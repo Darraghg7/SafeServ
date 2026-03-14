@@ -5,6 +5,7 @@ import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { useStaffTraining } from '../../hooks/useTraining'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 const PERMISSION_ROLES  = ['staff', 'manager', 'owner']
 const PERMISSION_LABELS = { staff: 'Staff', manager: 'Manager', owner: 'Owner' }
@@ -42,7 +43,7 @@ function useStaffManagement() {
     setLoading(true)
     const { data } = await supabase
       .from('staff')
-      .select('id, name, email, job_role, role, hourly_rate, is_active, show_temp_logs, show_allergens')
+      .select('id, name, email, job_role, role, hourly_rate, is_active, show_temp_logs, show_allergens, photo_url')
       .order('name')
     setStaff(data ?? [])
     setLoading(false)
@@ -209,6 +210,72 @@ function TrainingSection({ staffId }) {
   )
 }
 
+function NotificationsPanel({ session, toast, settings }) {
+  const { supported, permission, subscribed, subscribing, subscribe, unsubscribe } =
+    usePushNotifications(session?.staffId)
+  const [sendingReport, setSendingReport] = useState(false)
+
+  const sendWeeklyReport = async () => {
+    setSendingReport(true)
+    const { error } = await supabase.functions.invoke('send-weekly-report', {
+      body: { to: settings.manager_email },
+    })
+    setSendingReport(false)
+    if (error) { toast('Failed to send report: ' + error.message, 'error'); return }
+    toast(`Report sent to ${settings.manager_email || 'manager email'}`)
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-charcoal/10 p-6">
+      <SectionLabel>Notifications &amp; Reports</SectionLabel>
+      <div className="flex flex-col gap-5">
+
+        {/* Push notifications */}
+        <div>
+          <p className="text-sm font-medium text-charcoal mb-1">Push Notifications</p>
+          <p className="text-xs text-charcoal/40 mb-3">
+            Receive alerts on your phone for late clock-ins and overdue tasks — even when the app is in the background.
+          </p>
+          {!supported ? (
+            <p className="text-xs text-charcoal/35 italic">Push notifications are not supported in this browser. Install the app on your phone to enable them.</p>
+          ) : permission === 'denied' ? (
+            <p className="text-xs text-danger/70">Notifications blocked. Please enable them in your browser/phone settings.</p>
+          ) : subscribed ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-success font-medium">● Notifications enabled</span>
+              <button onClick={unsubscribe}
+                className="text-xs text-charcoal/40 hover:text-danger transition-colors underline underline-offset-2">
+                Disable
+              </button>
+            </div>
+          ) : (
+            <button onClick={subscribe} disabled={subscribing}
+              className="bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium hover:bg-charcoal/90 transition-colors disabled:opacity-40">
+              {subscribing ? 'Enabling…' : 'Enable Notifications →'}
+            </button>
+          )}
+        </div>
+
+        {/* Weekly email report */}
+        <div className="border-t border-charcoal/8 pt-4">
+          <p className="text-sm font-medium text-charcoal mb-1">Weekly Report</p>
+          <p className="text-xs text-charcoal/40 mb-3">
+            Send a summary report to <span className="font-medium text-charcoal/60">{settings.manager_email || 'your manager email'}</span> covering hours, temp checks, cleaning and waste for the past 7 days.
+          </p>
+          {!settings.manager_email ? (
+            <p className="text-xs text-charcoal/35 italic">Set your manager email in Venue Details to enable reports.</p>
+          ) : (
+            <button onClick={sendWeeklyReport} disabled={sendingReport}
+              className="bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium hover:bg-charcoal/90 transition-colors disabled:opacity-40">
+              {sendingReport ? 'Sending…' : 'Send Weekly Report →'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const toast = useToast()
   const { session } = useSession()
@@ -260,6 +327,28 @@ export default function SettingsPage() {
   const [editingId, setEditingId]     = useState(null)
   const [staffForm, setStaffForm]     = useState(EMPTY_FORM)
   const [savingStaff, setSavingStaff] = useState(false)
+  const [photoFile, setPhotoFile]     = useState(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  const uploadStaffPhoto = async (staffId, file) => {
+    if (!file || !staffId) return
+    setUploadingPhoto(true)
+    const ext  = file.name.split('.').pop()
+    const path = `${staffId}.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('staff-photos')
+      .upload(path, file, { upsert: true })
+    if (upErr) { toast('Photo upload failed: ' + upErr.message, 'error'); setUploadingPhoto(false); return }
+    const { data: urlData } = supabase.storage.from('staff-photos').getPublicUrl(path)
+    const { error: dbErr } = await supabase.from('staff')
+      .update({ photo_url: urlData.publicUrl + '?t=' + Date.now() })
+      .eq('id', staffId)
+    setUploadingPhoto(false)
+    if (dbErr) { toast('Failed to save photo URL', 'error'); return }
+    toast('Photo uploaded')
+    setPhotoFile(null)
+    reloadStaff()
+  }
 
   const openAdd = () => { setStaffForm(EMPTY_FORM); setEditingId(null); setShowForm(true) }
   const openEdit = (s) => {
@@ -405,6 +494,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Notifications & Reports */}
+      <NotificationsPanel session={session} toast={toast} settings={settings} />
+
       {/* Staff */}
       <div className="bg-white rounded-xl border border-charcoal/10 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -423,6 +515,37 @@ export default function SettingsPage() {
         {showForm && (
           <div className="mb-6 p-5 rounded-xl bg-cream/50 border border-charcoal/10 flex flex-col gap-4">
             <p className="text-sm font-semibold text-charcoal">{editingId ? 'Edit Staff Member' : 'New Staff Member'}</p>
+
+            {/* Photo upload (edit only) */}
+            {editingId && (() => {
+              const s = staff.find(m => m.id === editingId)
+              return (
+                <div className="flex items-center gap-4">
+                  {s?.photo_url ? (
+                    <img src={s.photo_url} alt={s.name}
+                      className="w-14 h-14 rounded-full object-cover border border-charcoal/10" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-charcoal/10 flex items-center justify-center">
+                      <span className="text-xl font-semibold text-charcoal/40">{staffForm.name.charAt(0) || '?'}</span>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] tracking-widests uppercase text-charcoal/40">Photo</label>
+                    <input type="file" accept="image/*"
+                      onChange={e => setPhotoFile(e.target.files[0] ?? null)}
+                      className="text-xs text-charcoal/60 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border file:border-charcoal/15 file:text-xs file:bg-cream/50 file:text-charcoal/60 hover:file:bg-cream" />
+                    {photoFile && (
+                      <button type="button"
+                        onClick={() => uploadStaffPhoto(editingId, photoFile)}
+                        disabled={uploadingPhoto}
+                        className="self-start text-xs bg-charcoal text-cream px-3 py-1 rounded-lg disabled:opacity-40 hover:bg-charcoal/90 transition-colors">
+                        {uploadingPhoto ? 'Uploading…' : 'Upload Photo →'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
 
             <div className="grid grid-cols-2 gap-3">
               <div>

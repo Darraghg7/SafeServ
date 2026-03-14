@@ -29,7 +29,7 @@ export default function LoginPage() {
   useEffect(() => {
     supabase
       .from('staff')
-      .select('id, name, role')
+      .select('id, name, role, photo_url')
       .eq('is_active', true)
       .order('name')
       .then(({ data }) => setStaff(data ?? []))
@@ -82,13 +82,22 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => selectStaff(s)}
                 className={[
-                  'w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all',
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all',
                   selected?.id === s.id
                     ? 'border-accent bg-accent/5 ring-1 ring-accent'
                     : 'border-charcoal/10 hover:border-charcoal/25 bg-white',
                 ].join(' ')}
               >
-                <span className="font-semibold text-charcoal text-sm">{s.name}</span>
+                {/* Avatar */}
+                {s.photo_url ? (
+                  <img src={s.photo_url} alt={s.name}
+                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-charcoal/10" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-charcoal/10 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-semibold text-charcoal/50">{s.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
+                <span className="flex-1 font-semibold text-charcoal text-sm">{s.name}</span>
                 <span className={[
                   'text-[10px] uppercase tracking-widest font-medium',
                   selected?.id === s.id ? 'text-accent' : 'text-charcoal/35',

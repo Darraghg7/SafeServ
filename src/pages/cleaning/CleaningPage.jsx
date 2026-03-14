@@ -5,6 +5,7 @@ import { useSession } from '../../contexts/SessionContext'
 import { useCleaningTasks } from '../../hooks/useCleaningTasks'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import CleaningExportModal from './CleaningExportModal'
 
 const FREQ_OPTIONS = ['daily', 'weekly', 'fortnightly', 'monthly', 'quarterly']
 const ROLE_OPTIONS = ['all', 'kitchen', 'foh']
@@ -36,6 +37,7 @@ export default function CleaningPage() {
   const [completeModal, setCompleteModal] = useState(null) // { task }
   const [notes, setNotes]       = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [showExport, setShowExport] = useState(false)
 
   const saveTask = async () => {
     if (!form.title.trim()) return
@@ -93,16 +95,28 @@ export default function CleaningPage() {
   return (
     <div className="flex flex-col gap-6">
 
+      <CleaningExportModal open={showExport} onClose={() => setShowExport(false)} />
+
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Cleaning Schedule</h1>
-        {isManager && (
+        <div className="flex items-center gap-3">
+          {isManager && (
+            <button
+              onClick={() => setShowExport(true)}
+              className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+            >
+              Export PDF
+            </button>
+          )}
+          {isManager && (
           <button
             onClick={() => setShowAdd((v) => !v)}
             className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
           >
             + Add Task
           </button>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Summary banner */}

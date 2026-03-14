@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import OpeningClosingExportModal from './OpeningClosingExportModal'
 
 function SectionLabel({ children }) {
   return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
@@ -193,6 +194,8 @@ export default function OpeningClosingPage() {
   const { checks, loading: checksLoading, reload: reloadChecks } = useChecks()
   const { completions, reload: reloadCompletions } = useTodayCompletions(today)
 
+  const [showExport, setShowExport] = useState(false)
+
   // ── Complete modal ───────────────────────────────────────────────────────
   const [pendingCheck, setPendingCheck] = useState(null) // { check, sessionType }
   const [notes, setNotes] = useState('')
@@ -231,9 +234,21 @@ export default function OpeningClosingPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-charcoal/40 mb-1">{format(new Date(), 'EEEE, d MMMM')}</p>
-        <h1 className="font-serif text-3xl text-charcoal">Opening &amp; Closing</h1>
+      <OpeningClosingExportModal open={showExport} onClose={() => setShowExport(false)} />
+
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-charcoal/40 mb-1">{format(new Date(), 'EEEE, d MMMM')}</p>
+          <h1 className="font-serif text-3xl text-charcoal">Opening &amp; Closing</h1>
+        </div>
+        {isManager && (
+          <button
+            onClick={() => setShowExport(true)}
+            className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+          >
+            Export PDF
+          </button>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

@@ -44,6 +44,9 @@ export const SESSION_JOB_ROLE_KEY    = 'safeserv_staff_job_role'
 export const SESSION_SHOW_TEMP_LOGS  = 'safeserv_show_temp_logs'
 export const SESSION_SHOW_ALLERGENS  = 'safeserv_show_allergens'
 
+// VAPID public key for Web Push — private key stored in Supabase secrets as VAPID_PRIVATE_KEY
+export const VAPID_PUBLIC_KEY = 'BBDUCYpy030Ejbra3lzqTxIo663ciiqK_H-qCDmMQZ1wNwt9icOCYvjqhcyYAIyTIKorp4gpsS81MOp5InvjJDc'
+
 // Legacy aliases — kept so old code doesn't break during migration
 export const STAFF_SESSION_KEY  = SESSION_TOKEN_KEY
 export const STAFF_ID_KEY       = SESSION_ID_KEY
