@@ -48,6 +48,74 @@ function useVenueLogo() {
   return logoUrl
 }
 
+/* ── Dropdown menu component ─────────────────────────────────────────────── */
+function NavDropdown({ label, items, alert, currentPath }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // Is any child route active?
+  const isGroupActive = items.some(
+    item => currentPath === item.to || (item.to !== '/dashboard' && currentPath.startsWith(item.to))
+  )
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
+  }, [open])
+
+  // Close on route change
+  useEffect(() => { setOpen(false) }, [currentPath])
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={[
+          'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px flex items-center gap-1',
+          isGroupActive
+            ? 'text-charcoal border-accent'
+            : alert
+              ? 'text-warning border-transparent hover:text-warning/80'
+              : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
+        ].join(' ')}
+      >
+        {label}
+        <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-px bg-white rounded-xl shadow-xl border border-charcoal/10 py-1.5 z-50 min-w-[180px]">
+          {items.map(item => {
+            const isActive = currentPath === item.to || (item.to !== '/dashboard' && currentPath.startsWith(item.to))
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={[
+                  'block px-4 py-2.5 text-[11px] tracking-widest font-medium transition-colors',
+                  isActive
+                    ? 'text-charcoal bg-accent/8'
+                    : item.alert
+                      ? 'text-warning hover:bg-warning/5'
+                      : 'text-charcoal/50 hover:text-charcoal hover:bg-charcoal/4',
+                ].join(' ')}
+              >
+                {item.label}
+              </NavLink>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Main AppShell ───────────────────────────────────────────────────────── */
 export default function AppShell({ children }) {
   const { session, isManager, signOut } = useSession()
   const location     = useLocation()
@@ -86,29 +154,33 @@ export default function AppShell({ children }) {
     }
   }, [])
 
-  // Scroll active link into view on mount / route change
   useEffect(() => {
     const el = navRef.current
     if (!el) return
     const active = el.querySelector('[data-active="true"]')
     if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
-    // Update indicators after scroll
     setTimeout(updateScrollIndicators, 100)
   }, [location.pathname])
 
-  // ── Nav links ────────────────────────────────────────────────────────────
-  const managerLinks = [
-    { to: '/dashboard',       label: 'DASHBOARD' },
-    { to: '/fridge',          label: 'TEMP LOGS' },
-    { to: '/opening-closing', label: 'CHECKS' },
-    { to: '/allergens',       label: 'ALLERGENS' },
-    { to: '/cleaning',        label: overdueCount > 0 ? `CLEANING (${overdueCount})` : 'CLEANING', alert: overdueCount > 0 },
-    { to: '/timesheet',       label: 'HOURS' },
-    { to: '/rota',            label: pendingSwaps > 0 ? `ROTA (${pendingSwaps})` : 'ROTA', alert: pendingSwaps > 0 },
-    { to: '/training',        label: 'TRAINING' },
-    { to: '/settings',        label: 'SETTINGS' },
+  // ── Manager nav: grouped with dropdowns ──────────────────────────────
+  const complianceItems = [
+    { to: '/fridge',       label: 'TEMP LOGS' },
+    { to: '/deliveries',   label: 'DELIVERIES' },
+    { to: '/probe',        label: 'PROBE CAL.' },
+    { to: '/allergens',    label: 'ALLERGENS' },
+    { to: '/cleaning',     label: overdueCount > 0 ? `CLEANING (${overdueCount})` : 'CLEANING', alert: overdueCount > 0 },
+    { to: '/corrective',   label: 'ACTIONS' },
   ]
+  const hasComplianceAlert = overdueCount > 0
 
+  const teamItems = [
+    { to: '/rota',       label: pendingSwaps > 0 ? `ROTA (${pendingSwaps})` : 'ROTA', alert: pendingSwaps > 0 },
+    { to: '/timesheet',  label: 'HOURS' },
+    { to: '/training',   label: 'TRAINING' },
+  ]
+  const hasTeamAlert = pendingSwaps > 0
+
+  // Staff nav: flat (fewer items, no dropdowns needed)
   const staffLinks = [
     { to: '/dashboard',       label: 'MY SHIFT' },
     { to: '/opening-closing', label: 'CHECKS' },
@@ -118,9 +190,8 @@ export default function AppShell({ children }) {
     { to: '/rota',            label: 'ROTA' },
   ]
 
-  const links    = isManager ? managerLinks : staffLinks
-  const bgClass  = isManager ? 'bg-cream'   : 'bg-staffbg'
-  const maxW     = isManager ? 'max-w-[900px]' : 'max-w-[560px]'
+  const bgClass = isManager ? 'bg-cream'   : 'bg-staffbg'
+  const maxW    = isManager ? 'max-w-[900px]' : 'max-w-[560px]'
 
   return (
     <div className={`min-h-dvh ${bgClass} font-sans flex flex-col`} style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
@@ -153,7 +224,6 @@ export default function AppShell({ children }) {
 
       {/* Nav tabs */}
       <nav className="bg-white border-b border-charcoal/10 shrink-0 relative">
-        {/* Left fade */}
         {canScrollLeft && (
           <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
         )}
@@ -162,27 +232,101 @@ export default function AppShell({ children }) {
           className={`${maxW} mx-auto px-3 sm:px-8 flex overflow-x-auto scrollbar-hide`}
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
-          {links.map(l => {
-            const isActive = location.pathname === l.to || (l.to !== '/dashboard' && location.pathname.startsWith(l.to))
-            return (
+          {isManager ? (
+            <>
+              {/* Dashboard — direct link */}
               <NavLink
-                key={l.to} to={l.to}
-                data-active={isActive}
+                to="/dashboard"
+                data-active={location.pathname === '/dashboard'}
                 className={[
-                  'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px',
-                  isActive
+                  'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px shrink-0',
+                  location.pathname === '/dashboard'
                     ? 'text-charcoal border-accent'
-                    : l.alert
-                      ? 'text-warning border-transparent hover:text-warning/80'
-                      : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
+                    : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
                 ].join(' ')}
               >
-                {l.label}
+                DASHBOARD
               </NavLink>
-            )
-          })}
+
+              {/* Checks — direct link */}
+              <NavLink
+                to="/opening-closing"
+                data-active={location.pathname.startsWith('/opening-closing')}
+                className={[
+                  'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px shrink-0',
+                  location.pathname.startsWith('/opening-closing')
+                    ? 'text-charcoal border-accent'
+                    : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
+                ].join(' ')}
+              >
+                CHECKS
+              </NavLink>
+
+              {/* Compliance dropdown */}
+              <NavDropdown
+                label={hasComplianceAlert ? 'COMPLIANCE !' : 'COMPLIANCE'}
+                items={complianceItems}
+                alert={hasComplianceAlert}
+                currentPath={location.pathname}
+              />
+
+              {/* Team dropdown */}
+              <NavDropdown
+                label={hasTeamAlert ? 'TEAM !' : 'TEAM'}
+                items={teamItems}
+                alert={hasTeamAlert}
+                currentPath={location.pathname}
+              />
+
+              {/* EHO Audit — direct link */}
+              <NavLink
+                to="/audit"
+                data-active={location.pathname === '/audit'}
+                className={[
+                  'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px shrink-0',
+                  location.pathname === '/audit'
+                    ? 'text-charcoal border-accent'
+                    : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
+                ].join(' ')}
+              >
+                EHO AUDIT
+              </NavLink>
+
+              {/* Settings — direct link */}
+              <NavLink
+                to="/settings"
+                data-active={location.pathname.startsWith('/settings')}
+                className={[
+                  'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px shrink-0',
+                  location.pathname.startsWith('/settings')
+                    ? 'text-charcoal border-accent'
+                    : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
+                ].join(' ')}
+              >
+                SETTINGS
+              </NavLink>
+            </>
+          ) : (
+            // Staff: flat nav (fewer items)
+            staffLinks.map(l => {
+              const isActive = location.pathname === l.to || (l.to !== '/dashboard' && location.pathname.startsWith(l.to))
+              return (
+                <NavLink
+                  key={l.to} to={l.to}
+                  data-active={isActive}
+                  className={[
+                    'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px',
+                    isActive
+                      ? 'text-charcoal border-accent'
+                      : 'text-charcoal/35 border-transparent hover:text-charcoal/60',
+                  ].join(' ')}
+                >
+                  {l.label}
+                </NavLink>
+              )
+            })
+          )}
         </div>
-        {/* Right fade */}
         {canScrollRight && (
           <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
         )}

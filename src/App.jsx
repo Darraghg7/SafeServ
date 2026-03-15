@@ -34,6 +34,12 @@ import OpeningClosingPage from './pages/opening/OpeningClosingPage'
 import RotaPage     from './pages/rota/RotaPage'
 import TimesheetPage from './pages/clockin/TimesheetPage'
 
+// Compliance
+import DeliveryChecksPage    from './pages/deliveries/DeliveryChecksPage'
+import ProbeCalibrationPage  from './pages/probe/ProbeCalibrationPage'
+import CorrectiveActionsPage from './pages/corrective/CorrectiveActionsPage'
+import EHOAuditPage          from './pages/audit/EHOAuditPage'
+
 // Training
 import TrainingPage from './pages/training/TrainingPage'
 
@@ -93,11 +99,15 @@ function AppRoutes() {
       <Route path="/rota"              element={wrap(RotaPage)} />
 
       {/* Manager only */}
-      <Route path="/allergens/new"      element={wrap(FoodItemFormPage,  RequireManager)} />
-      <Route path="/allergens/:id/edit" element={wrap(FoodItemFormPage,  RequireManager)} />
-      <Route path="/timesheet"          element={wrap(TimesheetPage,     RequireManager)} />
-      <Route path="/training"           element={wrap(TrainingPage,      RequireManager)} />
-      <Route path="/settings"           element={wrap(SettingsPage,      RequireManager)} />
+      <Route path="/allergens/new"      element={wrap(FoodItemFormPage,       RequireManager)} />
+      <Route path="/allergens/:id/edit" element={wrap(FoodItemFormPage,       RequireManager)} />
+      <Route path="/timesheet"          element={wrap(TimesheetPage,          RequireManager)} />
+      <Route path="/deliveries"         element={wrap(DeliveryChecksPage,     RequireManager)} />
+      <Route path="/probe"              element={wrap(ProbeCalibrationPage,   RequireManager)} />
+      <Route path="/corrective"         element={wrap(CorrectiveActionsPage,  RequireManager)} />
+      <Route path="/audit"              element={wrap(EHOAuditPage,           RequireManager)} />
+      <Route path="/training"           element={wrap(TrainingPage,           RequireManager)} />
+      <Route path="/settings"           element={wrap(SettingsPage,           RequireManager)} />
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
