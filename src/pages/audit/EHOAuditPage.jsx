@@ -65,7 +65,7 @@ export default function EHOAuditPage() {
         training,
         staff,
       ] = await Promise.all([
-        supabase.from('fridge_temperature_logs').select('id, temperature, status, recorded_at').gte('recorded_at', sinceTs),
+        supabase.from('fridge_temperature_logs').select('id, temperature, logged_at, fridge:fridge_id(min_temp, max_temp)').gte('logged_at', sinceTs),
         supabase.from('cleaning_tasks').select('id, title, frequency').eq('is_active', true),
         supabase.from('cleaning_completions').select('id, cleaning_task_id, completed_at').gte('completed_at', sinceTs),
         supabase.from('delivery_checks').select('id, overall_pass, checked_at').gte('checked_at', sinceTs),
@@ -86,7 +86,7 @@ export default function EHOAuditPage() {
 
       // Temp analysis
       const tempTotal = temps.length
-      const tempFails = temps.filter(t => t.status === 'fail' || t.temperature > 8 || t.temperature < -25).length
+      const tempFails = temps.filter(t => t.fridge && (t.temperature < t.fridge.min_temp || t.temperature > t.fridge.max_temp)).length
       const tempPassRate = tempTotal > 0 ? Math.round(((tempTotal - tempFails) / tempTotal) * 100) : 100
 
       // Cleaning analysis

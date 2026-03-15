@@ -62,7 +62,7 @@ function ComplianceScoreWidget() {
     const load = async () => {
       const since = subDays(new Date(), 30).toISOString()
       const [temps, deliveries, calibrations, actions, training] = await Promise.all([
-        supabase.from('fridge_temperature_logs').select('id, temperature, status').gte('recorded_at', since),
+        supabase.from('fridge_temperature_logs').select('id, temperature, fridge:fridge_id(min_temp, max_temp)').gte('logged_at', since),
         supabase.from('delivery_checks').select('id, overall_pass').gte('checked_at', since),
         supabase.from('probe_calibrations').select('id, pass').gte('calibrated_at', since),
         supabase.from('corrective_actions').select('id, status, severity'),
@@ -70,7 +70,7 @@ function ComplianceScoreWidget() {
       ])
 
       const t = temps.data ?? []
-      const tempFails = t.filter(x => x.status === 'fail').length
+      const tempFails = t.filter(x => x.fridge && (x.temperature < x.fridge.min_temp || x.temperature > x.fridge.max_temp)).length
       const tempRate = t.length > 0 ? Math.round(((t.length - tempFails) / t.length) * 100) : 100
 
       const d = deliveries.data ?? []

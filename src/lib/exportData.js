@@ -23,21 +23,24 @@ export async function exportTempLogs(days = 90) {
   const since = subDays(new Date(), days).toISOString()
   const { data } = await supabase
     .from('fridge_temperature_logs')
-    .select('temperature, status, logged_at, notes, fridge:fridge_id(name), recorder:recorded_by(name)')
-    .gte('recorded_at', since)
+    .select('temperature, logged_at, notes, fridge:fridge_id(name, min_temp, max_temp), logged_by_name')
+    .gte('logged_at', since)
     .order('logged_at', { ascending: false })
 
   const csv = buildCsv(
     ['Date', 'Time', 'Fridge', 'Temperature (C)', 'Status', 'Recorded By', 'Notes'],
-    (data ?? []).map(r => [
-      format(new Date(r.logged_at), 'yyyy-MM-dd'),
-      format(new Date(r.logged_at), 'HH:mm'),
-      r.fridge?.name ?? '',
-      r.temperature,
-      r.status ?? '',
-      r.recorder?.name ?? '',
-      r.notes ?? '',
-    ])
+    (data ?? []).map(r => {
+      const pass = r.fridge ? (r.temperature >= r.fridge.min_temp && r.temperature <= r.fridge.max_temp) : true
+      return [
+        format(new Date(r.logged_at), 'yyyy-MM-dd'),
+        format(new Date(r.logged_at), 'HH:mm'),
+        r.fridge?.name ?? '',
+        r.temperature,
+        pass ? 'PASS' : 'FAIL',
+        r.logged_by_name ?? '',
+        r.notes ?? '',
+      ]
+    })
   )
   downloadCsv(csv, `temp-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`)
 }
