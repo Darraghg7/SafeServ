@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { supabase } from '../../lib/supabase'
-import { useCleaningTasks } from '../../hooks/useCleaningTasks'
+import { useSession } from '../../contexts/SessionContext'
+import { useToast } from '../../components/ui/Toast'
+import { WIDGET_REGISTRY, DEFAULT_WIDGETS, ALL_WIDGET_IDS } from '../../components/widgets/WidgetRegistry'
+import Modal from '../../components/ui/Modal'
 
 function useVenueName() {
   const [name, setName] = useState('')
@@ -13,143 +15,243 @@ function useVenueName() {
   return name
 }
 
-function StatCard({ label, value, sub, alert, to }) {
-  const inner = (
-    <>
-      <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">{label}</p>
-      <p className={`font-serif text-3xl ${alert ? 'text-danger' : 'text-charcoal'}`}>{value}</p>
-      {sub && <p className="text-xs text-charcoal/40 mt-1">{sub}</p>}
-      {to && <p className="text-[10px] tracking-widest uppercase text-charcoal/25 mt-3">View →</p>}
-    </>
-  )
-  if (to) {
-    return (
-      <Link to={to} className="bg-white rounded-xl border border-charcoal/10 p-5 hover:border-charcoal/25 hover:shadow-sm transition-all block">
-        {inner}
-      </Link>
-    )
-  }
-  return <div className="bg-white rounded-xl border border-charcoal/10 p-5">{inner}</div>
-}
-
-const JOB_LABELS = { kitchen: 'Kitchen', foh: 'FOH' }
-
-function useTodaysShifts() {
-  const [shifts, setShifts] = useState([])
+/* ── Widget preferences hook ─────────────────────────────────────────────── */
+function useWidgetPreferences(staffId) {
+  const [widgetIds, setWidgetIds] = useState(null) // null = loading
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const today = format(new Date(), 'yyyy-MM-dd')
-    supabase
-      .from('shifts')
-      .select('id, start_time, end_time, role_label, staff:staff_id(id, name, job_role)')
-      .eq('shift_date', today)
-      .order('start_time')
-      .then(({ data }) => {
-        setShifts(data ?? [])
-        setLoading(false)
-      })
-  }, [])
+  const load = useCallback(async () => {
+    if (!staffId) return
+    const { data } = await supabase
+      .from('dashboard_widgets')
+      .select('widget_id, position')
+      .eq('staff_id', staffId)
+      .order('position')
 
-  return { shifts, loading }
+    if (data && data.length > 0) {
+      setWidgetIds(data.map(d => d.widget_id))
+    } else {
+      // No saved prefs — use defaults
+      setWidgetIds(DEFAULT_WIDGETS)
+    }
+    setLoading(false)
+  }, [staffId])
+
+  useEffect(() => { load() }, [load])
+
+  const save = useCallback(async (newIds) => {
+    if (!staffId) return
+    setWidgetIds(newIds)
+
+    // Delete existing, insert new
+    await supabase.from('dashboard_widgets').delete().eq('staff_id', staffId)
+    if (newIds.length > 0) {
+      const rows = newIds.map((id, i) => ({ staff_id: staffId, widget_id: id, position: i }))
+      await supabase.from('dashboard_widgets').insert(rows)
+    }
+  }, [staffId])
+
+  return { widgetIds: widgetIds ?? DEFAULT_WIDGETS, loading, save }
 }
 
-export default function ManagerDashboardPage() {
-  const [tempCount, setTempCount] = useState({ total: 0, fail: 0 })
-  const { overdueCount } = useCleaningTasks()
-  const { shifts, loading: shiftsLoading } = useTodaysShifts()
-  const venueName = useVenueName()
+/* ── Widget Picker Modal ─────────────────────────────────────────────────── */
+function WidgetPicker({ open, onClose, activeIds, onSave }) {
+  const [selected, setSelected] = useState([])
 
   useEffect(() => {
-    const today = format(new Date(), 'yyyy-MM-dd')
-    supabase
-      .from('fridge_temperature_logs')
-      .select('id, temperature, fridge:fridge_id(min_temp, max_temp)')
-      .gte('logged_at', today)
-      .then(({ data }) => {
-        const total = data?.length ?? 0
-        const fail  = data?.filter(l => l.fridge && (l.temperature < l.fridge.min_temp || l.temperature > l.fridge.max_temp)).length ?? 0
-        setTempCount({ total, fail })
-      })
-  }, [])
+    if (open) setSelected([...activeIds])
+  }, [open, activeIds])
 
-  const now = format(new Date(), 'HH:mm')
+  const toggle = (id) => {
+    setSelected(prev =>
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
+    )
+  }
+
+  const moveUp = (id) => {
+    setSelected(prev => {
+      const idx = prev.indexOf(id)
+      if (idx <= 0) return prev
+      const next = [...prev]
+      ;[next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+      return next
+    })
+  }
+
+  const moveDown = (id) => {
+    setSelected(prev => {
+      const idx = prev.indexOf(id)
+      if (idx < 0 || idx >= prev.length - 1) return prev
+      const next = [...prev]
+      ;[next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]
+      return next
+    })
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Customise Dashboard">
+      <div className="flex flex-col gap-4">
+        <p className="text-xs text-charcoal/50">
+          Select and reorder the widgets you want on your dashboard.
+        </p>
+
+        {/* Active widgets — reorderable */}
+        {selected.length > 0 && (
+          <div>
+            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Your widgets</p>
+            <div className="flex flex-col gap-1.5">
+              {selected.map((id, idx) => {
+                const w = WIDGET_REGISTRY[id]
+                if (!w) return null
+                return (
+                  <div key={id} className="flex items-center gap-2 bg-charcoal/4 rounded-xl px-3 py-2.5">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={() => moveUp(id)}
+                        disabled={idx === 0}
+                        className="text-charcoal/30 hover:text-charcoal disabled:opacity-20 text-[10px] leading-none"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveDown(id)}
+                        disabled={idx === selected.length - 1}
+                        className="text-charcoal/30 hover:text-charcoal disabled:opacity-20 text-[10px] leading-none"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-charcoal truncate">{w.label}</p>
+                      <p className="text-[10px] text-charcoal/40 truncate">{w.description}</p>
+                    </div>
+                    <button
+                      onClick={() => toggle(id)}
+                      className="text-danger/50 hover:text-danger text-xs px-2 py-1 shrink-0"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Available widgets */}
+        {(() => {
+          const available = ALL_WIDGET_IDS.filter(id => !selected.includes(id))
+          if (available.length === 0) return null
+          return (
+            <div>
+              <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Available widgets</p>
+              <div className="flex flex-col gap-1.5">
+                {available.map(id => {
+                  const w = WIDGET_REGISTRY[id]
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => toggle(id)}
+                      className="flex items-center gap-3 rounded-xl border border-dashed border-charcoal/15 px-3 py-2.5 hover:border-charcoal/30 hover:bg-charcoal/3 transition-all text-left"
+                    >
+                      <span className="text-charcoal/20 text-lg shrink-0">+</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-charcoal/60 truncate">{w.label}</p>
+                        <p className="text-[10px] text-charcoal/35 truncate">{w.description}</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Save */}
+        <div className="flex gap-2 pt-2 border-t border-charcoal/8">
+          <button
+            onClick={() => { onSave(selected); onClose() }}
+            className="flex-1 bg-charcoal text-cream py-2.5 rounded-xl text-sm font-medium hover:bg-charcoal/90 transition-colors"
+          >
+            Save Layout
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-charcoal/15 text-sm text-charcoal/50 hover:text-charcoal transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MANAGER DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export default function ManagerDashboardPage() {
+  const { session } = useSession()
+  const toast = useToast()
+  const venueName = useVenueName()
+  const { widgetIds, loading, save } = useWidgetPreferences(session?.staffId)
+  const [showPicker, setShowPicker] = useState(false)
+
+  const handleSave = (newIds) => {
+    save(newIds)
+    toast('Dashboard updated')
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        {venueName && (
-          <p className="font-serif text-lg text-charcoal/50 mb-0.5">{venueName}</p>
-        )}
-        <p className="text-xs uppercase tracking-widest text-charcoal/40 mb-1">{format(new Date(), 'EEEE, d MMMM')}</p>
-        <h1 className="font-serif text-3xl text-charcoal">Manager Dashboard</h1>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <StatCard
-          label="Temp Checks Today"
-          value={tempCount.total}
-          sub={`${tempCount.total - tempCount.fail} pass · ${tempCount.fail} fail`}
-          alert={tempCount.fail > 0}
-          to="/fridge"
-        />
-        <StatCard
-          label="Cleaning Overdue"
-          value={overdueCount}
-          sub={overdueCount > 0 ? 'Needs attention' : 'All on track'}
-          alert={overdueCount > 0}
-          to="/cleaning"
-        />
-      </div>
-
-      {/* Today's Staff */}
-      <div className="bg-white rounded-xl border border-charcoal/10 overflow-hidden">
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <p className="text-[10px] tracking-widest uppercase text-charcoal/40">On Shift Today</p>
-          <Link to="/rota" className="text-[10px] tracking-widest uppercase text-charcoal/30 hover:text-charcoal transition-colors">
-            View Rota →
-          </Link>
+      <div className="flex items-start justify-between">
+        <div>
+          {venueName && (
+            <p className="font-serif text-lg text-charcoal/50 mb-0.5">{venueName}</p>
+          )}
+          <p className="text-xs uppercase tracking-widest text-charcoal/40 mb-1">{format(new Date(), 'EEEE, d MMMM')}</p>
+          <h1 className="font-serif text-3xl text-charcoal">Manager Dashboard</h1>
         </div>
-
-        {shiftsLoading ? (
-          <p className="text-sm text-charcoal/35 italic px-5 pb-5">Loading…</p>
-        ) : shifts.length === 0 ? (
-          <p className="text-sm text-charcoal/35 italic px-5 pb-5">No shifts scheduled today.</p>
-        ) : (
-          <div className="divide-y divide-charcoal/6">
-            {shifts.map(s => {
-              const start = s.start_time?.slice(0, 5) ?? ''
-              const end   = s.end_time?.slice(0, 5)   ?? ''
-              const active = now >= start && now <= end
-              return (
-                <div key={s.id} className="flex items-center gap-4 px-5 py-3">
-                  {/* Status dot */}
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${active ? 'bg-success' : now > end ? 'bg-charcoal/20' : 'bg-warning'}`} />
-                  {/* Name + department */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-charcoal truncate">{s.staff?.name ?? '—'}</p>
-                    <p className="text-[11px] text-charcoal/40">
-                      {JOB_LABELS[s.staff?.job_role] ?? s.staff?.job_role}
-                      {s.role_label ? ` · ${s.role_label}` : ''}
-                    </p>
-                  </div>
-                  {/* Shift time */}
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-mono text-charcoal">{start}–{end}</p>
-                    <p className={`text-[10px] tracking-widest uppercase font-medium ${
-                      active      ? 'text-success' :
-                      now > end   ? 'text-charcoal/30' :
-                                    'text-warning'
-                    }`}>
-                      {active ? 'On shift' : now > end ? 'Finished' : 'Upcoming'}
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <button
+          onClick={() => setShowPicker(true)}
+          className="text-[10px] sm:text-[11px] tracking-widest uppercase text-charcoal/30 hover:text-charcoal/60 border border-charcoal/15 hover:border-charcoal/30 px-2.5 py-1.5 rounded-lg transition-colors mt-1"
+        >
+          Customise
+        </button>
       </div>
+
+      {/* Widget grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {widgetIds.map(id => {
+          const widget = WIDGET_REGISTRY[id]
+          if (!widget) return null
+          const Component = widget.component
+          return <Component key={id} />
+        })}
+      </div>
+
+      {widgetIds.length === 0 && (
+        <div className="bg-white rounded-xl border border-dashed border-charcoal/20 p-10 text-center">
+          <p className="text-charcoal/30 text-sm mb-3">No widgets on your dashboard</p>
+          <button
+            onClick={() => setShowPicker(true)}
+            className="bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium hover:bg-charcoal/90 transition-colors"
+          >
+            + Add Widgets
+          </button>
+        </div>
+      )}
+
+      {/* Widget picker modal */}
+      <WidgetPicker
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        activeIds={widgetIds}
+        onSave={handleSave}
+      />
     </div>
   )
 }

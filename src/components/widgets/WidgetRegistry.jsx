@@ -1,0 +1,490 @@
+/**
+ * Widget Registry — defines all available dashboard widgets.
+ * Each widget is self-contained: it fetches its own data and renders itself.
+ */
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { format, subDays } from 'date-fns'
+import { supabase } from '../../lib/supabase'
+import { useCleaningTasks } from '../../hooks/useCleaningTasks'
+import { useSession } from '../../contexts/SessionContext'
+import LoadingSpinner from '../ui/LoadingSpinner'
+
+/* ── Shared components ─────────────────────────────────────────────────── */
+function WidgetShell({ title, to, children, status }) {
+  const statusBorder = {
+    good: 'border-l-success',
+    warning: 'border-l-warning',
+    bad: 'border-l-danger',
+  }
+  return (
+    <div className={`bg-white rounded-xl border border-charcoal/10 overflow-hidden ${status ? `border-l-4 ${statusBorder[status] ?? ''}` : ''}`}>
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <p className="text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">{title}</p>
+        {to && (
+          <Link to={to} className="text-[10px] tracking-widest uppercase text-charcoal/25 hover:text-charcoal/50 transition-colors">
+            View →
+          </Link>
+        )}
+      </div>
+      <div className="px-5 pb-4">{children}</div>
+    </div>
+  )
+}
+
+function BigNumber({ value, label, alert }) {
+  return (
+    <div className="text-center py-1">
+      <p className={`font-serif text-3xl font-bold ${alert ? 'text-danger' : 'text-charcoal'}`}>{value}</p>
+      {label && <p className="text-xs text-charcoal/40 mt-0.5">{label}</p>}
+    </div>
+  )
+}
+
+function MiniRow({ label, value, warn }) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="text-sm text-charcoal/60">{label}</span>
+      <span className={`text-sm font-semibold ${warn ? 'text-danger' : 'text-charcoal'}`}>{value}</span>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WIDGET COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Compliance Score */
+function ComplianceScoreWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    const load = async () => {
+      const since = subDays(new Date(), 30).toISOString()
+      const [temps, deliveries, calibrations, actions, training] = await Promise.all([
+        supabase.from('fridge_temperature_logs').select('id, temperature, status').gte('recorded_at', since),
+        supabase.from('delivery_checks').select('id, overall_pass').gte('checked_at', since),
+        supabase.from('probe_calibrations').select('id, pass').gte('calibrated_at', since),
+        supabase.from('corrective_actions').select('id, status, severity'),
+        supabase.from('staff_training').select('id, expiry_date'),
+      ])
+
+      const t = temps.data ?? []
+      const tempFails = t.filter(x => x.status === 'fail').length
+      const tempRate = t.length > 0 ? Math.round(((t.length - tempFails) / t.length) * 100) : 100
+
+      const d = deliveries.data ?? []
+      const deliveryFails = d.filter(x => !x.overall_pass).length
+
+      const c = calibrations.data ?? []
+      const probeFails = c.filter(x => !x.pass).length
+
+      const a = actions.data ?? []
+      const openCritical = a.filter(x => x.status === 'open' && x.severity === 'critical').length
+      const openActions = a.filter(x => x.status === 'open').length
+
+      const tr = training.data ?? []
+      const expired = tr.filter(x => x.expiry_date && new Date(x.expiry_date) < new Date()).length
+
+      let score = 100
+      if (tempRate < 95) score -= 20
+      else if (tempRate < 100) score -= 5
+      if (deliveryFails > 0) score -= 10
+      if (probeFails > 0) score -= 10
+      if (openCritical > 0) score -= 25
+      else if (openActions > 3) score -= 10
+      if (expired > 0) score -= 10
+      if (c.length === 0) score -= 5
+      if (d.length === 0) score -= 5
+      score = Math.max(0, score)
+
+      const status = score >= 85 ? 'good' : score >= 60 ? 'warning' : 'bad'
+      setData({ score, status })
+    }
+    load()
+  }, [])
+
+  if (!data) return <WidgetShell title="Compliance Score" to="/audit"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  const colors = { good: 'text-success', warning: 'text-warning', bad: 'text-danger' }
+  const labels = { good: 'Inspection ready', warning: 'Needs attention', bad: 'Action required' }
+
+  return (
+    <WidgetShell title="Compliance Score" to="/audit" status={data.status}>
+      <div className="text-center py-2">
+        <p className={`font-serif text-4xl font-bold ${colors[data.status]}`}>{data.score}%</p>
+        <p className={`text-xs mt-1 ${colors[data.status]}`}>{labels[data.status]}</p>
+      </div>
+    </WidgetShell>
+  )
+}
+
+/* 2. Fridge Alerts */
+function FridgeAlertsWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    const load = async () => {
+      const today = format(new Date(), 'yyyy-MM-dd')
+      const { data: logs } = await supabase
+        .from('fridge_temperature_logs')
+        .select('id, temperature, fridge:fridge_id(name, min_temp, max_temp)')
+        .gte('logged_at', today)
+        .order('logged_at', { ascending: false })
+
+      const items = logs ?? []
+      const outOfRange = items.filter(l =>
+        l.fridge && (l.temperature < l.fridge.min_temp || l.temperature > l.fridge.max_temp)
+      )
+      const total = items.length
+      const { data: fridges } = await supabase.from('fridges').select('id, name').eq('is_active', true)
+      const fridgeCount = fridges?.length ?? 0
+      const checkedFridgeIds = new Set(items.map(l => l.fridge?.name).filter(Boolean))
+      const unchecked = fridgeCount - checkedFridgeIds.size
+
+      setData({ total, alerts: outOfRange.length, unchecked, fridgeCount })
+    }
+    load()
+  }, [])
+
+  if (!data) return <WidgetShell title="Fridge Status" to="/fridge"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  const status = data.alerts > 0 ? 'bad' : data.unchecked > 0 ? 'warning' : 'good'
+
+  return (
+    <WidgetShell title="Fridge Status" to="/fridge" status={status}>
+      <MiniRow label="Readings today" value={data.total} />
+      <MiniRow label="Out of range" value={data.alerts} warn={data.alerts > 0} />
+      <MiniRow label="Not yet checked" value={data.unchecked} warn={data.unchecked > 0} />
+    </WidgetShell>
+  )
+}
+
+/* 3. Cleaning Overdue */
+function CleaningOverdueWidget() {
+  const { overdueCount } = useCleaningTasks()
+  const status = overdueCount > 3 ? 'bad' : overdueCount > 0 ? 'warning' : 'good'
+
+  return (
+    <WidgetShell title="Cleaning" to="/cleaning" status={status}>
+      <BigNumber
+        value={overdueCount}
+        label={overdueCount === 0 ? 'All on track' : `task${overdueCount !== 1 ? 's' : ''} overdue`}
+        alert={overdueCount > 0}
+      />
+    </WidgetShell>
+  )
+}
+
+/* 4. Staff On Shift */
+function StaffOnShiftWidget() {
+  const [shifts, setShifts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const today = format(new Date(), 'yyyy-MM-dd')
+    supabase.from('shifts')
+      .select('id, start_time, end_time, role_label, staff:staff_id(name, job_role)')
+      .eq('shift_date', today)
+      .order('start_time')
+      .then(({ data }) => { setShifts(data ?? []); setLoading(false) })
+  }, [])
+
+  const now = format(new Date(), 'HH:mm')
+
+  return (
+    <WidgetShell title="On Shift Today" to="/rota">
+      {loading ? (
+        <div className="flex justify-center py-4"><LoadingSpinner /></div>
+      ) : shifts.length === 0 ? (
+        <p className="text-sm text-charcoal/30 italic py-2">No shifts today</p>
+      ) : (
+        <div className="flex flex-col divide-y divide-charcoal/6 -mx-5">
+          {shifts.slice(0, 5).map(s => {
+            const start = s.start_time?.slice(0, 5) ?? ''
+            const end = s.end_time?.slice(0, 5) ?? ''
+            const active = now >= start && now <= end
+            return (
+              <div key={s.id} className="flex items-center gap-3 px-5 py-2.5">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${active ? 'bg-success' : now > end ? 'bg-charcoal/20' : 'bg-warning'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-charcoal truncate">{s.staff?.name ?? '—'}</p>
+                  <p className="text-[10px] text-charcoal/40">{s.role_label}</p>
+                </div>
+                <p className="text-xs font-mono text-charcoal/50">{start}–{end}</p>
+              </div>
+            )
+          })}
+          {shifts.length > 5 && (
+            <p className="text-[10px] text-charcoal/30 px-5 py-2">+{shifts.length - 5} more</p>
+          )}
+        </div>
+      )}
+    </WidgetShell>
+  )
+}
+
+/* 5. Open Corrective Actions */
+function OpenActionsWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    supabase.from('corrective_actions')
+      .select('id, severity, status')
+      .eq('status', 'open')
+      .then(({ data: actions }) => {
+        const items = actions ?? []
+        const critical = items.filter(a => a.severity === 'critical').length
+        const major = items.filter(a => a.severity === 'major').length
+        setData({ total: items.length, critical, major })
+      })
+  }, [])
+
+  if (!data) return <WidgetShell title="Open Actions" to="/corrective"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  const status = data.critical > 0 ? 'bad' : data.total > 0 ? 'warning' : 'good'
+
+  return (
+    <WidgetShell title="Open Actions" to="/corrective" status={status}>
+      <BigNumber value={data.total} label={data.total === 0 ? 'No open issues' : 'unresolved'} alert={data.critical > 0} />
+      {data.total > 0 && (
+        <div className="flex justify-center gap-3 mt-1">
+          {data.critical > 0 && <span className="text-[10px] text-danger font-medium">{data.critical} critical</span>}
+          {data.major > 0 && <span className="text-[10px] text-orange-600 font-medium">{data.major} major</span>}
+        </div>
+      )}
+    </WidgetShell>
+  )
+}
+
+/* 6. Expiring Training */
+function ExpiringTrainingWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    supabase.from('staff_training')
+      .select('id, title, expiry_date, staff:staff_id(name)')
+      .not('expiry_date', 'is', null)
+      .order('expiry_date')
+      .then(({ data: certs }) => {
+        const now = new Date()
+        const thirtyDays = new Date(now.getTime() + 30 * 86400000)
+        const items = certs ?? []
+        const expired = items.filter(c => new Date(c.expiry_date) < now)
+        const expiring = items.filter(c => {
+          const d = new Date(c.expiry_date)
+          return d >= now && d <= thirtyDays
+        })
+        setData({ expired: expired.length, expiring: expiring.length, items: [...expired, ...expiring].slice(0, 4) })
+      })
+  }, [])
+
+  if (!data) return <WidgetShell title="Training Expiry" to="/training"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  const status = data.expired > 0 ? 'bad' : data.expiring > 0 ? 'warning' : 'good'
+
+  return (
+    <WidgetShell title="Training Expiry" to="/training" status={status}>
+      <MiniRow label="Expired" value={data.expired} warn={data.expired > 0} />
+      <MiniRow label="Expiring (30 days)" value={data.expiring} warn={data.expiring > 0} />
+      {data.items.length > 0 && (
+        <div className="mt-2 border-t border-charcoal/6 pt-2">
+          {data.items.map(c => (
+            <p key={c.id} className="text-xs text-charcoal/50 py-0.5 truncate">
+              {c.staff?.name} — {c.title} <span className="text-charcoal/30">({format(new Date(c.expiry_date), 'd MMM yy')})</span>
+            </p>
+          ))}
+        </div>
+      )}
+    </WidgetShell>
+  )
+}
+
+/* 7. Today's Deliveries */
+function TodaysDeliveriesWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    supabase.from('delivery_checks')
+      .select('id, supplier_name, overall_pass, checked_at')
+      .gte('checked_at', today.toISOString())
+      .order('checked_at', { ascending: false })
+      .limit(5)
+      .then(({ data: checks }) => {
+        const items = checks ?? []
+        const fails = items.filter(c => !c.overall_pass).length
+        setData({ total: items.length, fails, items })
+      })
+  }, [])
+
+  if (!data) return <WidgetShell title="Today's Deliveries" to="/deliveries"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  const status = data.fails > 0 ? 'bad' : data.total > 0 ? 'good' : 'neutral'
+
+  return (
+    <WidgetShell title="Today's Deliveries" to="/deliveries" status={status !== 'neutral' ? status : undefined}>
+      {data.total === 0 ? (
+        <p className="text-sm text-charcoal/30 italic py-2">No deliveries logged today</p>
+      ) : (
+        <>
+          <MiniRow label="Deliveries" value={data.total} />
+          <MiniRow label="Failed" value={data.fails} warn={data.fails > 0} />
+          <div className="mt-2 border-t border-charcoal/6 pt-2">
+            {data.items.map(c => (
+              <div key={c.id} className="flex items-center justify-between py-0.5">
+                <span className="text-xs text-charcoal/60 truncate">{c.supplier_name}</span>
+                <span className={`text-[10px] font-medium ${c.overall_pass ? 'text-success' : 'text-danger'}`}>
+                  {c.overall_pass ? 'PASS' : 'FAIL'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </WidgetShell>
+  )
+}
+
+/* 8. Weekly Labour Cost */
+function WeeklyLabourWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    const load = async () => {
+      const now = new Date()
+      const day = now.getDay()
+      const monday = new Date(now)
+      monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
+      const weekStart = format(monday, 'yyyy-MM-dd')
+
+      const { data: shifts } = await supabase
+        .from('shifts')
+        .select('start_time, end_time, staff:staff_id(hourly_rate)')
+        .eq('week_start', weekStart)
+
+      const items = shifts ?? []
+      let totalHrs = 0
+      let totalCost = 0
+      for (const s of items) {
+        const [sh, sm] = s.start_time.split(':').map(Number)
+        const [eh, em] = s.end_time.split(':').map(Number)
+        const hrs = Math.max(0, ((eh * 60 + em) - (sh * 60 + sm)) / 60)
+        totalHrs += hrs
+        totalCost += hrs * (s.staff?.hourly_rate ?? 0)
+      }
+
+      setData({ shifts: items.length, hours: totalHrs.toFixed(1), cost: totalCost.toFixed(2) })
+    }
+    load()
+  }, [])
+
+  if (!data) return <WidgetShell title="Weekly Labour" to="/rota"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  return (
+    <WidgetShell title="Weekly Labour" to="/rota">
+      <div className="text-center py-1">
+        <p className="font-serif text-3xl font-bold text-charcoal font-mono">&pound;{data.cost}</p>
+        <p className="text-xs text-charcoal/40 mt-0.5">{data.hours}h across {data.shifts} shifts</p>
+      </div>
+    </WidgetShell>
+  )
+}
+
+/* 9. Pending Swap Requests */
+function PendingSwapsWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    supabase.from('shift_swaps')
+      .select('id, requester_name, target_staff_name, status')
+      .eq('status', 'pending')
+      .limit(5)
+      .then(({ data: swaps }) => setData({ items: swaps ?? [], count: swaps?.length ?? 0 }))
+  }, [])
+
+  if (!data) return <WidgetShell title="Swap Requests" to="/rota"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  return (
+    <WidgetShell title="Swap Requests" to="/rota" status={data.count > 0 ? 'warning' : undefined}>
+      {data.count === 0 ? (
+        <p className="text-sm text-charcoal/30 italic py-2">No pending requests</p>
+      ) : (
+        <>
+          <BigNumber value={data.count} label="pending" alert={false} />
+          <div className="mt-1 border-t border-charcoal/6 pt-2">
+            {data.items.map(s => (
+              <p key={s.id} className="text-xs text-charcoal/50 py-0.5 truncate">
+                {s.requester_name} → {s.target_staff_name}
+              </p>
+            ))}
+          </div>
+        </>
+      )}
+    </WidgetShell>
+  )
+}
+
+/* 10. Probe Calibration Due */
+function ProbeCalDueWidget() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    supabase.from('probe_calibrations')
+      .select('id, probe_name, pass, calibrated_at')
+      .order('calibrated_at', { ascending: false })
+      .limit(10)
+      .then(({ data: records }) => {
+        const items = records ?? []
+        const last = items[0]
+        const daysSince = last
+          ? Math.floor((new Date() - new Date(last.calibrated_at)) / 86400000)
+          : null
+        const recentFails = items.filter(r => !r.pass).length
+        setData({ daysSince, recentFails, lastDate: last ? format(new Date(last.calibrated_at), 'd MMM') : 'Never' })
+      })
+  }, [])
+
+  if (!data) return <WidgetShell title="Probe Calibration" to="/probe"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
+
+  const status = data.daysSince === null || data.daysSince > 30 ? 'warning' : data.recentFails > 0 ? 'bad' : 'good'
+
+  return (
+    <WidgetShell title="Probe Calibration" to="/probe" status={status}>
+      <MiniRow label="Last calibration" value={data.lastDate} />
+      <MiniRow
+        label="Days since"
+        value={data.daysSince ?? '—'}
+        warn={data.daysSince !== null && data.daysSince > 30}
+      />
+      <MiniRow label="Recent failures" value={data.recentFails} warn={data.recentFails > 0} />
+    </WidgetShell>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REGISTRY — maps widget IDs to components + metadata
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const WIDGET_REGISTRY = {
+  compliance_score:   { id: 'compliance_score',   label: 'Compliance Score',      description: 'Overall compliance percentage based on all checks', component: ComplianceScoreWidget },
+  fridge_alerts:      { id: 'fridge_alerts',      label: 'Fridge Status',         description: 'Today\'s readings, out-of-range alerts, unchecked fridges', component: FridgeAlertsWidget },
+  cleaning_overdue:   { id: 'cleaning_overdue',   label: 'Cleaning',              description: 'Number of overdue cleaning tasks', component: CleaningOverdueWidget },
+  staff_on_shift:     { id: 'staff_on_shift',     label: 'Staff On Shift',        description: 'Who\'s working today with shift times', component: StaffOnShiftWidget },
+  open_actions:       { id: 'open_actions',       label: 'Open Actions',          description: 'Unresolved corrective actions by severity', component: OpenActionsWidget },
+  expiring_training:  { id: 'expiring_training',  label: 'Training Expiry',       description: 'Staff certificates expiring within 30 days', component: ExpiringTrainingWidget },
+  todays_deliveries:  { id: 'todays_deliveries',  label: 'Today\'s Deliveries',   description: 'Delivery checks logged today with pass/fail', component: TodaysDeliveriesWidget },
+  weekly_labour:      { id: 'weekly_labour',      label: 'Weekly Labour Cost',    description: 'Total wage bill from this week\'s rota', component: WeeklyLabourWidget },
+  pending_swaps:      { id: 'pending_swaps',      label: 'Swap Requests',         description: 'Pending shift swap requests awaiting approval', component: PendingSwapsWidget },
+  probe_calibration:  { id: 'probe_calibration',  label: 'Probe Calibration',     description: 'Days since last calibration and recent failures', component: ProbeCalDueWidget },
+}
+
+export const DEFAULT_WIDGETS = [
+  'compliance_score',
+  'fridge_alerts',
+  'cleaning_overdue',
+  'staff_on_shift',
+]
+
+export const ALL_WIDGET_IDS = Object.keys(WIDGET_REGISTRY)
