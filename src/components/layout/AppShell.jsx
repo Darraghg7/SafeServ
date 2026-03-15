@@ -105,8 +105,6 @@ export default function AppShell({ children }) {
     { to: '/cleaning',        label: overdueCount > 0 ? `CLEANING (${overdueCount})` : 'CLEANING', alert: overdueCount > 0 },
     { to: '/timesheet',       label: 'HOURS' },
     { to: '/rota',            label: pendingSwaps > 0 ? `ROTA (${pendingSwaps})` : 'ROTA', alert: pendingSwaps > 0 },
-    { to: '/waste',           label: 'WASTE' },
-    { to: '/orders',          label: 'ORDERS' },
     { to: '/training',        label: 'TRAINING' },
     { to: '/settings',        label: 'SETTINGS' },
   ]
@@ -118,8 +116,6 @@ export default function AppShell({ children }) {
     ...(session?.showTempLogs  ? [{ to: '/fridge',    label: 'TEMP LOGS' }] : []),
     ...(session?.showAllergens ? [{ to: '/allergens', label: 'ALLERGENS' }] : []),
     { to: '/rota',            label: 'ROTA' },
-    { to: '/waste',           label: 'WASTE' },
-    { to: '/orders',          label: 'ORDERS' },
   ]
 
   const links    = isManager ? managerLinks : staffLinks

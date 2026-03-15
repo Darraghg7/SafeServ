@@ -1,24 +1,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { format } from 'date-fns'
+import { format, addWeeks } from 'date-fns'
 
-export function useShifts(weekStart) {
+export function useShifts(weekStart, numWeeks = 1) {
   const [shifts, setShifts] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     if (!weekStart) return
     setLoading(true)
-    const weekStartStr = format(weekStart, 'yyyy-MM-dd')
-    const { data } = await supabase
-      .from('shifts')
-      .select('*, staff(id, name, email, hourly_rate, job_role)')
-      .eq('week_start', weekStartStr)
-      .order('shift_date')
-      .order('start_time')
-    setShifts(data ?? [])
+    if (numWeeks <= 1) {
+      const weekStartStr = format(weekStart, 'yyyy-MM-dd')
+      const { data } = await supabase
+        .from('shifts')
+        .select('*, staff(id, name, email, hourly_rate, job_role)')
+        .eq('week_start', weekStartStr)
+        .order('shift_date')
+        .order('start_time')
+      setShifts(data ?? [])
+    } else {
+      // Fetch shifts for multiple weeks
+      const weekStarts = Array.from({ length: numWeeks }, (_, i) =>
+        format(addWeeks(weekStart, i), 'yyyy-MM-dd')
+      )
+      const { data } = await supabase
+        .from('shifts')
+        .select('*, staff(id, name, email, hourly_rate, job_role)')
+        .in('week_start', weekStarts)
+        .order('shift_date')
+        .order('start_time')
+      setShifts(data ?? [])
+    }
     setLoading(false)
-  }, [weekStart])
+  }, [weekStart, numWeeks])
 
   useEffect(() => { load() }, [load])
   return { shifts, loading, reload: load }

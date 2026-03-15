@@ -45,7 +45,8 @@ export default function RotaPage() {
   const { session, isManager } = useSession()
 
   const [weekStart, setWeekStart] = useState(() => getWeekStart())
-  const { shifts, loading, reload } = useShifts(weekStart)
+  const [numWeeks, setNumWeeks]   = useState(1)
+  const { shifts, loading, reload } = useShifts(weekStart, numWeeks)
   const { staff, loading: staffLoading } = useStaffList()
   const { swaps, loading: swapsLoading, reload: reloadSwaps, pendingCount } = useShiftSwaps()
 
@@ -66,8 +67,8 @@ export default function RotaPage() {
   const [rejectNote, setRejectNote]   = useState({}) // { [swapId]: note }
   const [resolving, setResolving]     = useState(null)
 
-  const prevWeek = () => setWeekStart((w) => addWeeks(w, -1))
-  const nextWeek = () => setWeekStart((w) => addWeeks(w, 1))
+  const prevWeek = () => setWeekStart((w) => addWeeks(w, -numWeeks))
+  const nextWeek = () => setWeekStart((w) => addWeeks(w, numWeeks))
 
   // ── Manager: shift cell click ──
   const openCell = (staffMember, date, dayShifts) => {
@@ -389,30 +390,70 @@ export default function RotaPage() {
         </div>
       )}
 
-      {/* ── Rota grid ── */}
-      <div className="bg-white rounded-xl border border-charcoal/10 overflow-hidden">
-        {/* Week nav header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-charcoal/8">
-          <button onClick={prevWeek} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-charcoal/8 text-charcoal/50 hover:text-charcoal transition-colors text-sm">‹</button>
-          <span className="text-sm font-medium text-charcoal">
-            {format(weekStart, 'd MMM')} – {format(addWeeks(weekStart, 1), 'd MMM yyyy')}
-          </span>
-          <button onClick={nextWeek} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-charcoal/8 text-charcoal/50 hover:text-charcoal transition-colors text-sm">›</button>
+      {/* ── Week count selector (manager only) ── */}
+      {isManager && (
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">View</span>
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              key={n}
+              onClick={() => setNumWeeks(n)}
+              className={[
+                'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                numWeeks === n
+                  ? 'bg-charcoal text-cream border-charcoal'
+                  : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30 hover:text-charcoal',
+              ].join(' ')}
+            >
+              {n} {n === 1 ? 'week' : 'weeks'}
+            </button>
+          ))}
         </div>
+      )}
 
-        {loading || staffLoading ? (
-          <div className="flex justify-center py-10"><LoadingSpinner /></div>
-        ) : (
-          <RotaWeekView
-            weekStart={weekStart}
-            shifts={shifts}
-            staff={staff}
-            onCellClick={openStaffCell}
-            currentStaffId={session?.staffId ?? null}
-            isManager={isManager}
-          />
-        )}
-      </div>
+      {/* ── Rota grid(s) ── */}
+      {Array.from({ length: numWeeks }, (_, wi) => {
+        const thisWeekStart = addWeeks(weekStart, wi)
+        const thisWeekShifts = shifts.filter(
+          (sh) => sh.week_start === format(thisWeekStart, 'yyyy-MM-dd')
+        )
+        return (
+          <div key={wi} className="bg-white rounded-xl border border-charcoal/10 overflow-hidden">
+            {/* Week nav header (only on first week) */}
+            {wi === 0 && (
+              <div className="flex items-center justify-between px-5 py-4 border-b border-charcoal/8">
+                <button onClick={prevWeek} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-charcoal/8 text-charcoal/50 hover:text-charcoal transition-colors text-sm">‹</button>
+                <span className="text-sm font-medium text-charcoal">
+                  {format(weekStart, 'd MMM')} – {format(addWeeks(weekStart, numWeeks), 'd MMM yyyy')}
+                </span>
+                <button onClick={nextWeek} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-charcoal/8 text-charcoal/50 hover:text-charcoal transition-colors text-sm">›</button>
+              </div>
+            )}
+            {/* Week label for multi-week view */}
+            {numWeeks > 1 && (
+              <div className="px-5 py-2 bg-charcoal/4 border-b border-charcoal/8">
+                <p className="text-[10px] tracking-widest uppercase text-charcoal/50 font-medium">
+                  Week {wi + 1} — {format(thisWeekStart, 'd MMM')} – {format(addWeeks(thisWeekStart, 1), 'd MMM')}
+                </p>
+              </div>
+            )}
+
+            {loading || staffLoading ? (
+              <div className="flex justify-center py-10"><LoadingSpinner /></div>
+            ) : (
+              <RotaWeekView
+                weekStart={thisWeekStart}
+                shifts={thisWeekShifts}
+                staff={staff}
+                onCellClick={openStaffCell}
+                currentStaffId={session?.staffId ?? null}
+                isManager={isManager}
+              />
+            )}
+          </div>
+        )
+      })}
+
 
       {/* ── Manager: shift modal ── */}
       {isManager && (

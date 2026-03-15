@@ -34,12 +34,6 @@ import OpeningClosingPage from './pages/opening/OpeningClosingPage'
 import RotaPage     from './pages/rota/RotaPage'
 import TimesheetPage from './pages/clockin/TimesheetPage'
 
-// Waste Log
-import WasteLogPage from './pages/waste/WasteLogPage'
-
-// Supplier Orders
-import SupplierOrdersPage from './pages/orders/SupplierOrdersPage'
-
 // Training
 import TrainingPage from './pages/training/TrainingPage'
 
@@ -97,8 +91,6 @@ function AppRoutes() {
       <Route path="/cleaning"          element={wrap(CleaningPage)} />
       <Route path="/opening-closing"   element={wrap(OpeningClosingPage)} />
       <Route path="/rota"              element={wrap(RotaPage)} />
-      <Route path="/waste"             element={wrap(WasteLogPage)} />
-      <Route path="/orders"            element={wrap(SupplierOrdersPage)} />
 
       {/* Manager only */}
       <Route path="/allergens/new"      element={wrap(FoodItemFormPage,  RequireManager)} />
