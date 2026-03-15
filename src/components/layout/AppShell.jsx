@@ -229,8 +229,8 @@ export default function AppShell({ children }) {
         )}
         <div
           ref={navRef}
-          className={`${maxW} mx-auto px-3 sm:px-8 flex overflow-x-auto scrollbar-hide`}
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+          className={`${maxW} mx-auto px-3 sm:px-8 flex ${isManager ? 'overflow-visible flex-wrap' : 'overflow-x-auto scrollbar-hide'}`}
+          style={isManager ? {} : { scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           {isManager ? (
             <>
