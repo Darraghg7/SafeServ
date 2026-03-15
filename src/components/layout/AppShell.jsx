@@ -127,10 +127,10 @@ export default function AppShell({ children }) {
   const maxW     = isManager ? 'max-w-[900px]' : 'max-w-[560px]'
 
   return (
-    <div className={`min-h-dvh ${bgClass} font-sans flex flex-col`}>
+    <div className={`min-h-dvh ${bgClass} font-sans flex flex-col`} style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
 
       {/* Header */}
-      <header className="bg-charcoal shrink-0">
+      <header className="bg-charcoal shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className={`${maxW} mx-auto px-3 sm:px-8 h-12 flex items-center justify-between gap-1.5`}>
           {/* Left: logo */}
           <span className="font-serif text-cream text-lg tracking-tight shrink-0">SafeServ</span>
