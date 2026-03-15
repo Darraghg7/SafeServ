@@ -40,6 +40,9 @@ import WasteLogPage from './pages/waste/WasteLogPage'
 // Supplier Orders
 import SupplierOrdersPage from './pages/orders/SupplierOrdersPage'
 
+// Training
+import TrainingPage from './pages/training/TrainingPage'
+
 // Settings
 import SettingsPage from './pages/settings/SettingsPage'
 
@@ -101,6 +104,7 @@ function AppRoutes() {
       <Route path="/allergens/new"      element={wrap(FoodItemFormPage,  RequireManager)} />
       <Route path="/allergens/:id/edit" element={wrap(FoodItemFormPage,  RequireManager)} />
       <Route path="/timesheet"          element={wrap(TimesheetPage,     RequireManager)} />
+      <Route path="/training"           element={wrap(TrainingPage,      RequireManager)} />
       <Route path="/settings"           element={wrap(SettingsPage,      RequireManager)} />
 
       <Route path="*" element={<NotFoundPage />} />

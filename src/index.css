@@ -17,3 +17,5 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; -web
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
 ::-webkit-scrollbar-track { background: transparent; }
 table { border-spacing: 0; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { scrollbar-width: none; }

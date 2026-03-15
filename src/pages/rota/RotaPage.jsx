@@ -597,7 +597,7 @@ export default function RotaPage() {
             </div>
 
             <div>
-              <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-2">
+              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">
                 Swap with <span className="text-danger">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
@@ -624,7 +624,7 @@ export default function RotaPage() {
             </div>
 
             <div>
-              <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-2">
+              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">
                 Message (optional)
               </label>
               <textarea

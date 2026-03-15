@@ -504,7 +504,7 @@ export default function SettingsPage() {
           {!showForm && (
             <button
               onClick={openAdd}
-              className="text-[11px] tracking-widests uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+              className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
             >
               + Add Staff
             </button>
@@ -530,7 +530,7 @@ export default function SettingsPage() {
                     </div>
                   )}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] tracking-widests uppercase text-charcoal/40">Photo</label>
+                    <label className="text-[10px] tracking-widest uppercase text-charcoal/40">Photo</label>
                     <input type="file" accept="image/*"
                       onChange={e => setPhotoFile(e.target.files[0] ?? null)}
                       className="text-xs text-charcoal/60 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border file:border-charcoal/15 file:text-xs file:bg-cream/50 file:text-charcoal/60 hover:file:bg-cream" />
@@ -549,7 +549,7 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-1.5">Name *</label>
+                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Name *</label>
                 <input
                   value={staffForm.name}
                   onChange={e => setStaffForm(f => ({ ...f, name: e.target.value }))}
@@ -558,7 +558,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-1.5">Email</label>
+                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Email</label>
                 <input
                   type="email"
                   value={staffForm.email}
@@ -568,7 +568,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-1.5">
+                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
                   PIN {editingId && <span className="normal-case text-charcoal/30">— blank to keep current</span>}
                 </label>
                 <input
@@ -582,7 +582,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-1.5">Hourly Rate (£)</label>
+                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Hourly Rate (£)</label>
                 <input
                   type="number" step="0.01" min="0"
                   value={staffForm.hourly_rate}
@@ -595,7 +595,7 @@ export default function SettingsPage() {
 
             {/* Permission level chips */}
             <div>
-              <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-2">Permission Level</label>
+              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Permission Level</label>
               <div className="flex gap-2 flex-wrap">
                 {PERMISSION_ROLES.map(r => (
                   <button
@@ -618,7 +618,7 @@ export default function SettingsPage() {
 
             {/* Job role chips */}
             <div>
-              <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-2">Department</label>
+              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Department</label>
               <div className="flex gap-2 flex-wrap">
                 {JOB_ROLES.map(r => (
                   <button
@@ -636,7 +636,7 @@ export default function SettingsPage() {
 
             {/* Tab access toggles */}
             <div>
-              <label className="text-[10px] tracking-widests uppercase text-charcoal/40 block mb-2">App Tab Access</label>
+              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">App Tab Access</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -684,19 +684,19 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium text-charcoal text-sm">{s.name}</p>
                   <span className={[
-                    'text-[10px] tracking-widests uppercase font-medium px-1.5 py-0.5 rounded',
+                    'text-[10px] tracking-widest uppercase font-medium px-1.5 py-0.5 rounded',
                     s.role === 'owner'   ? 'bg-purple-50 text-purple-600' :
                     s.role === 'manager' ? 'bg-amber-50 text-amber-600' :
                                           'bg-charcoal/5 text-charcoal/50',
                   ].join(' ')}>
                     {PERMISSION_LABELS[s.role] ?? s.role}
                   </span>
-                  <span className="text-[10px] tracking-widests uppercase text-charcoal/40 border border-charcoal/15 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] tracking-widest uppercase text-charcoal/40 border border-charcoal/15 px-1.5 py-0.5 rounded">
                     {JOB_LABELS[s.job_role] ?? s.job_role}
                   </span>
                   {s.show_temp_logs  && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Temp Logs</span>}
                   {s.show_allergens  && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Allergens</span>}
-                  {!s.is_active      && <span className="text-[10px] tracking-widests uppercase text-charcoal/30 italic">inactive</span>}
+                  {!s.is_active      && <span className="text-[10px] tracking-widest uppercase text-charcoal/30 italic">inactive</span>}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5">
                   {s.email && <p className="text-xs text-charcoal/40">{s.email}</p>}

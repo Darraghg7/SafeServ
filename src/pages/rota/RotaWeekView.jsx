@@ -152,7 +152,7 @@ export default function RotaWeekView({
         {isManager && weeklyTotal > 0 && (
           <tfoot>
             <tr>
-              <td colSpan={days.length + 1} className="px-5 py-3 text-right text-[10px] tracking-widests uppercase text-charcoal/40">
+              <td colSpan={days.length + 1} className="px-5 py-3 text-right text-[10px] tracking-widest uppercase text-charcoal/40">
                 Total weekly wage bill
               </td>
               <td className="px-4 py-3 text-right">

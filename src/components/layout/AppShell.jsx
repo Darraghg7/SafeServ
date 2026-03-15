@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '../../contexts/SessionContext'
 import { supabase } from '../../lib/supabase'
@@ -55,6 +55,9 @@ export default function AppShell({ children }) {
   const overdueCount = useOverdueCleaning()
   const pendingSwaps = usePendingSwaps()
   const logoUrl      = useVenueLogo()
+  const navRef       = useRef(null)
+  const [canScrollLeft, setCanScrollLeft]   = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
   const name = session?.staffName ?? ''
 
@@ -62,6 +65,36 @@ export default function AppShell({ children }) {
     signOut()
     navigate('/', { replace: true })
   }
+
+  // ── Nav scroll state ───────────────────────────────────────────────────
+  const updateScrollIndicators = () => {
+    const el = navRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 2)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2)
+  }
+
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    updateScrollIndicators()
+    el.addEventListener('scroll', updateScrollIndicators, { passive: true })
+    window.addEventListener('resize', updateScrollIndicators)
+    return () => {
+      el.removeEventListener('scroll', updateScrollIndicators)
+      window.removeEventListener('resize', updateScrollIndicators)
+    }
+  }, [])
+
+  // Scroll active link into view on mount / route change
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const active = el.querySelector('[data-active="true"]')
+    if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    // Update indicators after scroll
+    setTimeout(updateScrollIndicators, 100)
+  }, [location.pathname])
 
   // ── Nav links ────────────────────────────────────────────────────────────
   const managerLinks = [
@@ -74,6 +107,7 @@ export default function AppShell({ children }) {
     { to: '/rota',            label: pendingSwaps > 0 ? `ROTA (${pendingSwaps})` : 'ROTA', alert: pendingSwaps > 0 },
     { to: '/waste',           label: 'WASTE' },
     { to: '/orders',          label: 'ORDERS' },
+    { to: '/training',        label: 'TRAINING' },
     { to: '/settings',        label: 'SETTINGS' },
   ]
 
@@ -97,21 +131,16 @@ export default function AppShell({ children }) {
 
       {/* Header */}
       <header className="bg-charcoal shrink-0">
-        <div className={`${maxW} mx-auto px-4 sm:px-8 h-12 flex items-center justify-between gap-2`}>
-          {/* Left: logo + role badge */}
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-serif text-cream text-lg tracking-tight shrink-0">SafeServ</span>
-            <span className="hidden xs:inline-block text-[10px] uppercase tracking-widest text-cream/40 border border-cream/20 px-1.5 py-0.5 rounded shrink-0">
-              {session?.staffRole === 'owner' ? 'OWNER' : isManager ? 'MANAGER' : 'STAFF'}
-            </span>
-          </div>
-          {/* Right: bell + name (hidden on small) + sign out + logo */}
-          <div className="flex items-center gap-2 shrink-0">
+        <div className={`${maxW} mx-auto px-3 sm:px-8 h-12 flex items-center justify-between gap-1.5`}>
+          {/* Left: logo */}
+          <span className="font-serif text-cream text-lg tracking-tight shrink-0">SafeServ</span>
+          {/* Right: bell + name + sign out + logo */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <NotificationBell />
             <span className="hidden sm:block text-xs text-cream/60 font-medium max-w-[120px] truncate">{name}</span>
             <button
               onClick={handleSignOut}
-              className="text-[11px] tracking-widest uppercase text-cream/50 border border-cream/20 px-2 py-1 rounded hover:text-cream hover:border-cream/50 transition-colors whitespace-nowrap"
+              className="text-[10px] sm:text-[11px] tracking-wider sm:tracking-widest uppercase text-cream/50 border border-cream/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hover:text-cream hover:border-cream/50 transition-colors whitespace-nowrap"
             >
               Sign Out
             </button>
@@ -119,7 +148,7 @@ export default function AppShell({ children }) {
               <img
                 src={logoUrl}
                 alt="Venue logo"
-                className="h-8 w-8 rounded-md object-contain bg-white/10 p-0.5 shrink-0"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-md object-contain bg-white/10 p-0.5 shrink-0"
               />
             )}
           </div>
@@ -127,15 +156,24 @@ export default function AppShell({ children }) {
       </header>
 
       {/* Nav tabs */}
-      <nav className="bg-white border-b border-charcoal/10 shrink-0">
-        <div className={`${maxW} mx-auto px-5 sm:px-8 flex overflow-x-auto`}>
+      <nav className="bg-white border-b border-charcoal/10 shrink-0 relative">
+        {/* Left fade */}
+        {canScrollLeft && (
+          <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+        )}
+        <div
+          ref={navRef}
+          className={`${maxW} mx-auto px-3 sm:px-8 flex overflow-x-auto scrollbar-hide`}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
           {links.map(l => {
-            const isActive = location.pathname.startsWith(l.to)
+            const isActive = location.pathname === l.to || (l.to !== '/dashboard' && location.pathname.startsWith(l.to))
             return (
               <NavLink
                 key={l.to} to={l.to}
+                data-active={isActive}
                 className={[
-                  'px-4 py-3.5 text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px',
+                  'px-3 sm:px-4 py-3 sm:py-3.5 text-[10px] sm:text-[11px] tracking-widest font-semibold whitespace-nowrap transition-colors border-b-2 -mb-px',
                   isActive
                     ? 'text-charcoal border-accent'
                     : l.alert
@@ -148,10 +186,14 @@ export default function AppShell({ children }) {
             )
           })}
         </div>
+        {/* Right fade */}
+        {canScrollRight && (
+          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        )}
       </nav>
 
       {/* Page content */}
-      <main className={`flex-1 ${maxW} mx-auto w-full px-5 sm:px-8 py-8`}>
+      <main className={`flex-1 ${maxW} mx-auto w-full px-4 sm:px-8 py-6 sm:py-8`}>
         {children}
       </main>
     </div>

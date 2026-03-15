@@ -75,6 +75,7 @@ function CheckItem({ check, completion, onMark }) {
 }
 
 function CheckList({ type, label, checks, completions, onMark, isManager, onAddCheck, onRemoveCheck }) {
+  const toast = useToast()
   const typeChecks = checks.filter(c => c.type === type)
   const typeCompletions = completions.filter(c => c.session_type === type)
   const doneCount = typeChecks.filter(c => typeCompletions.some(cp => cp.check_id === c.id)).length
@@ -93,7 +94,7 @@ function CheckList({ type, label, checks, completions, onMark, isManager, onAddC
       sort_order: typeChecks.length,
     })
     setSaving(false)
-    if (error) { return }
+    if (error) { toast(error.message, 'error'); return }
     setNewTitle('')
     setShowAdd(false)
     onAddCheck()
