@@ -99,30 +99,38 @@ export default function RotaWeekView({
                       className={[
                         'border-b border-charcoal/5 px-2 py-2 align-top transition-colors min-w-[96px]',
                         canClick ? 'cursor-pointer' : 'cursor-default',
-                        // Unavailability background colours
+                        // Cell background: red = time off, grey = unavailable, green = available (in avail mode)
                         isTimeOff && dayShifts.length === 0
-                          ? 'bg-success/6'
+                          ? 'bg-danger/8'
                           : isManualOff && dayShifts.length === 0
-                            ? 'bg-charcoal/4'
-                            : today ? 'bg-accent/5' : '',
+                            ? 'bg-charcoal/6'
+                            : availabilityMode && !unavail && dayShifts.length === 0
+                              ? 'bg-success/8'
+                              : today ? 'bg-accent/5' : '',
                         canClick && !unavail && today  ? 'hover:bg-accent/10'  : '',
                         canClick && !unavail && !today ? 'hover:bg-charcoal/5' : '',
-                        canClick && isManualOff ? 'hover:bg-charcoal/8' : '',
+                        canClick && isManualOff ? 'hover:bg-charcoal/10' : '',
+                        canClick && isTimeOff ? 'hover:bg-danger/12' : '',
                         availabilityMode && canClick ? 'ring-1 ring-inset ring-charcoal/10' : '',
                       ].join(' ')}
                     >
                       {dayShifts.length === 0 ? (
                         // ── Empty cell: show unavailability or normal empty ──
                         isTimeOff ? (
-                          <div className="h-10 flex items-center justify-center rounded border border-success/20">
-                            <span className="text-[9px] tracking-widest uppercase text-success/60 font-medium">Time Off</span>
+                          <div className="h-10 flex items-center justify-center rounded bg-danger/10 border border-danger/20">
+                            <span className="text-[9px] tracking-widest uppercase text-danger/70 font-semibold">Time Off</span>
                           </div>
                         ) : isManualOff ? (
-                          <div className="h-10 flex items-center justify-center rounded border border-charcoal/15">
-                            <span className="text-[9px] tracking-widest uppercase text-charcoal/30 font-medium">Unavail</span>
+                          <div className="h-10 flex items-center justify-center rounded bg-charcoal/8 border border-charcoal/15">
+                            <span className="text-[9px] tracking-widest uppercase text-charcoal/40 font-semibold">Unavail</span>
                           </div>
                         ) : isManager ? (
-                          <div className="h-10 flex items-center justify-center text-charcoal/20 text-xs rounded border border-dashed border-charcoal/12 hover:border-charcoal/25 transition-colors">
+                          <div className={[
+                            'h-10 flex items-center justify-center text-xs rounded border transition-colors',
+                            availabilityMode
+                              ? 'bg-success/10 border-success/20 text-success/60'
+                              : 'border-dashed border-charcoal/12 hover:border-charcoal/25 text-charcoal/20',
+                          ].join(' ')}>
                             {availabilityMode ? '✓' : '+'}
                           </div>
                         ) : isOwnStaff ? (

@@ -258,13 +258,26 @@ export default function RotaPage() {
         )}
       </div>
 
-      {/* Availability mode banner */}
+      {/* Availability mode banner + legend */}
       {availabilityMode && isManager && (
-        <div className="rounded-xl bg-accent/8 border border-accent/15 px-4 py-3 flex items-center gap-2">
-          <span className="text-lg">📅</span>
-          <p className="text-xs text-accent/80">
-            Tap any cell to mark staff as unavailable. Tap again to make them available. Time-off entries (green) are managed from the Time Off page.
+        <div className="rounded-xl bg-charcoal/4 border border-charcoal/10 px-4 py-3 flex flex-col gap-2">
+          <p className="text-xs text-charcoal/60">
+            Tap any cell to toggle availability. Time-off entries are managed from the Time Off page.
           </p>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-success/30 border border-success/30" />
+              <span className="text-[10px] tracking-wider uppercase text-charcoal/40">Available</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-charcoal/15 border border-charcoal/20" />
+              <span className="text-[10px] tracking-wider uppercase text-charcoal/40">Unavailable</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-danger/20 border border-danger/25" />
+              <span className="text-[10px] tracking-wider uppercase text-charcoal/40">Time Off</span>
+            </div>
+          </div>
         </div>
       )}
 
