@@ -129,6 +129,7 @@ Migrations are numbered sequentially (`001_`, `002_`, …). Always apply them in
 | `016_fridge_ampm.sql` | AM/PM fridge check periods |
 | `017_multi_tenancy.sql` | Multi-venue / tenancy isolation |
 | `018_cooking_and_hot_holding.sql` | Cooking temps, reheating temps, hot holding checks |
+| `019_cooling_and_pest_control.sql` | Food cooling logs (≤8°C target), pest control log |
 
 ---
 
@@ -175,6 +176,8 @@ To work on this project a developer needs access to:
 | `/v/:slug/fridge-history` | Fridge temp history | All staff |
 | `/v/:slug/cooking-temps` | Cooking & reheating temps | Manager |
 | `/v/:slug/hot-holding` | Hot holding twice-daily checks | Manager |
+| `/v/:slug/cooling-logs` | Food cooling temperature logs | Manager |
+| `/v/:slug/pest-control` | Pest control inspections, sightings, treatments | Manager |
 | `/v/:slug/deliveries` | Delivery checks | All staff |
 | `/v/:slug/cleaning` | Cleaning schedules | All staff |
 | `/v/:slug/opening` | Opening/closing checklists | All staff |

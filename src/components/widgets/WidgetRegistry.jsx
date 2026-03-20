@@ -64,12 +64,15 @@ function ComplianceScoreWidget() {
     if (!venueId) return
     const load = async () => {
       const since = subDays(new Date(), 30).toISOString()
-      const [temps, deliveries, calibrations, actions, training] = await Promise.all([
+      const since90 = subDays(new Date(), 90).toISOString()
+      const [temps, deliveries, calibrations, actions, training, coolingLogs, pestIssues] = await Promise.all([
         supabase.from('fridge_temperature_logs').select('id, temperature, fridge:fridge_id(min_temp, max_temp)').eq('venue_id', venueId).gte('logged_at', since),
         supabase.from('delivery_checks').select('id, overall_pass').eq('venue_id', venueId).gte('checked_at', since),
         supabase.from('probe_calibrations').select('id, pass').eq('venue_id', venueId).gte('calibrated_at', since),
         supabase.from('corrective_actions').select('id, status, severity').eq('venue_id', venueId),
         supabase.from('staff_training').select('id, expiry_date').eq('venue_id', venueId),
+        supabase.from('cooling_logs').select('id, end_temp, target_temp').eq('venue_id', venueId).gte('logged_at', since),
+        supabase.from('pest_control_logs').select('id, status, severity, log_type, logged_at').eq('venue_id', venueId).in('log_type', ['sighting', 'treatment']).eq('status', 'open'),
       ])
 
       const t = temps.data ?? []
@@ -89,6 +92,13 @@ function ComplianceScoreWidget() {
       const tr = training.data ?? []
       const expired = tr.filter(x => x.expiry_date && new Date(x.expiry_date) < new Date()).length
 
+      const cl = coolingLogs.data ?? []
+      const coolingFails = cl.filter(x => Number(x.end_temp) > Number(x.target_temp ?? 8)).length
+
+      const pi = pestIssues.data ?? []
+      const openHighPest   = pi.filter(x => x.severity === 'high').length
+      const openMedPest    = pi.filter(x => x.severity === 'medium').length
+
       let score = 100
       if (tempRate < 95) score -= 20
       else if (tempRate < 100) score -= 5
@@ -99,6 +109,9 @@ function ComplianceScoreWidget() {
       if (expired > 0) score -= 10
       if (c.length === 0) score -= 5
       if (d.length === 0) score -= 5
+      if (coolingFails > 0) score -= 10
+      if (openHighPest > 0) score -= 15
+      else if (openMedPest > 0) score -= 5
       score = Math.max(0, score)
 
       const status = score >= 85 ? 'good' : score >= 60 ? 'warning' : 'bad'

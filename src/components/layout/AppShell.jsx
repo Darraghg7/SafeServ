@@ -280,7 +280,9 @@ export default function AppShell({ children }) {
                 <SubItem to={vp('/hot-holding')}    label="Hot Holding"    isActive={isUnder('/hot-holding')} />
                 <SubItem to={vp('/deliveries')}     label="Deliveries"     isActive={isUnder('/deliveries')} />
                 <SubItem to={vp('/probe')}          label="Probe Cal."     isActive={isUnder('/probe')} />
+                <SubItem to={vp('/cooling-logs')}   label="Cooling Logs"   isActive={isUnder('/cooling-logs')} />
                 <SubItem to={vp('/allergens')}      label="Allergens"      isActive={isUnder('/allergens')} />
+                <SubItem to={vp('/pest-control')}   label="Pest Control"   isActive={isUnder('/pest-control')} />
                 <SubItem to={vp('/cleaning')}       label="Cleaning"       badge={overdueCount} alert={overdueCount > 0} isActive={isUnder('/cleaning')} />
                 <SubItem to={vp('/corrective')}     label="Actions"        isActive={isUnder('/corrective')} />
               </div>
