@@ -24,7 +24,7 @@ export default function LandingPage() {
     setLoading(true)
     setError('')
 
-    const { error: err, slug } = await signInWithEmail(email.trim(), password)
+    const { error: err } = await signInWithEmail(email.trim(), password)
 
     if (err) {
       setError(err.message === 'Invalid login credentials'
@@ -34,7 +34,8 @@ export default function LandingPage() {
       return
     }
 
-    navigate(`/v/${slug}`, { replace: true })
+    // Navigation is handled by the useEffect above once user + venueSlug
+    // are committed to state — avoids RequireVenueAuth seeing stale null user.
   }
 
   if (authLoading) {
