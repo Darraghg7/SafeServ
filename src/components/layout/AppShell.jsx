@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import NotificationBell from '../notifications/NotificationBell'
 import OfflineBanner from '../ui/OfflineBanner'
 import MobileNav from './MobileNav'
+import { useVenueFeatures } from '../../hooks/useVenueFeatures'
 
 // Simple per-venue cache to avoid refetching on every page navigation
 const _cache = { cleaning: {}, swaps: {}, logo: {} }
@@ -215,6 +216,8 @@ export default function AppShell({ children }) {
   const pendingSwaps = usePendingSwaps(venueId)
   const logoUrl      = useVenueLogo(venueId)
 
+  const { isEnabled } = useVenueFeatures()
+
   const name = session?.staffName ?? ''
 
   const vp = (p) => `/v/${venueSlug}${p}`
@@ -270,29 +273,29 @@ export default function AppShell({ children }) {
             <>
               <div className="space-y-0.5 px-0 pt-2">
                 <SideItem to={vp('/dashboard')}      icon={IcoDashboard} label="Dashboard"   isActive={isAt('/dashboard')} />
-                <SideItem to={vp('/opening-closing')} icon={IcoChecks}   label="Checks"      isActive={isUnder('/opening-closing')} />
+                {isEnabled('opening_closing') && <SideItem to={vp('/opening-closing')} icon={IcoChecks} label="Checks" isActive={isUnder('/opening-closing')} />}
               </div>
 
               <SideSection label="Compliance" />
               <div className="space-y-0.5">
-                <SubItem to={vp('/fridge')}         label="Fridge Temps"   isActive={isUnder('/fridge')} />
-                <SubItem to={vp('/cooking-temps')}  label="Cooking Temps"  isActive={isUnder('/cooking-temps')} />
-                <SubItem to={vp('/hot-holding')}    label="Hot Holding"    isActive={isUnder('/hot-holding')} />
-                <SubItem to={vp('/deliveries')}     label="Deliveries"     isActive={isUnder('/deliveries')} />
-                <SubItem to={vp('/probe')}          label="Probe Cal."     isActive={isUnder('/probe')} />
-                <SubItem to={vp('/cooling-logs')}   label="Cooling Logs"   isActive={isUnder('/cooling-logs')} />
-                <SubItem to={vp('/allergens')}      label="Allergens"      isActive={isUnder('/allergens')} />
-                <SubItem to={vp('/pest-control')}   label="Pest Control"   isActive={isUnder('/pest-control')} />
-                <SubItem to={vp('/cleaning')}       label="Cleaning"       badge={overdueCount} alert={overdueCount > 0} isActive={isUnder('/cleaning')} />
-                <SubItem to={vp('/corrective')}     label="Actions"        isActive={isUnder('/corrective')} />
+                {isEnabled('fridge')        && <SubItem to={vp('/fridge')}         label="Fridge Temps"   isActive={isUnder('/fridge')} />}
+                {isEnabled('cooking_temps') && <SubItem to={vp('/cooking-temps')}  label="Cooking Temps"  isActive={isUnder('/cooking-temps')} />}
+                {isEnabled('hot_holding')   && <SubItem to={vp('/hot-holding')}    label="Hot Holding"    isActive={isUnder('/hot-holding')} />}
+                {isEnabled('cooling_logs')  && <SubItem to={vp('/cooling-logs')}   label="Cooling Logs"   isActive={isUnder('/cooling-logs')} />}
+                {isEnabled('deliveries')    && <SubItem to={vp('/deliveries')}     label="Deliveries"     isActive={isUnder('/deliveries')} />}
+                {isEnabled('probe')         && <SubItem to={vp('/probe')}          label="Probe Cal."     isActive={isUnder('/probe')} />}
+                {isEnabled('allergens')     && <SubItem to={vp('/allergens')}      label="Allergens"      isActive={isUnder('/allergens')} />}
+                {isEnabled('pest_control')  && <SubItem to={vp('/pest-control')}   label="Pest Control"   isActive={isUnder('/pest-control')} />}
+                {isEnabled('cleaning')      && <SubItem to={vp('/cleaning')}       label="Cleaning"       badge={overdueCount} alert={overdueCount > 0} isActive={isUnder('/cleaning')} />}
+                {isEnabled('corrective')    && <SubItem to={vp('/corrective')}     label="Actions"        isActive={isUnder('/corrective')} />}
               </div>
 
               <SideSection label="Team" />
               <div className="space-y-0.5">
-                <SubItem to={vp('/rota')}      label="Rota"      badge={pendingSwaps} alert={pendingSwaps > 0} isActive={isUnder('/rota')} />
-                <SubItem to={vp('/timesheet')} label="Hours"     isActive={isUnder('/timesheet')} />
-                <SubItem to={vp('/training')}  label="Training"  isActive={isUnder('/training')} />
-                <SubItem to={vp('/time-off')}  label="Time Off"  isActive={isUnder('/time-off')} />
+                {isEnabled('rota')      && <SubItem to={vp('/rota')}      label="Rota"      badge={pendingSwaps} alert={pendingSwaps > 0} isActive={isUnder('/rota')} />}
+                {isEnabled('timesheet') && <SubItem to={vp('/timesheet')} label="Hours"     isActive={isUnder('/timesheet')} />}
+                {isEnabled('training')  && <SubItem to={vp('/training')}  label="Training"  isActive={isUnder('/training')} />}
+                {isEnabled('time_off')  && <SubItem to={vp('/time-off')}  label="Time Off"  isActive={isUnder('/time-off')} />}
               </div>
 
               <div className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
@@ -303,14 +306,14 @@ export default function AppShell({ children }) {
           ) : (
             <div className="space-y-0.5 pt-2">
               <SideItem to={vp('/dashboard')}       icon={IcoUser}       label="My Shift"  isActive={isAt('/dashboard')} />
-              <SideItem to={vp('/opening-closing')} icon={IcoChecks}     label="Checks"    isActive={isUnder('/opening-closing')} />
-              <SideItem to={vp('/cleaning')}        icon={IcoCompliance} label="Cleaning"  isActive={isUnder('/cleaning')} />
-              {session?.showTempLogs && (
+              {isEnabled('opening_closing') && <SideItem to={vp('/opening-closing')} icon={IcoChecks}     label="Checks"    isActive={isUnder('/opening-closing')} />}
+              {isEnabled('cleaning')        && <SideItem to={vp('/cleaning')}        icon={IcoCompliance} label="Cleaning"  isActive={isUnder('/cleaning')} />}
+              {isEnabled('fridge') && session?.showTempLogs && (
                 <SideItem to={vp('/fridge')} icon={IcoCompliance} label="Temp Logs" isActive={isUnder('/fridge')} />
               )}
-              <SideItem to={vp('/allergens')} icon={IcoCompliance} label="Allergens" isActive={isUnder('/allergens')} />
-              <SideItem to={vp('/rota')}      icon={IcoRota}       label="Rota"      isActive={isUnder('/rota')} />
-              <SideItem to={vp('/time-off')}  icon={IcoTimeOff}    label="Time Off"  isActive={isUnder('/time-off')} />
+              {isEnabled('allergens') && <SideItem to={vp('/allergens')} icon={IcoCompliance} label="Allergens" isActive={isUnder('/allergens')} />}
+              {isEnabled('rota')     && <SideItem to={vp('/rota')}      icon={IcoRota}       label="Rota"      isActive={isUnder('/rota')} />}
+              {isEnabled('time_off') && <SideItem to={vp('/time-off')}  icon={IcoTimeOff}    label="Time Off"  isActive={isUnder('/time-off')} />}
             </div>
           )}
         </nav>

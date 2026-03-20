@@ -9,6 +9,7 @@ import { useStaffTraining } from '../../hooks/useTraining'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { useAppSettings } from '../../hooks/useSettings'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useVenueFeatures, FEATURE_GROUPS, ALL_FEATURE_IDS } from '../../hooks/useVenueFeatures'
 
 const PERMISSION_ROLES  = ['staff', 'manager', 'owner']
 const PERMISSION_LABELS = { staff: 'Staff', manager: 'Manager', owner: 'Owner' }
@@ -294,6 +295,7 @@ export default function SettingsPage() {
   const { staff, loading: staffLoading, reload: reloadStaff }   = useStaffManagement()
   const { customRoles, closedDays, saveCustomRoles, saveClosedDays, nextColor } = useAppSettings()
   const { dark, toggle: toggleDark } = useTheme()
+  const { config: featuresConfig, save: saveFeatures } = useVenueFeatures()
 
   // Venue form
   const [venueForm, setVenueForm]   = useState({ venue_name: '', manager_email: '' })
@@ -566,6 +568,115 @@ export default function SettingsPage() {
             </span>
           </button>
         </div>
+      </div>
+
+      {/* Features & Modules */}
+      <div className="bg-white dark:bg-white/5 rounded-xl border border-charcoal/10 dark:border-white/10 p-6">
+        <SectionLabel>Features &amp; Modules</SectionLabel>
+        <p className="text-xs text-charcoal/40 dark:text-white/40 mb-5">
+          Choose which features are available in this venue. Disabled features are hidden from the navigation.
+        </p>
+
+        {/* Mode toggle */}
+        <div className="flex gap-2 mb-6">
+          {['all', 'custom'].map(mode => (
+            <button
+              key={mode}
+              onClick={() => saveFeatures({
+                mode,
+                enabled: mode === 'all' ? ALL_FEATURE_IDS : (featuresConfig.enabled ?? ALL_FEATURE_IDS),
+              })}
+              className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                featuresConfig.mode === mode
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-charcoal/15 dark:border-white/15 text-charcoal/50 dark:text-white/40 hover:border-charcoal/30 dark:hover:border-white/30'
+              }`}
+            >
+              {mode === 'all' ? 'All Features' : 'Custom'}
+            </button>
+          ))}
+        </div>
+
+        {/* Feature groups — only shown in custom mode */}
+        {featuresConfig.mode === 'custom' && (
+          <div className="space-y-6">
+            {FEATURE_GROUPS.map(group => {
+              const allOn  = group.features.every(f => featuresConfig.enabled?.includes(f.id))
+              const someOn = group.features.some(f => featuresConfig.enabled?.includes(f.id))
+
+              const toggleGroup = () => {
+                const next = allOn
+                  ? (featuresConfig.enabled ?? ALL_FEATURE_IDS).filter(id => !group.features.find(f => f.id === id))
+                  : [...new Set([...(featuresConfig.enabled ?? []), ...group.features.map(f => f.id)])]
+                saveFeatures({ ...featuresConfig, enabled: next })
+              }
+
+              const toggleFeature = (featureId) => {
+                const current = featuresConfig.enabled ?? ALL_FEATURE_IDS
+                const next = current.includes(featureId)
+                  ? current.filter(id => id !== featureId)
+                  : [...current, featureId]
+                saveFeatures({ ...featuresConfig, enabled: next })
+              }
+
+              return (
+                <div key={group.id} className="rounded-xl border border-charcoal/10 dark:border-white/10 overflow-hidden">
+                  {/* Group header */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-charcoal/3 dark:bg-white/4 border-b border-charcoal/8 dark:border-white/8">
+                    <div>
+                      <p className="text-sm font-semibold text-charcoal dark:text-white">{group.label}</p>
+                      <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5">{group.description}</p>
+                    </div>
+                    {/* Group toggle */}
+                    <button
+                      onClick={toggleGroup}
+                      className={`relative w-10 h-6 rounded-full transition-colors duration-200 shrink-0 ${
+                        allOn ? 'bg-accent' : someOn ? 'bg-accent/40' : 'bg-charcoal/15 dark:bg-white/15'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                        allOn ? 'translate-x-4' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                  </div>
+
+                  {/* Individual features */}
+                  <div className="divide-y divide-charcoal/6 dark:divide-white/6">
+                    {group.features.map(feature => {
+                      const on = featuresConfig.enabled?.includes(feature.id) ?? true
+                      return (
+                        <div key={feature.id} className="flex items-center justify-between px-4 py-3">
+                          <div className="flex-1 min-w-0 pr-4">
+                            <p className={`text-sm font-medium ${on ? 'text-charcoal dark:text-white' : 'text-charcoal/35 dark:text-white/30'}`}>
+                              {feature.label}
+                            </p>
+                            <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5 truncate">{feature.description}</p>
+                          </div>
+                          <button
+                            onClick={() => toggleFeature(feature.id)}
+                            className={`relative w-10 h-6 rounded-full transition-colors duration-200 shrink-0 ${
+                              on ? 'bg-accent' : 'bg-charcoal/15 dark:bg-white/15'
+                            }`}
+                          >
+                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                              on ? 'translate-x-4' : 'translate-x-0.5'
+                            }`} />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {featuresConfig.mode === 'all' && (
+          <p className="text-xs text-charcoal/35 dark:text-white/30 italic">
+            All {ALL_FEATURE_IDS.length} features are enabled. Switch to Custom to hide modules that don't apply to your business.
+          </p>
+        )}
       </div>
 
       {/* Roles */}
