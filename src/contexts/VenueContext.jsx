@@ -32,6 +32,11 @@ export function VenueProvider({ children }) {
       })
   }, [venueSlug])
 
+  // useMemo must be called unconditionally (Rules of Hooks) — before any early returns
+  const value = useMemo(() => !venue ? null : {
+    venueId: venue.id, venueSlug: venue.slug, venueName: venue.name
+  }, [venue])
+
   if (loading) return <FullPageLoader />
 
   if (error || !venue) {
@@ -43,10 +48,6 @@ export function VenueProvider({ children }) {
       </div>
     )
   }
-
-  const value = useMemo(() => ({
-    venueId: venue.id, venueSlug: venue.slug, venueName: venue.name
-  }), [venue.id, venue.slug, venue.name])
 
   return (
     <VenueContext.Provider value={value}>
