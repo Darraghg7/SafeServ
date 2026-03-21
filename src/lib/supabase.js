@@ -16,5 +16,25 @@ if (!isConfigured) {
 // only actual DB queries will fail (handled gracefully when unconfigured).
 export const supabase = createClient(
   supabaseUrl     || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder'
+  supabaseAnonKey || 'placeholder',
+  {
+    auth: {
+      // Explicitly enable session persistence and auto token refresh.
+      // Supabase JWTs expire after 1 hour — auto-refresh keeps the owner
+      // logged in without requiring re-entry of email/password.
+      autoRefreshToken: true,
+      persistSession:   true,
+      detectSessionInUrl: true,
+      storageKey: 'safeserv-auth-token',
+    },
+    global: {
+      // Abort any hanging fetch after 15 seconds to prevent indefinite hangs
+      fetch: (url, options = {}) => {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+        return fetch(url, { ...options, signal: controller.signal })
+          .finally(() => clearTimeout(timeout))
+      },
+    },
+  }
 )

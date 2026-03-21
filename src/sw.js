@@ -1,10 +1,20 @@
-import { precacheAndRoute } from 'workbox-precaching'
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
+import { skipWaiting, clientsClaim } from 'workbox-core'
+
+// Immediately take control of all clients when a new SW version installs.
+// Without this, the new SW waits indefinitely in "waiting" state — causing
+// the app to keep serving stale cached JS chunks after a deployment.
+skipWaiting()
+clientsClaim()
 
 // Workbox precaching — manifest injected by vite-plugin-pwa
 precacheAndRoute(self.__WB_MANIFEST)
+
+// Remove outdated caches from previous builds to free storage
+cleanupOutdatedCaches()
 
 // Cache Google Fonts
 registerRoute(

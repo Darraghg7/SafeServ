@@ -21,6 +21,16 @@ import {
 
 const SessionContext = createContext(null)
 
+/** Race a promise against a timeout — rejects if not resolved within ms. */
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Session validation timed out')), ms)
+    ),
+  ])
+}
+
 /** All localStorage keys we manage — centralised for easy clearSession(). */
 const LS_KEYS = [
   SESSION_TOKEN_KEY,
@@ -48,25 +58,34 @@ export function SessionProvider({ children }) {
       return
     }
 
-    supabase
-      .rpc('validate_staff_session', { p_token: token })
+    withTimeout(
+      supabase.rpc('validate_staff_session', { p_token: token }),
+      8000
+    )
       .then(({ data: venueId, error }) => {
-        // validate_staff_session now returns venue_id (text) or null
+        // validate_staff_session returns venue_id (text) or null
         if (!error && venueId) {
           setSession({
             token,
-            staffId:      id,
-            staffName:    localStorage.getItem(SESSION_NAME_KEY)     ?? '',
-            staffRole:    localStorage.getItem(SESSION_ROLE_KEY)     ?? 'staff',
-            jobRole:      localStorage.getItem(SESSION_JOB_ROLE_KEY) ?? 'kitchen',
-            showTempLogs: localStorage.getItem(SESSION_SHOW_TEMP_LOGS) === 'true',
+            staffId:       id,
+            staffName:     localStorage.getItem(SESSION_NAME_KEY)     ?? '',
+            staffRole:     localStorage.getItem(SESSION_ROLE_KEY)     ?? 'staff',
+            jobRole:       localStorage.getItem(SESSION_JOB_ROLE_KEY) ?? 'kitchen',
+            showTempLogs:  localStorage.getItem(SESSION_SHOW_TEMP_LOGS) === 'true',
             showAllergens: localStorage.getItem(SESSION_SHOW_ALLERGENS) === 'true',
-            venueId:      localStorage.getItem(SESSION_VENUE_ID_KEY) ?? venueId,
-            venueSlug:    localStorage.getItem(SESSION_VENUE_SLUG_KEY) ?? '',
+            venueId:       localStorage.getItem(SESSION_VENUE_ID_KEY) ?? venueId,
+            venueSlug:     localStorage.getItem(SESSION_VENUE_SLUG_KEY) ?? '',
           })
         } else {
+          // Token invalid or expired — clear so user is prompted to re-login
           clearStorage()
         }
+        setLoading(false)
+      })
+      .catch(() => {
+        // Network timeout or Supabase unavailable — clear stale token so the
+        // user sees the login screen rather than being stuck on a spinner
+        clearStorage()
         setLoading(false)
       })
   }, [])

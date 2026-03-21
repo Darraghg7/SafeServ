@@ -42,30 +42,49 @@ export function AuthProvider({ children }) {
 
   // ── Listen for auth state changes ─────────────────────────────────────
   useEffect(() => {
-    // Check existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user)
-        try {
-          const slug = await resolveVenue(session.user.email)
-          setVenueSlug(slug)
-        } catch (err) {
-          console.warn('[AuthContext] resolveVenue failed:', err)
+    let cancelled = false
+
+    // Check existing session on mount — with 8s timeout so a slow/offline
+    // Supabase never leaves the app hanging on a white loading screen.
+    const sessionCheck = Promise.race([
+      supabase.auth.getSession(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('getSession timeout')), 8000)
+      ),
+    ])
+
+    sessionCheck
+      .then(async ({ data: { session } }) => {
+        if (cancelled) return
+        if (session?.user) {
+          setUser(session.user)
+          try {
+            const slug = await resolveVenue(session.user.email)
+            if (!cancelled) setVenueSlug(slug)
+          } catch (err) {
+            console.warn('[AuthContext] resolveVenue failed:', err)
+          }
         }
-      }
-      setAuthLoading(false)
-    }).catch(() => {
-      // If getSession fails (e.g. stale token), just mark as not loading
-      setAuthLoading(false)
-    })
+        if (!cancelled) setAuthLoading(false)
+      })
+      .catch(() => {
+        // getSession timed out or failed — clear loading so the app shows the
+        // login form instead of an infinite spinner
+        if (!cancelled) setAuthLoading(false)
+      })
 
     // Subscribe to future changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user)
-          const slug = await resolveVenue(session.user.email)
-          setVenueSlug(slug)
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session?.user) {
+            setUser(session.user)
+            // Only re-resolve venue on actual sign-in, not every token refresh
+            if (event === 'SIGNED_IN') {
+              const slug = await resolveVenue(session.user.email)
+              setVenueSlug(slug)
+            }
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setVenueSlug(null)
@@ -73,7 +92,10 @@ export function AuthProvider({ children }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   // ── Sign in with email + password ─────────────────────────────────────

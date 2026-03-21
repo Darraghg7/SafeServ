@@ -8,68 +8,97 @@ import OfflineBanner from '../ui/OfflineBanner'
 import MobileNav from './MobileNav'
 import { useVenueFeatures } from '../../hooks/useVenueFeatures'
 
-// Simple per-venue cache to avoid refetching on every page navigation
+// Per-venue cache — busted automatically after TTL or on app restart
+const CACHE_TTL = 60_000 // 1 minute
 const _cache = { cleaning: {}, swaps: {}, logo: {} }
 
+/** True if a cache entry exists and is still within the TTL window. */
+function isFresh(bucket, key) {
+  const ts = _cache[bucket][key + '_ts']
+  return ts && Date.now() - ts < CACHE_TTL
+}
+
 function useOverdueCleaning(venueId) {
-  const [count, setCount] = useState(() => _cache.cleaning[venueId] ?? 0)
+  const [count, setCount] = useState(0)
   useEffect(() => {
     if (!venueId) return
-    if (_cache.cleaning[venueId + '_ts'] && Date.now() - _cache.cleaning[venueId + '_ts'] < 60000) return
+    if (isFresh('cleaning', venueId)) {
+      setCount(_cache.cleaning[venueId] ?? 0)
+      return
+    }
+    let cancelled = false
     const load = async () => {
-      const { data: tasks } = await supabase
-        .from('cleaning_tasks').select('id, frequency').eq('venue_id', venueId).eq('is_active', true)
-      if (!tasks?.length) return
-      const { data: completions } = await supabase
-        .from('cleaning_completions').select('cleaning_task_id, completed_at')
-        .eq('venue_id', venueId)
-        .order('completed_at', { ascending: false })
-      const freqDays = { daily: 1, weekly: 7, fortnightly: 14, monthly: 30, quarterly: 90 }
-      const now = new Date()
-      let overdue = 0
-      for (const t of tasks) {
-        const last = completions?.find(c => c.cleaning_task_id === t.id)
-        if (!last) { overdue++; continue }
-        if ((now - new Date(last.completed_at)) / 86400000 > freqDays[t.frequency]) overdue++
-      }
-      _cache.cleaning[venueId] = overdue
-      _cache.cleaning[venueId + '_ts'] = Date.now()
-      setCount(overdue)
+      try {
+        const { data: tasks } = await supabase
+          .from('cleaning_tasks').select('id, frequency').eq('venue_id', venueId).eq('is_active', true)
+        if (!tasks?.length || cancelled) return
+        const { data: completions } = await supabase
+          .from('cleaning_completions').select('cleaning_task_id, completed_at')
+          .eq('venue_id', venueId)
+          .order('completed_at', { ascending: false })
+        if (cancelled) return
+        const freqDays = { daily: 1, weekly: 7, fortnightly: 14, monthly: 30, quarterly: 90 }
+        const now = new Date()
+        let overdue = 0
+        for (const t of tasks) {
+          const last = completions?.find(c => c.cleaning_task_id === t.id)
+          if (!last) { overdue++; continue }
+          if ((now - new Date(last.completed_at)) / 86400000 > freqDays[t.frequency]) overdue++
+        }
+        _cache.cleaning[venueId] = overdue
+        _cache.cleaning[venueId + '_ts'] = Date.now()
+        setCount(overdue)
+      } catch { /* network error — leave count at 0 */ }
     }
     load()
+    return () => { cancelled = true }
   }, [venueId])
   return count
 }
 
 function usePendingSwaps(venueId) {
-  const [count, setCount] = useState(() => _cache.swaps[venueId] ?? 0)
+  const [count, setCount] = useState(0)
   useEffect(() => {
     if (!venueId) return
-    if (_cache.swaps[venueId + '_ts'] && Date.now() - _cache.swaps[venueId + '_ts'] < 60000) return
+    if (isFresh('swaps', venueId)) {
+      setCount(_cache.swaps[venueId] ?? 0)
+      return
+    }
+    let cancelled = false
     supabase.from('shift_swaps').select('id', { count: 'exact', head: true })
       .eq('venue_id', venueId)
       .eq('status', 'pending')
       .then(({ count: c }) => {
+        if (cancelled) return
         _cache.swaps[venueId] = c ?? 0
         _cache.swaps[venueId + '_ts'] = Date.now()
         setCount(c ?? 0)
       })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [venueId])
   return count
 }
 
 function useVenueLogo(venueId) {
-  const [logoUrl, setLogoUrl] = useState(() => _cache.logo[venueId] ?? '')
+  const [logoUrl, setLogoUrl] = useState('')
   useEffect(() => {
     if (!venueId) return
-    if (_cache.logo[venueId + '_ts']) return
-    supabase.from('app_settings').select('value').eq('venue_id', venueId).eq('key', 'logo_url').single()
+    if (isFresh('logo', venueId)) {
+      setLogoUrl(_cache.logo[venueId] ?? '')
+      return
+    }
+    let cancelled = false
+    supabase.from('app_settings').select('value').eq('venue_id', venueId).eq('key', 'logo_url').maybeSingle()
       .then(({ data }) => {
+        if (cancelled) return
         const url = data?.value ?? ''
         _cache.logo[venueId] = url
         _cache.logo[venueId + '_ts'] = Date.now()
-        if (url) setLogoUrl(url)
+        setLogoUrl(url)
       })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [venueId])
   return logoUrl
 }

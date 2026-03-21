@@ -6,7 +6,7 @@ import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Modal from '../../components/ui/Modal'
-import { createWorker } from 'tesseract.js'
+// tesseract.js is ~7 MB — dynamically imported only when OCR is actually used
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HOOKS
@@ -88,6 +88,7 @@ function categoryConfig(cat) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 async function extractTextFromImage(file) {
+  const { createWorker } = await import('tesseract.js')
   const worker = await createWorker('eng')
   const { data: { text } } = await worker.recognize(file)
   await worker.terminate()
