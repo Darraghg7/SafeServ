@@ -94,7 +94,7 @@ function LogForm({ checkType, onLogged }) {
       </div>
 
       {/* Temperature + time */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <SectionLabel>Core Temperature (°C)</SectionLabel>
           <div className="relative">

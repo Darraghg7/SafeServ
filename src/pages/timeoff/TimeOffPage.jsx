@@ -68,7 +68,8 @@ function CalendarView({ month, requests, onDayClick }) {
   }
 
   return (
-    <div>
+    <div className="overflow-x-auto -mx-0">
+      <div style={{ minWidth: '320px' }}>
       <div className="grid grid-cols-7 gap-px bg-charcoal/8 rounded-t-xl overflow-hidden">
         {DAY_LABELS.map(d => (
           <div key={d} className="bg-white py-2 text-center text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">
@@ -117,6 +118,7 @@ function CalendarView({ month, requests, onDayClick }) {
             </button>
           )
         })}
+      </div>
       </div>
     </div>
   )

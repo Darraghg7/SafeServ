@@ -95,7 +95,7 @@ function TasksIcon({ active }) {
 /* ── Sub-navigation pills ──────────────────────────────────────────────── */
 function SubNav({ items, currentPath }) {
   return (
-    <nav className="sm:hidden flex gap-2 px-4 py-2.5 overflow-x-auto scrollbar-hide bg-white dark:bg-[#1a1a1a] border-b border-charcoal/8" aria-label="Section navigation">
+    <nav className="lg:hidden flex gap-2 px-4 py-2.5 overflow-x-auto scrollbar-hide bg-white dark:bg-[#1a1a1a] border-b border-charcoal/8" aria-label="Section navigation">
       {items.map(item => {
         const isActive = currentPath === item.to || currentPath.startsWith(item.to + '/')
         return (
@@ -244,7 +244,7 @@ export default function MobileNav() {
 
       {/* Bottom tab bar */}
       <nav
-        className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-t border-charcoal/8"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-t border-charcoal/8"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         aria-label="Main navigation"
         role="tablist"

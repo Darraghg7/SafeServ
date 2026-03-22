@@ -399,13 +399,13 @@ export default function RotaWeekView({
 
   return (
     <>
-      {/* Mobile: single-day card list */}
-      <div className="sm:hidden px-1">
+      {/* Mobile/tablet: single-day card list (< 1024px) */}
+      <div className="lg:hidden px-1">
         <MobileDayView {...sharedProps} />
       </div>
 
-      {/* Desktop: full week table */}
-      <div className="hidden sm:block">
+      {/* Desktop: full week table (≥ 1024px) */}
+      <div className="hidden lg:block">
         <DesktopWeekTable {...sharedProps} weeklyTotal={weeklyTotal} />
       </div>
     </>

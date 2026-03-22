@@ -275,9 +275,9 @@ export default function AppShell({ children }) {
         Skip to content
       </a>
 
-      {/* ── Desktop sidebar ───────────────────────────────────────────────── */}
+      {/* ── Desktop sidebar (hidden on everything below 1024px — lg breakpoint) ─ */}
       <aside
-        className="hidden sm:flex flex-col w-[220px] fixed inset-y-0 left-0 z-30 bg-white dark:bg-[#1a1a18] border-r border-charcoal/10 dark:border-white/8 overflow-y-auto overflow-x-hidden"
+        className="hidden lg:flex flex-col w-[220px] fixed inset-y-0 left-0 z-30 bg-white dark:bg-[#1a1a18] border-r border-charcoal/10 dark:border-white/8 overflow-y-auto overflow-x-hidden"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
         aria-label="Sidebar navigation"
       >
@@ -365,11 +365,11 @@ export default function AppShell({ children }) {
       </aside>
 
       {/* ── Content area (offset by sidebar on desktop) ───────────────────── */}
-      <div className={`flex-1 sm:ml-[220px] flex flex-col min-h-dvh ${bgClass}`}>
+      <div className={`flex-1 lg:ml-[220px] flex flex-col min-h-dvh ${bgClass}`}>
 
-        {/* Mobile-only header */}
+        {/* Mobile-only header (shown below lg breakpoint) */}
         <header
-          className="sm:hidden bg-charcoal dark:bg-[#0a0a0a] shrink-0"
+          className="lg:hidden bg-charcoal dark:bg-[#0a0a0a] shrink-0"
           role="banner"
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
@@ -397,7 +397,7 @@ export default function AppShell({ children }) {
         <main
           id="main-content"
           role="main"
-          className={`flex-1 ${maxW} mx-auto w-full px-4 sm:px-8 py-6 sm:py-8 pb-[max(5rem,calc(4rem+env(safe-area-inset-bottom)))] sm:pb-8`}
+          className={`flex-1 ${maxW} mx-auto w-full px-4 lg:px-8 py-5 lg:py-8 pb-[max(5.5rem,calc(4.5rem+env(safe-area-inset-bottom)))] lg:pb-8`}
         >
           {children}
         </main>

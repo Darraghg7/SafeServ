@@ -218,7 +218,7 @@ export default function FridgeDashboardPage() {
           </div>
 
           <form onSubmit={handleLog} className="flex flex-col gap-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Temperature (°C)</p>
                 <input
