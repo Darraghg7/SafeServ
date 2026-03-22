@@ -133,7 +133,7 @@ export default function TimesheetPage() {
             {/* Per-staff table */}
             <div className="flex flex-col gap-0">
               {/* Header */}
-              <div className="grid grid-cols-3 pb-2 text-[10px] tracking-widest uppercase text-charcoal/40">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 pb-2 text-[10px] tracking-widest uppercase text-charcoal/40">
                 <span>Staff</span>
                 <span className="text-right">Hours</span>
                 <span className="text-right">Est. Pay</span>
@@ -141,12 +141,12 @@ export default function TimesheetPage() {
               {timesheets.map((t) => {
                 const pay = (t.totalMinutes / 60) * t.hourlyRate
                 return (
-                  <div key={t.name} className="grid grid-cols-3 py-3 border-t border-charcoal/5 items-center">
-                    <span className="text-sm font-medium text-charcoal">{t.name}</span>
-                    <span className="text-right font-mono text-sm font-semibold text-charcoal">
+                  <div key={t.name} className="grid grid-cols-[1fr_auto_auto] gap-x-4 py-3 border-t border-charcoal/5 items-center">
+                    <span className="text-sm font-medium text-charcoal truncate">{t.name}</span>
+                    <span className="text-right font-mono text-sm font-semibold text-charcoal whitespace-nowrap">
                       {formatMinutes(Math.round(t.totalMinutes))}
                     </span>
-                    <div className="text-right">
+                    <div className="text-right whitespace-nowrap">
                       {pay > 0 ? (
                         <span className="font-mono text-sm text-charcoal">{fmtGBP(pay)}</span>
                       ) : (

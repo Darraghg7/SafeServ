@@ -110,11 +110,11 @@ export default function CorrectiveActionsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Corrective Actions</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium hover:bg-charcoal/90 transition-colors"
+          className="bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium hover:bg-charcoal/90 transition-colors self-start sm:self-auto"
         >
           + Log Issue
         </button>

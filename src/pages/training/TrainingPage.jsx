@@ -193,7 +193,7 @@ export default function TrainingPage() {
       />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: 'Valid',    count: validCount,    color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Expiring', count: expiringCount, color: 'text-amber-600',   bg: 'bg-amber-50' },
@@ -202,11 +202,11 @@ export default function TrainingPage() {
           <button
             key={s.label}
             onClick={() => setFilterStatus(filterStatus === s.label.toLowerCase() ? '' : s.label.toLowerCase())}
-            className={`rounded-xl border border-charcoal/10 p-4 text-left transition-all ${
+            className={`rounded-xl border border-charcoal/10 p-3 sm:p-4 text-left transition-all ${
               filterStatus === s.label.toLowerCase() ? 'ring-2 ring-charcoal/20' : ''
             } bg-white`}
           >
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">{s.label}</p>
+            <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40 mb-1 truncate">{s.label}</p>
             <p className={`text-2xl font-serif ${s.color}`}>{s.count}</p>
           </button>
         ))}

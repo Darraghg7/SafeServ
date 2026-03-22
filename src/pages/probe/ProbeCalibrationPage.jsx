@@ -98,19 +98,19 @@ export default function ProbeCalibrationPage() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl border border-charcoal/10 p-4 text-center">
-          <p className="text-[10px] tracking-widest uppercase text-charcoal/40">Last check</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
+          <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40 truncate">Last Cal.</p>
           <p className="text-sm font-semibold text-charcoal mt-1">
             {lastCalibration ? format(new Date(lastCalibration.calibrated_at), 'd MMM') : '--'}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-charcoal/10 p-4 text-center">
-          <p className="text-[10px] tracking-widest uppercase text-charcoal/40">Passed</p>
+        <div className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
+          <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40">Passed</p>
           <p className="text-2xl font-bold text-success">{passCount}</p>
         </div>
-        <div className="bg-white rounded-xl border border-charcoal/10 p-4 text-center">
-          <p className="text-[10px] tracking-widest uppercase text-charcoal/40">Failed</p>
+        <div className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
+          <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40">Failed</p>
           <p className="text-2xl font-bold text-danger">{failCount}</p>
         </div>
       </div>

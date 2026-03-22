@@ -38,14 +38,14 @@ export default function AllergenRegistryPage() {
   return (
     <div className="flex flex-col gap-6">
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Allergen Checklists</h1>
         <input
           type="search"
           placeholder="Search…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20 w-36 sm:w-48"
+          className="px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20 w-full sm:w-48"
         />
       </div>
 
