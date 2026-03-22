@@ -6,7 +6,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import DateRangePresets, { presetToDates } from '../../components/ui/DateRangePresets'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 export default function FridgeHistoryPage() {
@@ -74,11 +74,11 @@ export default function FridgeHistoryPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-t border-charcoal/8">
-                  <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Fridge</th>
-                  <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Temp</th>
-                  <th className="text-center px-3 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">AM/PM</th>
-                  <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium hidden sm:table-cell">Logged by</th>
-                  <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Date / Time</th>
+                  <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Fridge</th>
+                  <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Temp</th>
+                  <th className="text-center px-3 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">AM/PM</th>
+                  <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium hidden sm:table-cell">Logged by</th>
+                  <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Date / Time</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,7 +93,7 @@ export default function FridgeHistoryPage() {
                         {formatTemp(log.temperature)}
                       </td>
                       <td className="text-center px-3 py-3">
-                        <span className="text-[10px] font-semibold tracking-wider uppercase text-charcoal/50">
+                        <span className="text-[11px] font-semibold tracking-wider uppercase text-charcoal/50">
                           {log.check_period?.toUpperCase() ?? '—'}
                         </span>
                       </td>

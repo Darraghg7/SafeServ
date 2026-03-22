@@ -193,7 +193,7 @@ function SideItem({ to, icon: Ico, label, badge, alert, isActive }) {
       )}
       <span className="flex-1 truncate tracking-wide">{label}</span>
       {badge > 0 && (
-        <span className={`min-w-[18px] h-[18px] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shrink-0 ${alert ? 'bg-warning' : 'bg-accent'}`}>
+        <span className={`min-w-[18px] h-[18px] text-white text-[11px] font-bold rounded-full flex items-center justify-center px-1 shrink-0 ${alert ? 'bg-warning' : 'bg-accent'}`}>
           {badge}
         </span>
       )}
@@ -218,7 +218,7 @@ function SubItem({ to, label, badge, alert, isActive }) {
       <span className={`w-1 h-1 rounded-full shrink-0 ${isActive ? 'bg-accent' : 'bg-charcoal/20 dark:bg-white/20'}`} />
       <span className="flex-1 truncate">{label}</span>
       {badge > 0 && (
-        <span className={`min-w-[16px] h-4 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shrink-0 ${alert ? 'bg-warning' : 'bg-accent'}`}>
+        <span className={`min-w-[16px] h-4 text-white text-[11px] font-bold rounded-full flex items-center justify-center px-1 shrink-0 ${alert ? 'bg-warning' : 'bg-accent'}`}>
           {badge}
         </span>
       )}
@@ -379,7 +379,7 @@ export default function AppShell({ children }) {
               <NotificationBell />
               <button
                 onClick={handleSignOut}
-                className="text-[10px] tracking-wider uppercase text-cream/50 border border-cream/20 px-1.5 py-0.5 rounded hover:text-cream hover:border-cream/50 transition-colors whitespace-nowrap"
+                className="text-[11px] tracking-wider uppercase text-cream/50 border border-cream/20 px-1.5 py-0.5 rounded hover:text-cream hover:border-cream/50 transition-colors whitespace-nowrap"
               >
                 Sign Out
               </button>

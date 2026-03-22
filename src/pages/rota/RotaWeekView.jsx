@@ -69,11 +69,11 @@ function MobileDayView({ days, shifts, staff, onCellClick, currentStaffId, isMan
         <h3 className="font-semibold text-charcoal text-sm">
           {format(day, 'EEEE, d MMMM')}
           {isToday(day) && (
-            <span className="ml-2 text-[10px] tracking-widest uppercase bg-accent/12 text-accent px-2 py-0.5 rounded-full font-medium">Today</span>
+            <span className="ml-2 text-[11px] tracking-widest uppercase bg-accent/12 text-accent px-2 py-0.5 rounded-full font-medium">Today</span>
           )}
         </h3>
         {isClosed && (
-          <span className="text-[10px] tracking-widest uppercase text-charcoal/35 font-semibold">Closed</span>
+          <span className="text-[11px] tracking-widest uppercase text-charcoal/35 font-semibold">Closed</span>
         )}
       </div>
 
@@ -117,13 +117,13 @@ function MobileDayView({ days, shifts, staff, onCellClick, currentStaffId, isMan
                     <span className="text-[9px] tracking-widest uppercase bg-accent/15 text-accent px-1.5 py-0.5 rounded-full font-medium shrink-0">You</span>
                   )}
                 </div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/35 mt-0.5">{s.job_role ?? s.role}</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/35 mt-0.5">{s.job_role ?? s.role}</p>
               </div>
 
               <div className="shrink-0 flex flex-col items-end gap-1">
                 {staffDayShifts.length === 0 ? (
                   isTimeOff ? (
-                    <span className="text-[10px] font-semibold text-danger tracking-wide">Time Off</span>
+                    <span className="text-[11px] font-semibold text-danger tracking-wide">Time Off</span>
                   ) : isManager ? (
                     <span className="text-[11px] text-charcoal/25 border border-dashed border-charcoal/15 rounded-lg px-2.5 py-1">+ Add shift</span>
                   ) : (
@@ -136,7 +136,7 @@ function MobileDayView({ days, shifts, staff, onCellClick, currentStaffId, isMan
                         {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}
                       </span>
                       {sh.role_label && (
-                        <span className="text-[10px] text-charcoal/40 tracking-wide">{sh.role_label}</span>
+                        <span className="text-[11px] text-charcoal/40 tracking-wide">{sh.role_label}</span>
                       )}
                     </div>
                   ))
@@ -151,13 +151,13 @@ function MobileDayView({ days, shifts, staff, onCellClick, currentStaffId, isMan
 }
 
 /* ── Desktop Week Table ───────────────────────────────────────────────────── */
-function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailability, currentStaffId, isManager, unavailability, closedDays, weeklyTotal }) {
+function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailability, currentStaffId, isManager, unavailability, closedDays, weeklyTotal, breakDurationMins }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm border-separate border-spacing-0">
         <thead>
           <tr>
-            <th className="sticky left-0 bg-white w-36 text-left px-5 py-3 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium border-b border-charcoal/8 z-10">
+            <th className="sticky left-0 bg-white w-36 text-left px-5 py-3 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium border-b border-charcoal/8 z-10">
               Staff
             </th>
             {days.map((d, i) => {
@@ -169,7 +169,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                   isClosed ? 'bg-charcoal/5' : today ? 'bg-accent/5' : '',
                 ].join(' ')}>
                   <p className={[
-                    'text-[10px] tracking-widest font-medium',
+                    'text-[11px] tracking-widest font-medium',
                     isClosed ? 'text-charcoal/25' : today ? 'text-accent' : 'text-charcoal/35',
                   ].join(' ')}>{DAY_LABELS[i]}</p>
                   <p className={[
@@ -183,7 +183,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
               )
             })}
             {isManager && (
-              <th className="px-4 py-3 border-b border-charcoal/8 text-right text-[10px] tracking-widest uppercase text-charcoal/40 font-medium whitespace-nowrap min-w-[80px]">
+              <th className="px-4 py-3 border-b border-charcoal/8 text-right text-[11px] tracking-widest uppercase text-charcoal/40 font-medium whitespace-nowrap min-w-[80px]">
                 Est. Cost
               </th>
             )}
@@ -193,7 +193,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
           {staff.map((s) => {
             const staffShifts = shifts.filter((sh) => sh.staff_id === s.id)
             const isUnder18   = s.is_under_18 ?? false
-            const totalHrs    = staffShifts.reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isUnder18), 0)
+            const totalHrs    = staffShifts.reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isUnder18, breakDurationMins), 0)
             const rawHrs      = staffShifts.reduce((acc, sh) => acc + shiftDurationHours(sh.start_time, sh.end_time), 0)
             const wageCost    = totalHrs * (s.hourly_rate ?? 0)
             const isOwnStaff  = !isManager && currentStaffId === s.id
@@ -204,7 +204,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                   <div className="flex items-center gap-2">
                     <div>
                       <p className="font-medium text-charcoal text-sm">{s.name}</p>
-                      <p className="text-[10px] tracking-widest uppercase text-charcoal/30">{s.job_role ?? s.role}</p>
+                      <p className="text-[11px] tracking-widest uppercase text-charcoal/30">{s.job_role ?? s.role}</p>
                     </div>
                     {isOwnStaff && (
                       <span className="text-[9px] tracking-widest uppercase bg-accent/15 text-accent px-1.5 py-0.5 rounded-full font-medium">You</span>
@@ -261,7 +261,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                             {isManager && (
                               <button
                                 onClick={() => onCellClick(s, d, dayShifts)}
-                                className="h-6 flex items-center justify-center text-[10px] rounded border border-dashed border-charcoal/12 hover:border-charcoal/25 text-charcoal/20 hover:text-charcoal/40 transition-colors cursor-pointer"
+                                className="h-6 flex items-center justify-center text-[11px] rounded border border-dashed border-charcoal/12 hover:border-charcoal/25 text-charcoal/20 hover:text-charcoal/40 transition-colors cursor-pointer"
                               >+</button>
                             )}
                           </div>
@@ -276,7 +276,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                             {isManager && (
                               <button
                                 onClick={() => onCellClick(s, d, dayShifts)}
-                                className="h-6 flex items-center justify-center text-[10px] rounded border border-dashed border-charcoal/12 hover:border-charcoal/25 text-charcoal/20 hover:text-charcoal/40 transition-colors cursor-pointer"
+                                className="h-6 flex items-center justify-center text-[11px] rounded border border-dashed border-charcoal/12 hover:border-charcoal/25 text-charcoal/20 hover:text-charcoal/40 transition-colors cursor-pointer"
                               >+</button>
                             )}
                           </div>
@@ -314,7 +314,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                               ].join(' ')}
                             >
                               <p className="font-medium">{sh.start_time.slice(0,5)}&ndash;{sh.end_time.slice(0,5)}</p>
-                              <p className="opacity-50 truncate text-[10px]">{sh.role_label}</p>
+                              <p className="opacity-50 truncate text-[11px]">{sh.role_label}</p>
                               {isOwnStaff && !isManager && (
                                 <span className="absolute -top-1 -right-1 bg-accent text-white text-[8px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold leading-none">↔</span>
                               )}
@@ -341,7 +341,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                     {wageCost > 0 ? (
                       <div>
                         <p className="font-mono text-sm font-semibold text-charcoal">{fmtGBP(wageCost)}</p>
-                        <p className="text-[10px] text-charcoal/35">{totalHrs.toFixed(1)}h paid</p>
+                        <p className="text-[11px] text-charcoal/35">{totalHrs.toFixed(1)}h paid</p>
                         {rawHrs !== totalHrs && (
                           <p className="text-[9px] text-charcoal/25">{isUnder18 ? '30m' : '20m'} break</p>
                         )}
@@ -358,7 +358,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
         {isManager && weeklyTotal > 0 && (
           <tfoot>
             <tr>
-              <td colSpan={days.length + 1} className="px-5 py-3 text-right text-[10px] tracking-widest uppercase text-charcoal/40">
+              <td colSpan={days.length + 1} className="px-5 py-3 text-right text-[11px] tracking-widest uppercase text-charcoal/40">
                 Total weekly wage bill
               </td>
               <td className="px-4 py-3 text-right">
@@ -383,6 +383,7 @@ export default function RotaWeekView({
   isManager = true,
   unavailability = {},
   closedDays = [],
+  breakDurationMins = 30,
 }) {
   const days = getWeekDays(weekStart)
 
@@ -397,11 +398,11 @@ export default function RotaWeekView({
   const weeklyTotal = staff.reduce((total, s) => {
     const staffShifts = shifts.filter((sh) => sh.staff_id === s.id)
     const isUnder18 = s.is_under_18 ?? false
-    const hrs = staffShifts.reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isUnder18), 0)
+    const hrs = staffShifts.reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isUnder18, breakDurationMins), 0)
     return total + hrs * (s.hourly_rate ?? 0)
   }, 0)
 
-  const sharedProps = { days, shifts, staff, onCellClick, onToggleAvailability, currentStaffId, isManager, unavailability, closedDays }
+  const sharedProps = { days, shifts, staff, onCellClick, onToggleAvailability, currentStaffId, isManager, unavailability, closedDays, breakDurationMins }
 
   return (
     <>

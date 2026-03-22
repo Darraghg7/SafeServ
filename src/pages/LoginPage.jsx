@@ -112,7 +112,7 @@ export default function LoginPage() {
                 )}
                 <span className="flex-1 font-semibold text-charcoal text-sm">{s.name}</span>
                 <span className={[
-                  'text-[10px] uppercase tracking-widest font-medium',
+                  'text-[11px] uppercase tracking-widest font-medium',
                   selected?.id === s.id ? 'text-accent' : 'text-charcoal/35',
                 ].join(' ')}>
                   {ROLE_LABEL[s.role] ?? s.role}

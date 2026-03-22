@@ -68,7 +68,7 @@ export default function LandingPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
                   Email
                 </label>
                 <input
@@ -83,7 +83,7 @@ export default function LandingPage() {
               </div>
 
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
                   Password
                 </label>
                 <input
@@ -113,7 +113,7 @@ export default function LandingPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[10px] text-charcoal/25 mt-6 tracking-wide">
+        <p className="text-center text-[11px] text-charcoal/25 mt-6 tracking-wide">
           Powered by SafeServ · Food safety made simple
         </p>
       </div>

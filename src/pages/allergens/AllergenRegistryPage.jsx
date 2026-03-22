@@ -10,7 +10,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner'
 function SectionLabel({ children, action }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <p className="text-[10px] tracking-widest uppercase text-charcoal/40">{children}</p>
+      <p className="text-[11px] tracking-widest uppercase text-charcoal/40">{children}</p>
       {action}
     </div>
   )

@@ -9,7 +9,7 @@ import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 export default function FridgeLogFormPage() {
@@ -124,7 +124,7 @@ export default function FridgeLogFormPage() {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
                   Corrective Action <span className="text-danger">*</span>
                 </label>
                 <textarea

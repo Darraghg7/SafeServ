@@ -68,14 +68,14 @@ function IssueModal({ check, onConfirm, onCancel, saving }) {
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
       >
         <div>
-          <p className="text-[10px] tracking-widest uppercase text-warning mb-1">Issue Flagged</p>
+          <p className="text-[11px] tracking-widest uppercase text-warning mb-1">Issue Flagged</p>
           <h3 className="font-semibold text-charcoal text-lg">{check.title}</h3>
           <p className="text-xs text-charcoal/40 mt-1">
             Describe what corrective action was taken. This will appear in the audit log.
           </p>
         </div>
         <div>
-          <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">
+          <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">
             Corrective Action Taken <span className="text-danger">*</span>
           </label>
           <textarea
@@ -233,19 +233,19 @@ function CheckSection({ type, label, checks, completions, onOK, onIssue, isManag
         </div>
         <div className="flex items-center gap-3">
           {allDone && issueCount === 0 && (
-            <span className="text-[10px] tracking-widest uppercase font-medium text-success bg-success/10 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] tracking-widest uppercase font-medium text-success bg-success/10 px-2.5 py-1 rounded-full">
               All Clear ✓
             </span>
           )}
           {allDone && issueCount > 0 && (
-            <span className="text-[10px] tracking-widest uppercase font-medium text-warning bg-warning/10 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] tracking-widest uppercase font-medium text-warning bg-warning/10 px-2.5 py-1 rounded-full">
               Complete ⚠
             </span>
           )}
           {isManager && !readOnly && (
             <button
               onClick={() => setShowAdd(v => !v)}
-              className="text-[10px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+              className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
             >
               {showAdd ? 'Cancel' : '+ Add Check'}
             </button>
@@ -461,7 +461,7 @@ export default function OpeningClosingPage() {
 
       {/* Date selector */}
       <div className="flex flex-col gap-2">
-        <p className="text-[10px] tracking-widest uppercase text-charcoal/35">Viewing checks for</p>
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/35">Viewing checks for</p>
         <DateSelector value={selectedDate} onChange={setSelectedDate} />
         {isPast && (
           <p className="text-[11px] text-charcoal/40 italic">

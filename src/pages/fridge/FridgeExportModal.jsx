@@ -106,19 +106,19 @@ export default function FridgeExportModal({ open, onClose }) {
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">From</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">From</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-charcoal/20" />
           </div>
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">To</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">To</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-charcoal/20" />
           </div>
         </div>
 
         <div>
-          <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Fridge</label>
+          <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Fridge</label>
           <select value={fridgeId} onChange={e => setFridgeId(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-charcoal/20">
             <option value="">All fridges</option>

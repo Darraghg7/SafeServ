@@ -42,7 +42,7 @@ function StatusBadge({ status }) {
   }
   const labels = { expired: 'Expired', expiring: 'Expiring Soon', valid: 'Valid' }
   return (
-    <span className={`text-[10px] tracking-widest uppercase font-medium px-1.5 py-0.5 rounded ${styles[status]}`}>
+    <span className={`text-[11px] tracking-widest uppercase font-medium px-1.5 py-0.5 rounded ${styles[status]}`}>
       {labels[status]}
     </span>
   )
@@ -206,7 +206,7 @@ export default function TrainingPage() {
               filterStatus === s.label.toLowerCase() ? 'ring-2 ring-charcoal/20' : ''
             } bg-white`}
           >
-            <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40 mb-1 truncate">{s.label}</p>
+            <p className="text-[9px] sm:text-[11px] tracking-wide uppercase text-charcoal/40 mb-1 truncate">{s.label}</p>
             <p className={`text-2xl font-serif ${s.color}`}>{s.count}</p>
           </button>
         ))}
@@ -219,7 +219,7 @@ export default function TrainingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Staff Member *</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Staff Member *</label>
               <select
                 value={form.staff_id}
                 onChange={e => setForm(f => ({ ...f, staff_id: e.target.value }))}
@@ -232,7 +232,7 @@ export default function TrainingPage() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Category</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Category</label>
               <select
                 value={form.category}
                 onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
@@ -247,7 +247,7 @@ export default function TrainingPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Title *</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Title *</label>
             <input
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -258,7 +258,7 @@ export default function TrainingPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Issued Date</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Issued Date</label>
               <input
                 type="date"
                 value={form.issued_date}
@@ -267,7 +267,7 @@ export default function TrainingPage() {
               />
             </div>
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Expiry Date</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Expiry Date</label>
               <input
                 type="date"
                 value={form.expiry_date}
@@ -278,7 +278,7 @@ export default function TrainingPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
             <textarea
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -289,7 +289,7 @@ export default function TrainingPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Certificate / Document</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Certificate / Document</label>
             <input
               type="file"
               accept="image/*,.pdf,.doc,.docx"
@@ -365,7 +365,7 @@ export default function TrainingPage() {
               )}
               <div>
                 <p className="text-sm font-semibold text-charcoal">{name}</p>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40">
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40">
                   {recs[0]?.staff?.job_role === 'kitchen' ? 'Kitchen' : recs[0]?.staff?.job_role === 'foh' ? 'Front of House' : recs[0]?.staff?.job_role ?? ''}
                   {' · '}{recs.length} record{recs.length !== 1 ? 's' : ''}
                 </p>
@@ -381,7 +381,7 @@ export default function TrainingPage() {
                         <p className="text-sm font-medium text-charcoal">{r.title}</p>
                         <StatusBadge status={status} />
                         {r.category && (
-                          <span className="text-[10px] tracking-widest uppercase text-charcoal/30 border border-charcoal/10 px-1.5 py-0.5 rounded">
+                          <span className="text-[11px] tracking-widest uppercase text-charcoal/30 border border-charcoal/10 px-1.5 py-0.5 rounded">
                             {r.category}
                           </span>
                         )}

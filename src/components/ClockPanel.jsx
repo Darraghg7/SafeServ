@@ -44,17 +44,17 @@ function ElapsedTimer({ clockInAt, breakStartAt, totalBreakMs, status }) {
   return (
     <div className="flex items-baseline gap-3">
       <div>
-        <p className="text-[10px] tracking-widest uppercase text-charcoal/40">Shift</p>
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40">Shift</p>
         <p className="font-mono text-2xl text-charcoal tabular-nums">{formatElapsed(workingMs)}</p>
       </div>
       {status === 'on_break' && breakStartAt && (
         <div>
-          <p className="text-[10px] tracking-widest uppercase text-warning/60">Break</p>
+          <p className="text-[11px] tracking-widest uppercase text-warning/60">Break</p>
           <p className="font-mono text-lg text-warning tabular-nums">{formatElapsed(currentBreakMs)}</p>
         </div>
       )}
       {totalBreakMs > 0 && status !== 'on_break' && (
-        <p className="text-[10px] text-charcoal/30">
+        <p className="text-[11px] text-charcoal/30">
           {formatElapsed(totalBreakMs)} on breaks
         </p>
       )}

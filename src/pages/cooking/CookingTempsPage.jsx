@@ -22,13 +22,13 @@ import { useCookingLogs, useTodayCookingLogs, isCookingTempFail, COOKING_TARGET_
 import { formatTemp, formatDateTime } from '../../lib/utils'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function PassBadge({ pass }) {
   return pass
-    ? <span className="text-[10px] font-semibold tracking-wider uppercase bg-success/10 text-success px-2 py-0.5 rounded-full">Pass</span>
-    : <span className="text-[10px] font-semibold tracking-wider uppercase bg-danger/10 text-danger px-2 py-0.5 rounded-full">Fail</span>
+    ? <span className="text-[11px] font-semibold tracking-wider uppercase bg-success/10 text-success px-2 py-0.5 rounded-full">Pass</span>
+    : <span className="text-[11px] font-semibold tracking-wider uppercase bg-danger/10 text-danger px-2 py-0.5 rounded-full">Fail</span>
 }
 
 function nowLocal() {
@@ -183,12 +183,12 @@ function HistoryTable({ logs, loading }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-t border-charcoal/8">
-            <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Food Item</th>
-            <th className="text-left px-4 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Type</th>
-            <th className="text-left px-4 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Temp</th>
-            <th className="text-center px-3 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Status</th>
-            <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium hidden sm:table-cell">By</th>
-            <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">When</th>
+            <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Food Item</th>
+            <th className="text-left px-4 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Type</th>
+            <th className="text-left px-4 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Temp</th>
+            <th className="text-center px-3 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Status</th>
+            <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium hidden sm:table-cell">By</th>
+            <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">When</th>
           </tr>
         </thead>
         <tbody>
@@ -198,7 +198,7 @@ function HistoryTable({ logs, loading }) {
               <tr key={log.id} className={`border-t border-charcoal/6 ${fail ? 'bg-danger/4' : ''}`}>
                 <td className="px-5 py-3 text-charcoal font-medium">{log.food_item}</td>
                 <td className="px-4 py-3">
-                  <span className="text-[10px] tracking-wider uppercase font-semibold text-charcoal/50 bg-charcoal/6 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] tracking-wider uppercase font-semibold text-charcoal/50 bg-charcoal/6 px-2 py-0.5 rounded-full">
                     {log.check_type}
                   </span>
                 </td>

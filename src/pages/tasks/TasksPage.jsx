@@ -17,12 +17,12 @@ const ROLE_COLORS = {
 }
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function RoleBadge({ role }) {
   return (
-    <span className={`text-[10px] tracking-widest uppercase font-medium px-2 py-0.5 rounded ${ROLE_COLORS[role] ?? 'bg-charcoal/8 text-charcoal'}`}>
+    <span className={`text-[11px] tracking-widest uppercase font-medium px-2 py-0.5 rounded ${ROLE_COLORS[role] ?? 'bg-charcoal/8 text-charcoal'}`}>
       {ROLE_LABELS[role] ?? role}
     </span>
   )
@@ -209,7 +209,7 @@ function ManagerTasksView() {
             return (
               <div key={t.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-[10px] ${comp ? 'bg-success border-success text-white' : 'border-charcoal/20'}`}>
+                  <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-[11px] ${comp ? 'bg-success border-success text-white' : 'border-charcoal/20'}`}>
                     {comp ? '✓' : ''}
                   </span>
                   <div>
@@ -326,7 +326,7 @@ function ManagerTasksView() {
             return (
               <div key={o.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-[10px] ${comp ? 'bg-success border-success text-white' : 'border-charcoal/20'}`}>
+                  <span className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center text-[11px] ${comp ? 'bg-success border-success text-white' : 'border-charcoal/20'}`}>
                     {comp ? '✓' : ''}
                   </span>
                   <div>
@@ -397,7 +397,7 @@ function StaffTasksView({ session }) {
       <div className="bg-white rounded-xl border border-charcoal/10 p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">Today's Progress</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">Today's Progress</p>
             <p className="font-serif text-2xl text-charcoal">{done} / {allTasks.length} tasks done</p>
           </div>
           {done === allTasks.length && allTasks.length > 0 && (
@@ -448,7 +448,7 @@ function StaffTasksView({ session }) {
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {isPersonal && (
-                      <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded font-medium">
+                      <span className="text-[11px] bg-accent/10 text-accent px-2 py-0.5 rounded font-medium">
                         Assigned to you
                       </span>
                     )}

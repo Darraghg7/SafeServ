@@ -5,7 +5,7 @@ import { buildRota } from '../../lib/rotaBuilder'
 import TimeSelect from '../../components/ui/TimeSelect'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">{children}</p>
 }
 
 export default function RotaBuilderModal({
@@ -116,7 +116,7 @@ export default function RotaBuilderModal({
                     ].join(' ')}
                   >
                     <p className="text-sm font-medium">{opt.label}</p>
-                    <p className={`text-[10px] mt-0.5 ${mode === opt.value ? 'text-cream/60' : 'text-charcoal/35'}`}>
+                    <p className={`text-[11px] mt-0.5 ${mode === opt.value ? 'text-cream/60' : 'text-charcoal/35'}`}>
                       {opt.desc}
                     </p>
                   </button>
@@ -127,7 +127,7 @@ export default function RotaBuilderModal({
             {/* Closed days info */}
             {closedDays.length > 0 && (
               <div className="rounded-lg bg-charcoal/4 border border-charcoal/10 px-3 py-2">
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/35 mb-1">Closed Days (skipped)</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/35 mb-1">Closed Days (skipped)</p>
                 <div className="flex gap-1.5 flex-wrap">
                   {closedDays.sort((a, b) => a - b).map(d => (
                     <span key={d} className="text-xs text-charcoal/40 bg-charcoal/8 px-2 py-0.5 rounded line-through">
@@ -143,7 +143,7 @@ export default function RotaBuilderModal({
               <SectionLabel>Staffing per Day</SectionLabel>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] tracking-widest uppercase text-charcoal/30 block mb-1">Minimum</label>
+                  <label className="text-[11px] tracking-widest uppercase text-charcoal/30 block mb-1">Minimum</label>
                   <input
                     type="number"
                     min={1}
@@ -154,7 +154,7 @@ export default function RotaBuilderModal({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] tracking-widest uppercase text-charcoal/30 block mb-1">Maximum</label>
+                  <label className="text-[11px] tracking-widest uppercase text-charcoal/30 block mb-1">Maximum</label>
                   <input
                     type="number"
                     min={minStaff}
@@ -172,11 +172,11 @@ export default function RotaBuilderModal({
               <SectionLabel>Default Shift Times</SectionLabel>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] tracking-widest uppercase text-charcoal/30 block mb-1">Start</label>
+                  <label className="text-[11px] tracking-widest uppercase text-charcoal/30 block mb-1">Start</label>
                   <TimeSelect value={defaultStart} onChange={setDefaultStart} />
                 </div>
                 <div>
-                  <label className="text-[10px] tracking-widest uppercase text-charcoal/30 block mb-1">End</label>
+                  <label className="text-[11px] tracking-widest uppercase text-charcoal/30 block mb-1">End</label>
                   <TimeSelect value={defaultEnd} onChange={setDefaultEnd} />
                 </div>
               </div>
@@ -185,7 +185,7 @@ export default function RotaBuilderModal({
             {/* Required Roles per Day */}
             <div>
               <SectionLabel>Required Roles per Day</SectionLabel>
-              <p className="text-[10px] text-charcoal/30 mb-2">
+              <p className="text-[11px] text-charcoal/30 mb-2">
                 Set minimum count for each role needed daily. Leave 0 to skip.
               </p>
               {customRoles.length === 0 ? (
@@ -227,19 +227,19 @@ export default function RotaBuilderModal({
           <>
             {/* Stats */}
             <div className="bg-accent/8 rounded-xl p-4 border border-accent/15">
-              <p className="text-[10px] tracking-widest uppercase text-accent/60 mb-2">Generation Summary</p>
+              <p className="text-[11px] tracking-widest uppercase text-accent/60 mb-2">Generation Summary</p>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <p className="font-serif text-2xl text-charcoal">{result.stats.totalShiftsCreated}</p>
-                  <p className="text-[10px] text-charcoal/40">Shifts</p>
+                  <p className="text-[11px] text-charcoal/40">Shifts</p>
                 </div>
                 <div>
                   <p className="font-serif text-2xl text-charcoal">{result.stats.totalHours.toFixed(0)}h</p>
-                  <p className="text-[10px] text-charcoal/40">Total Hours</p>
+                  <p className="text-[11px] text-charcoal/40">Total Hours</p>
                 </div>
                 <div>
                   <p className="font-serif text-2xl text-charcoal">£{result.stats.estimatedCost.toFixed(0)}</p>
-                  <p className="text-[10px] text-charcoal/40">Est. Cost</p>
+                  <p className="text-[11px] text-charcoal/40">Est. Cost</p>
                 </div>
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function RotaBuilderModal({
                       <div className="flex items-center gap-3">
                         <div>
                           <p className="text-xs font-medium text-charcoal">{sh._staffName}</p>
-                          <p className="text-[10px] text-charcoal/40">
+                          <p className="text-[11px] text-charcoal/40">
                             {sh.shift_date} · {sh.start_time}–{sh.end_time} · {sh.role_label}
                           </p>
                         </div>

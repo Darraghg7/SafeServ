@@ -19,7 +19,7 @@ const JOB_ROLES  = ['kitchen', 'foh']
 const JOB_LABELS = { kitchen: 'Kitchen', foh: 'Front of House' }
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function useVenueSettings() {
@@ -129,11 +129,11 @@ function TrainingSection({ staffId }) {
   return (
     <div className="border-t border-charcoal/10 pt-4 mt-2">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] tracking-widest uppercase text-charcoal/40">Training Records</p>
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40">Training Records</p>
         <button
           type="button"
           onClick={() => setShowForm(f => !f)}
-          className="text-[10px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+          className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
         >
           {showForm ? 'Cancel' : '+ Add Record'}
         </button>
@@ -142,31 +142,31 @@ function TrainingSection({ staffId }) {
       {showForm && (
         <div className="bg-white rounded-lg border border-charcoal/10 p-4 mb-3 flex flex-col gap-3">
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Title *</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Title *</label>
             <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="e.g. Food Hygiene Level 2"
               className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Issued Date</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Issued Date</label>
               <input type="date" value={form.issued_date} onChange={e => setForm(f => ({ ...f, issued_date: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20" />
             </div>
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Expiry Date</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Expiry Date</label>
               <input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))}
                 className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20" />
             </div>
           </div>
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
             <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               rows={2} placeholder="Optional notes"
               className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-cream/30 text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20 resize-none" />
           </div>
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Certificate / File</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Certificate / File</label>
             <input type="file" accept="image/*,.pdf"
               onChange={e => setFile(e.target.files[0] ?? null)}
               className="w-full text-sm text-charcoal/60 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-charcoal/15 file:text-xs file:bg-cream/50 file:text-charcoal/60 hover:file:bg-cream" />
@@ -192,7 +192,7 @@ function TrainingSection({ staffId }) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-charcoal">{r.title}</p>
                     {expired && (
-                      <span className="text-[10px] tracking-widest uppercase bg-danger/10 text-danger px-1.5 py-0.5 rounded font-medium">Expired</span>
+                      <span className="text-[11px] tracking-widest uppercase bg-danger/10 text-danger px-1.5 py-0.5 rounded font-medium">Expired</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
@@ -294,7 +294,7 @@ export default function SettingsPage() {
   const { venueId } = useVenue()
   const { settings, loading: sLoading, reload: reloadSettings } = useVenueSettings()
   const { staff, loading: staffLoading, reload: reloadStaff }   = useStaffManagement()
-  const { customRoles, closedDays, saveCustomRoles, saveClosedDays, nextColor } = useAppSettings()
+  const { customRoles, closedDays, breakDurationMins, saveCustomRoles, saveClosedDays, saveBreakDuration, nextColor } = useAppSettings()
   const { dark, toggle: toggleDark } = useTheme()
   const { config: featuresConfig, save: saveFeatures } = useVenueFeatures()
 
@@ -501,7 +501,7 @@ export default function SettingsPage() {
         <SectionLabel>Venue Details</SectionLabel>
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Venue Name</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Venue Name</label>
             <input
               value={venueForm.venue_name}
               onChange={e => setVenueForm(f => ({ ...f, venue_name: e.target.value }))}
@@ -510,7 +510,7 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Manager Email</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Manager Email</label>
             <input
               type="email"
               value={venueForm.manager_email}
@@ -529,7 +529,7 @@ export default function SettingsPage() {
 
           {/* Logo upload */}
           <div className="border-t border-charcoal/10 pt-4 mt-2">
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-3">Venue Logo</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-3">Venue Logo</label>
             <div className="flex items-center gap-4 flex-wrap">
               {settings.logo_url && (
                 <img
@@ -738,6 +738,42 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      {/* Break Duration */}
+      <div className="bg-white rounded-xl border border-charcoal/10 p-6">
+        <SectionLabel>Rota &amp; Pay</SectionLabel>
+        <p className="text-sm text-charcoal/50 mb-5">
+          Set the unpaid break deducted from paid hours for adult staff (18+) working more than 6 hours. UK law requires a minimum of 20 minutes. Under-18 staff always get 30 minutes as required by law.
+        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-charcoal">Break duration (adults, shifts &gt;6h)</p>
+            <p className="text-xs text-charcoal/40 mt-0.5">Deducted from paid hours and wage cost</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {[15, 20, 30, 45, 60].map(mins => (
+              <button
+                key={mins}
+                onClick={() => saveBreakDuration(mins)}
+                className={[
+                  'px-3 py-1.5 rounded-lg text-sm font-medium border transition-all',
+                  breakDurationMins === mins
+                    ? 'bg-charcoal text-cream border-charcoal'
+                    : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30',
+                ].join(' ')}
+              >
+                {mins}m
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-charcoal/35 mt-3">
+          Currently set to <span className="font-semibold text-charcoal">{breakDurationMins} minutes</span>.
+          {breakDurationMins < 20 && (
+            <span className="text-warning ml-2">Note: UK minimum is 20 minutes.</span>
+          )}
+        </p>
+      </div>
+
       {/* Notifications & Reports */}
       <NotificationsPanel session={session} toast={toast} settings={settings} />
 
@@ -774,7 +810,7 @@ export default function SettingsPage() {
                     </div>
                   )}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] tracking-widest uppercase text-charcoal/40">Photo</label>
+                    <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Photo</label>
                     <input type="file" accept="image/*"
                       onChange={e => setPhotoFile(e.target.files[0] ?? null)}
                       className="text-xs text-charcoal/60 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border file:border-charcoal/15 file:text-xs file:bg-cream/50 file:text-charcoal/60 hover:file:bg-cream" />
@@ -793,7 +829,7 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Name *</label>
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Name *</label>
                 <input
                   value={staffForm.name}
                   onChange={e => setStaffForm(f => ({ ...f, name: e.target.value }))}
@@ -802,7 +838,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Email</label>
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Email</label>
                 <input
                   type="email"
                   value={staffForm.email}
@@ -812,7 +848,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">
                   PIN {editingId && <span className="normal-case text-charcoal/30">— blank to keep current</span>}
                 </label>
                 <input
@@ -826,7 +862,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Hourly Rate (£)</label>
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Hourly Rate (£)</label>
                 <input
                   type="number" step="0.01" min="0"
                   value={staffForm.hourly_rate}
@@ -839,7 +875,7 @@ export default function SettingsPage() {
 
             {/* Permission level chips */}
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Permission Level</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Permission Level</label>
               <div className="flex gap-2 flex-wrap">
                 {PERMISSION_ROLES.map(r => (
                   <button
@@ -862,7 +898,7 @@ export default function SettingsPage() {
 
             {/* Job role chips */}
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Department</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Department</label>
               <div className="flex gap-2 flex-wrap">
                 {JOB_ROLES.map(r => (
                   <button
@@ -880,7 +916,7 @@ export default function SettingsPage() {
 
             {/* Skills (checkboxes from custom roles) */}
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Skills</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Skills</label>
               <div className="flex gap-3 flex-wrap">
                 {customRoles.map(role => {
                   const checked = staffForm.skills?.includes(role.value)
@@ -925,7 +961,7 @@ export default function SettingsPage() {
 
             {/* Tab access toggles */}
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">App Tab Access</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">App Tab Access</label>
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-charcoal">Temp Logs</span>
@@ -971,25 +1007,25 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium text-charcoal text-sm">{s.name}</p>
                   <span className={[
-                    'text-[10px] tracking-widest uppercase font-medium px-1.5 py-0.5 rounded',
+                    'text-[11px] tracking-widest uppercase font-medium px-1.5 py-0.5 rounded',
                     s.role === 'owner'   ? 'bg-purple-50 text-purple-600' :
                     s.role === 'manager' ? 'bg-amber-50 text-amber-600' :
                                           'bg-charcoal/5 text-charcoal/50',
                   ].join(' ')}>
                     {PERMISSION_LABELS[s.role] ?? s.role}
                   </span>
-                  <span className="text-[10px] tracking-widest uppercase text-charcoal/40 border border-charcoal/15 px-1.5 py-0.5 rounded">
+                  <span className="text-[11px] tracking-widest uppercase text-charcoal/40 border border-charcoal/15 px-1.5 py-0.5 rounded">
                     {JOB_LABELS[s.job_role] ?? s.job_role}
                   </span>
-                  {s.show_temp_logs  && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Temp Logs</span>}
-                  {s.show_allergens  && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Allergens</span>}
+                  {s.show_temp_logs  && <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Temp Logs</span>}
+                  {s.show_allergens  && <span className="text-[11px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Allergens</span>}
                   {(s.skills ?? []).map(sk => {
                     const roleDef = customRoles.find(r => r.value === sk)
                     return roleDef ? (
-                      <span key={sk} className={`text-[10px] px-1.5 py-0.5 rounded ${roleDef.color}`}>{roleDef.label}</span>
+                      <span key={sk} className={`text-[11px] px-1.5 py-0.5 rounded ${roleDef.color}`}>{roleDef.label}</span>
                     ) : null
                   })}
-                  {!s.is_active      && <span className="text-[10px] tracking-widest uppercase text-charcoal/30 italic">inactive</span>}
+                  {!s.is_active      && <span className="text-[11px] tracking-widest uppercase text-charcoal/30 italic">inactive</span>}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5">
                   {s.email && <p className="text-xs text-charcoal/40">{s.email}</p>}

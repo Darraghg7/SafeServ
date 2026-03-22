@@ -92,7 +92,7 @@ function StaffDeclarationForm({ session, venueId, onSaved }) {
     <div className="bg-white rounded-2xl border border-charcoal/10 overflow-hidden max-w-lg w-full mx-auto">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-charcoal/8">
-        <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">SC7 — Shift Start</p>
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">SC7 — Shift Start</p>
         <h2 className="font-serif text-2xl text-charcoal">Fitness to Work</h2>
         <p className="text-sm text-charcoal/50 mt-1">
           Complete before starting your shift. This declaration is recorded for food safety compliance.
@@ -355,10 +355,10 @@ function ManagerDeclarationsView({ venueId }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-charcoal">{d.staff_name}</p>
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${d.is_fit ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${d.is_fit ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
                       {d.is_fit ? 'Fit' : 'Unfit'}
                     </span>
-                    <span className="text-[10px] bg-charcoal/8 text-charcoal/50 px-2 py-0.5 rounded-full capitalize">
+                    <span className="text-[11px] bg-charcoal/8 text-charcoal/50 px-2 py-0.5 rounded-full capitalize">
                       {d.shift_type}
                     </span>
                   </div>
@@ -428,7 +428,7 @@ export default function FitnessPage() {
           </p>
           <h1 className="font-serif text-3xl text-charcoal">Fitness to Work</h1>
         </div>
-        <span className="text-[10px] tracking-widest uppercase text-charcoal/30 border border-charcoal/15 rounded px-2 py-1">SC7</span>
+        <span className="text-[11px] tracking-widest uppercase text-charcoal/30 border border-charcoal/15 rounded px-2 py-1">SC7</span>
       </div>
 
       {/* Staff: show form OR summary */}
@@ -443,7 +443,7 @@ export default function FitnessPage() {
         <>
           {/* Manager's own declaration */}
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">Your declaration</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">Your declaration</p>
             {myDeclaration
               ? <DeclarationSummary declaration={myDeclaration} />
               : <StaffDeclarationForm session={session} venueId={venueId} onSaved={() => checkOwnDeclaration()} />
@@ -452,7 +452,7 @@ export default function FitnessPage() {
 
           {/* All staff declarations */}
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">Team declarations</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">Team declarations</p>
             <ManagerDeclarationsView venueId={venueId} />
           </div>
         </>

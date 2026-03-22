@@ -19,7 +19,7 @@ const STATUS_CONFIG = {
 }
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1) }
@@ -145,7 +145,7 @@ export default function CleaningPage() {
           />
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Frequency</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Frequency</label>
               <div className="flex flex-wrap gap-2">
                 {FREQ_OPTIONS.map((f) => (
                   <button
@@ -163,7 +163,7 @@ export default function CleaningPage() {
               </div>
             </div>
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Assigned To</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Assigned To</label>
               <div className="flex flex-wrap gap-2">
                 {ROLE_OPTIONS.map((r) => (
                   <button
@@ -210,7 +210,7 @@ export default function CleaningPage() {
             ].join(' ')}
           >
             {s === 'all' ? 'All' : s === 'due_soon' ? 'Due Soon' : capitalize(s)}
-            {s === 'overdue' && overdueCount > 0 && <span className="ml-1.5 bg-danger/20 text-danger px-1.5 rounded-full text-[10px]">{overdueCount}</span>}
+            {s === 'overdue' && overdueCount > 0 && <span className="ml-1.5 bg-danger/20 text-danger px-1.5 rounded-full text-[11px]">{overdueCount}</span>}
           </button>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default function CleaningPage() {
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium text-charcoal">{t.title}</p>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-[10px] tracking-widest uppercase font-medium px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>
+                        <span className={`text-[11px] tracking-widest uppercase font-medium px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>
                           {cfg.label}
                         </span>
                         <button
@@ -248,9 +248,9 @@ export default function CleaningPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                      <span className="text-[10px] tracking-widest uppercase text-charcoal/35">{capitalize(t.frequency)}</span>
+                      <span className="text-[11px] tracking-widest uppercase text-charcoal/35">{capitalize(t.frequency)}</span>
                       <span className="text-charcoal/20">·</span>
-                      <span className="text-[10px] tracking-widest uppercase text-charcoal/35">{ROLE_LABELS[t.assigned_role]}</span>
+                      <span className="text-[11px] tracking-widest uppercase text-charcoal/35">{ROLE_LABELS[t.assigned_role]}</span>
                       {t.lastCompletion && (
                         <>
                           <span className="text-charcoal/20">·</span>
@@ -278,11 +278,11 @@ export default function CleaningPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 flex flex-col gap-4 shadow-2xl" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
             <div>
-              <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">Mark Complete</p>
+              <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">Mark Complete</p>
               <h3 className="font-semibold text-charcoal text-lg">{completeModal.title}</h3>
             </div>
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">
                 Notes (optional)
               </label>
               <textarea

@@ -29,7 +29,7 @@ function PassBadge({ endTemp }) {
   if (endTemp === '' || isNaN(Number(endTemp))) return null
   const fail = isCoolingTempFail(endTemp)
   return (
-    <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full ${
+    <span className={`text-[11px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full ${
       fail ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'
     }`}>
       {fail ? `FAIL >8°C` : 'PASS ≤8°C'}
@@ -146,7 +146,7 @@ export default function CoolingLogsPage() {
         <div className="space-y-6">
           {/* Form */}
           <div className="bg-white dark:bg-white/5 rounded-2xl border border-charcoal/10 dark:border-white/10 p-5 space-y-4">
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 dark:text-white/35 font-semibold">New Cooling Entry</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 dark:text-white/35 font-semibold">New Cooling Entry</p>
 
             {/* Food item */}
             <div>
@@ -171,7 +171,7 @@ export default function CoolingLogsPage() {
                   placeholder="e.g. 75"
                   className="w-full px-4 py-2.5 rounded-xl border border-charcoal/15 dark:border-white/15 bg-white dark:bg-white/8 text-sm text-charcoal dark:text-white placeholder:text-charcoal/30 dark:placeholder:text-white/25 outline-none focus:border-accent dark:focus:border-accent font-mono"
                 />
-                <p className="text-[10px] text-charcoal/35 dark:text-white/30 mt-1">When cooling started</p>
+                <p className="text-[11px] text-charcoal/35 dark:text-white/30 mt-1">When cooling started</p>
               </div>
               <div>
                 <label className="text-xs text-charcoal/60 dark:text-white/50 mb-1 flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function CoolingLogsPage() {
                       : 'border-charcoal/15 dark:border-white/15 focus:border-accent'
                   }`}
                 />
-                <p className="text-[10px] text-charcoal/35 dark:text-white/30 mt-1">Target ≤8°C</p>
+                <p className="text-[11px] text-charcoal/35 dark:text-white/30 mt-1">Target ≤8°C</p>
               </div>
             </div>
 
@@ -253,7 +253,7 @@ export default function CoolingLogsPage() {
 
           {/* Today's logs */}
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 dark:text-white/35 font-semibold mb-3">Today's Logs</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 dark:text-white/35 font-semibold mb-3">Today's Logs</p>
             {todayLoading ? (
               <p className="text-sm text-charcoal/40 dark:text-white/35">Loading…</p>
             ) : todayLogs.length === 0 ? (

@@ -73,22 +73,24 @@ export function shiftDurationHours(startTime, endTime) {
 }
 
 /**
- * UK statutory unpaid break entitlement (Working Time Regulations 1998).
- * Under 18 (Young Workers): 30 min if shift > 4.5 hours.
- * Adults (18+): 20 min if shift > 6 hours.
+ * Unpaid break entitlement per shift.
+ * Under-18 (Young Workers): fixed 30 min UK statutory if shift > 4.5h.
+ * Adults (18+): manager-configured break duration if shift > 6h.
+ *   customAdultBreakMins defaults to 30 (a common employer policy);
+ *   the UK statutory minimum is 20 min but managers often give more.
  * Returns break duration in minutes (0 if no entitlement).
  */
-export function unpaidBreakMins(rawHours, isUnder18) {
-  if (isUnder18 && rawHours > 4.5) return 30
-  if (!isUnder18 && rawHours > 6) return 20
+export function unpaidBreakMins(rawHours, isUnder18, customAdultBreakMins = 30) {
+  if (isUnder18 && rawHours > 4.5) return 30               // UK law, fixed
+  if (!isUnder18 && rawHours > 6)  return customAdultBreakMins
   return 0
 }
 
 /**
- * Paid shift hours after deducting statutory unpaid break.
+ * Paid shift hours after deducting unpaid break.
  * Used for rota cost and hours totals.
  */
-export function paidShiftHours(startTime, endTime, isUnder18 = false) {
+export function paidShiftHours(startTime, endTime, isUnder18 = false, customAdultBreakMins = 30) {
   const raw = shiftDurationHours(startTime, endTime)
-  return Math.max(0, raw - unpaidBreakMins(raw, isUnder18) / 60)
+  return Math.max(0, raw - unpaidBreakMins(raw, isUnder18, customAdultBreakMins) / 60)
 }

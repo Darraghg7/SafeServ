@@ -6,7 +6,7 @@ import { formatMinutes, getWeekStart, downloadCsv } from '../../lib/utils'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function fmtGBP(n) { return `£${Number(n).toFixed(2)}` }
@@ -133,7 +133,7 @@ export default function TimesheetPage() {
             {/* Per-staff table */}
             <div className="flex flex-col gap-0">
               {/* Header */}
-              <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 pb-2 text-[10px] tracking-widest uppercase text-charcoal/40">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 pb-2 text-[11px] tracking-widest uppercase text-charcoal/40">
                 <span>Staff</span>
                 <span className="text-right">Hours</span>
                 <span className="text-right">Est. Pay</span>

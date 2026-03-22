@@ -30,19 +30,19 @@ import {
 import { formatTemp, formatDateTime } from '../../lib/utils'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function PassBadge({ pass }) {
   return pass
-    ? <span className="text-[10px] font-semibold tracking-wider uppercase bg-success/10 text-success px-2 py-0.5 rounded-full">Pass</span>
-    : <span className="text-[10px] font-semibold tracking-wider uppercase bg-danger/10 text-danger px-2 py-0.5 rounded-full">Fail</span>
+    ? <span className="text-[11px] font-semibold tracking-wider uppercase bg-success/10 text-success px-2 py-0.5 rounded-full">Pass</span>
+    : <span className="text-[11px] font-semibold tracking-wider uppercase bg-danger/10 text-danger px-2 py-0.5 rounded-full">Fail</span>
 }
 
 function PeriodBadge({ done }) {
   return done
-    ? <span className="text-[10px] font-semibold tracking-wider uppercase bg-success/10 text-success px-2.5 py-1 rounded-full">✓ Done</span>
-    : <span className="text-[10px] font-semibold tracking-wider uppercase bg-charcoal/8 text-charcoal/45 px-2.5 py-1 rounded-full">Pending</span>
+    ? <span className="text-[11px] font-semibold tracking-wider uppercase bg-success/10 text-success px-2.5 py-1 rounded-full">✓ Done</span>
+    : <span className="text-[11px] font-semibold tracking-wider uppercase bg-charcoal/8 text-charcoal/45 px-2.5 py-1 rounded-full">Pending</span>
 }
 
 /* ── Main Page ────────────────────────────────────────────────────────────── */
@@ -357,12 +357,12 @@ export default function HotHoldingPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-t border-charcoal/8">
-                    <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Item</th>
-                    <th className="text-center px-3 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Period</th>
-                    <th className="text-left px-4 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Temp</th>
-                    <th className="text-center px-3 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">Status</th>
-                    <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium hidden sm:table-cell">By</th>
-                    <th className="text-left px-5 py-2.5 text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">When</th>
+                    <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Item</th>
+                    <th className="text-center px-3 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Period</th>
+                    <th className="text-left px-4 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Temp</th>
+                    <th className="text-center px-3 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">Status</th>
+                    <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium hidden sm:table-cell">By</th>
+                    <th className="text-left px-5 py-2.5 text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">When</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -372,7 +372,7 @@ export default function HotHoldingPage() {
                       <tr key={log.id} className={`border-t border-charcoal/6 ${fail ? 'bg-danger/4' : ''}`}>
                         <td className="px-5 py-3 text-charcoal font-medium">{log.item_name}</td>
                         <td className="px-3 py-3 text-center">
-                          <span className="text-[10px] font-semibold tracking-wider uppercase text-charcoal/50">
+                          <span className="text-[11px] font-semibold tracking-wider uppercase text-charcoal/50">
                             {log.check_period?.toUpperCase()}
                           </span>
                         </td>

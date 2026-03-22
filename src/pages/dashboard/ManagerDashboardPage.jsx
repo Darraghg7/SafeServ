@@ -113,7 +113,7 @@ function WidgetPicker({ open, onClose, activeIds, onSave }) {
         {/* Active widgets — reorderable */}
         {selected.length > 0 && (
           <div>
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Your widgets</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Your widgets</p>
             <div className="flex flex-col gap-1.5">
               {selected.map((id, idx) => {
                 const w = WIDGET_REGISTRY[id]
@@ -124,21 +124,21 @@ function WidgetPicker({ open, onClose, activeIds, onSave }) {
                       <button
                         onClick={() => moveUp(id)}
                         disabled={idx === 0}
-                        className="text-charcoal/30 hover:text-charcoal disabled:opacity-20 text-[10px] leading-none"
+                        className="text-charcoal/30 hover:text-charcoal disabled:opacity-20 text-[11px] leading-none"
                       >
                         ▲
                       </button>
                       <button
                         onClick={() => moveDown(id)}
                         disabled={idx === selected.length - 1}
-                        className="text-charcoal/30 hover:text-charcoal disabled:opacity-20 text-[10px] leading-none"
+                        className="text-charcoal/30 hover:text-charcoal disabled:opacity-20 text-[11px] leading-none"
                       >
                         ▼
                       </button>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-charcoal truncate">{w.label}</p>
-                      <p className="text-[10px] text-charcoal/40 truncate">{w.description}</p>
+                      <p className="text-[11px] text-charcoal/40 truncate">{w.description}</p>
                     </div>
                     <button
                       onClick={() => toggle(id)}
@@ -159,7 +159,7 @@ function WidgetPicker({ open, onClose, activeIds, onSave }) {
           if (available.length === 0) return null
           return (
             <div>
-              <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Available widgets</p>
+              <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Available widgets</p>
               <div className="flex flex-col gap-1.5">
                 {available.map(id => {
                   const w = WIDGET_REGISTRY[id]
@@ -172,7 +172,7 @@ function WidgetPicker({ open, onClose, activeIds, onSave }) {
                       <span className="text-charcoal/20 text-lg shrink-0">+</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-charcoal/60 truncate">{w.label}</p>
-                        <p className="text-[10px] text-charcoal/35 truncate">{w.description}</p>
+                        <p className="text-[11px] text-charcoal/35 truncate">{w.description}</p>
                       </div>
                     </button>
                   )
@@ -240,7 +240,7 @@ export default function ManagerDashboardPage() {
         </div>
         <button
           onClick={() => setShowPicker(true)}
-          className="text-[10px] sm:text-[11px] tracking-widest uppercase text-charcoal/30 hover:text-charcoal/60 border border-charcoal/15 hover:border-charcoal/30 px-2.5 py-1.5 rounded-lg transition-colors mt-1"
+          className="text-[11px] sm:text-[11px] tracking-widest uppercase text-charcoal/30 hover:text-charcoal/60 border border-charcoal/15 hover:border-charcoal/30 px-2.5 py-1.5 rounded-lg transition-colors mt-1"
         >
           Customise
         </button>
@@ -248,7 +248,7 @@ export default function ManagerDashboardPage() {
 
       {/* Clock in/out */}
       <div className="bg-white rounded-xl border border-charcoal/10 p-5">
-        <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">My Clock</p>
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">My Clock</p>
         <ClockPanel staffId={session?.staffId} hasShift />
       </div>
 

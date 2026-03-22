@@ -120,7 +120,7 @@ function parseItemsFromText(text) {
 
 function PassFailChip({ pass }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-medium ${
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] tracking-wider uppercase font-medium ${
       pass ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
     }`}>
       {pass ? 'PASS' : 'FAIL'}
@@ -182,7 +182,7 @@ function ItemCategoryPicker({ itemName, onSave, onSkip }) {
           <button
             key={c.value}
             onClick={() => setCategory(c.value)}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
               category === c.value
                 ? 'bg-charcoal text-cream border-charcoal'
                 : 'bg-white text-charcoal/50 border-charcoal/15'
@@ -511,7 +511,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
             {/* OCR categorisation */}
             {ocrItems.length > 0 && categorisingIdx < ocrItems.length && (
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">
                   Categorise new item ({categorisingIdx + 1}/{ocrItems.length})
                 </p>
                 <ItemCategoryPicker
@@ -525,7 +525,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
             {/* Checklist — items needing temp */}
             {tempItems.length > 0 && (
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">
                   Temperature Items ({tempItems.length})
                 </p>
                 <div className="flex flex-col gap-2">
@@ -541,7 +541,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
                           {item.received && <span className="text-xs">✓</span>}
                         </button>
                         <span className="text-sm font-medium text-charcoal flex-1 truncate">{item.itemName}</span>
-                        <span className="text-[10px] tracking-wider uppercase text-charcoal/30">{item.category}</span>
+                        <span className="text-[11px] tracking-wider uppercase text-charcoal/30">{item.category}</span>
                       </div>
                       {item.received && (
                         <div className="flex items-center gap-2 ml-7">
@@ -568,7 +568,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
             {/* Checklist — non-temp items */}
             {nonTempItems.length > 0 && (
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">
                   Other Items ({nonTempItems.length})
                 </p>
                 <div className="flex flex-col gap-1.5">
@@ -585,7 +585,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
                       <span className={`text-sm flex-1 truncate ${item.received ? 'text-charcoal' : 'text-charcoal/40 line-through'}`}>
                         {item.itemName}
                       </span>
-                      <span className="text-[10px] tracking-wider uppercase text-charcoal/25">{item.category}</span>
+                      <span className="text-[11px] tracking-wider uppercase text-charcoal/25">{item.category}</span>
                     </div>
                   ))}
                 </div>
@@ -602,7 +602,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
 
             {/* Overall checks */}
             <div>
-              <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Overall Checks</p>
+              <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Overall Checks</p>
               {[
                 { key: 'packaging', label: 'Packaging intact', value: packagingOk, set: setPackagingOk },
                 { key: 'useby', label: 'Use-by dates valid', value: useByOk, set: setUseByOk },
@@ -627,7 +627,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
 
             {/* Photo */}
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Delivery note photo</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Delivery note photo</label>
               <input type="file" accept="image/*" onChange={handlePhoto} className="text-sm" />
               {uploading && <p className="text-xs text-charcoal/40 mt-1">Uploading...</p>}
               {photoUrl && <p className="text-xs text-success mt-1">Photo attached</p>}
@@ -635,7 +635,7 @@ function DeliveryCheckModal({ open, onClose, suppliers, onSupplierAdded, onCompl
 
             {/* Notes */}
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
               <textarea
                 value={overallNotes}
                 onChange={e => setOverallNotes(e.target.value)}
@@ -710,7 +710,7 @@ export default function DeliveryChecksPage() {
           { label: 'Failed', value: failCount, color: 'text-danger' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
-            <p className="text-[9px] sm:text-[10px] tracking-widest uppercase text-charcoal/40">{s.label}</p>
+            <p className="text-[9px] sm:text-[11px] tracking-widest uppercase text-charcoal/40">{s.label}</p>
             <p className={`text-xl sm:text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
@@ -756,7 +756,7 @@ export default function DeliveryChecksPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs text-charcoal/40">{format(new Date(c.checked_at), 'd MMM HH:mm')}</p>
-                  <p className="text-[10px] text-charcoal/30 mt-0.5">{c.checker?.name ?? 'Unknown'}</p>
+                  <p className="text-[11px] text-charcoal/30 mt-0.5">{c.checker?.name ?? 'Unknown'}</p>
                 </div>
               </div>
             </div>

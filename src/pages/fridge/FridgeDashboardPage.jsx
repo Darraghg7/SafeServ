@@ -11,7 +11,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import FridgeExportModal from './FridgeExportModal'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 function nowLocal() {
@@ -220,7 +220,7 @@ export default function FridgeDashboardPage() {
           <form onSubmit={handleLog} className="flex flex-col gap-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Temperature (°C)</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Temperature (°C)</p>
                 <input
                   type="number" step="0.1" min="-30" max="60"
                   value={temp}
@@ -235,7 +235,7 @@ export default function FridgeDashboardPage() {
                 />
               </div>
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Time of Check</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Time of Check</p>
                 <input
                   type="datetime-local"
                   value={loggedAt}
@@ -249,7 +249,7 @@ export default function FridgeDashboardPage() {
                 />
               </div>
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Check Period</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Check Period</p>
                 <div className="flex rounded-lg border border-charcoal/15 overflow-hidden h-[42px]">
                   <button
                     type="button"
@@ -318,7 +318,7 @@ export default function FridgeDashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[10px] tracking-widest uppercase text-charcoal/40">
+                <tr className="text-[11px] tracking-widest uppercase text-charcoal/40">
                   <th className="text-left pb-3 font-medium">Fridge / Freezer</th>
                   <th className="text-center pb-3 font-medium w-24">AM</th>
                   <th className="text-center pb-3 font-medium w-24">PM</th>
@@ -341,7 +341,7 @@ export default function FridgeDashboardPage() {
                     <tr key={f.id}>
                       <td className="py-3">
                         <p className="font-medium text-charcoal">{f.name}</p>
-                        <p className="text-[10px] text-charcoal/35">{f.min_temp}–{f.max_temp}°C</p>
+                        <p className="text-[11px] text-charcoal/35">{f.min_temp}–{f.max_temp}°C</p>
                       </td>
                       <td className={`text-center py-3 ${amDone ? '' : 'bg-warning/5'}`}>
                         {renderCell(f.am)}
@@ -359,7 +359,7 @@ export default function FridgeDashboardPage() {
             const total = checkStatus.length * 2
             const done = checkStatus.filter(f => f.am).length + checkStatus.filter(f => f.pm).length
             return (
-              <p className="text-[10px] text-charcoal/35 mt-3 pt-2 border-t border-charcoal/6">
+              <p className="text-[11px] text-charcoal/35 mt-3 pt-2 border-t border-charcoal/6">
                 {done}/{total} checks completed today
               </p>
             )

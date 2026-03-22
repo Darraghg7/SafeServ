@@ -100,17 +100,17 @@ export default function ProbeCalibrationPage() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
-          <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40 truncate">Last Cal.</p>
+          <p className="text-[9px] sm:text-[11px] tracking-wide uppercase text-charcoal/40 truncate">Last Cal.</p>
           <p className="text-sm font-semibold text-charcoal mt-1">
             {lastCalibration ? format(new Date(lastCalibration.calibrated_at), 'd MMM') : '--'}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
-          <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40">Passed</p>
+          <p className="text-[9px] sm:text-[11px] tracking-wide uppercase text-charcoal/40">Passed</p>
           <p className="text-2xl font-bold text-success">{passCount}</p>
         </div>
         <div className="bg-white rounded-xl border border-charcoal/10 p-3 sm:p-4 text-center">
-          <p className="text-[9px] sm:text-[10px] tracking-wide uppercase text-charcoal/40">Failed</p>
+          <p className="text-[9px] sm:text-[11px] tracking-wide uppercase text-charcoal/40">Failed</p>
           <p className="text-2xl font-bold text-danger">{failCount}</p>
         </div>
       </div>
@@ -140,7 +140,7 @@ export default function ProbeCalibrationPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-charcoal text-sm">{r.probe_name}</h3>
-                    <span className={`text-[10px] tracking-wider uppercase font-medium px-2 py-0.5 rounded-full ${
+                    <span className={`text-[11px] tracking-wider uppercase font-medium px-2 py-0.5 rounded-full ${
                       r.pass ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
                     }`}>
                       {r.pass ? 'PASS' : 'FAIL'}
@@ -155,7 +155,7 @@ export default function ProbeCalibrationPage() {
                 </div>
                 <div className="text-right shrink-0 ml-3">
                   <p className="text-xs text-charcoal/40">{format(new Date(r.calibrated_at), 'd MMM HH:mm')}</p>
-                  <p className="text-[10px] text-charcoal/30 mt-0.5">{r.calibrator?.name ?? 'Unknown'}</p>
+                  <p className="text-[11px] text-charcoal/30 mt-0.5">{r.calibrator?.name ?? 'Unknown'}</p>
                 </div>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function ProbeCalibrationPage() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Calibrate Probe">
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Probe name</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Probe name</label>
             <input
               type="text"
               value={form.probe_name}
@@ -178,7 +178,7 @@ export default function ProbeCalibrationPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">Method</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Method</label>
             <div className="grid grid-cols-2 gap-2">
               {METHODS.map(m => (
                 <button
@@ -192,7 +192,7 @@ export default function ProbeCalibrationPage() {
                   }`}
                 >
                   <p className="font-semibold text-xs">{m.value === 'ice_water' ? 'Ice Water' : 'Boiling Water'}</p>
-                  <p className={`text-[10px] mt-0.5 ${form.method === m.value ? 'opacity-60' : 'text-charcoal/35'}`}>
+                  <p className={`text-[11px] mt-0.5 ${form.method === m.value ? 'opacity-60' : 'text-charcoal/35'}`}>
                     Expected {m.expected}C
                   </p>
                 </button>
@@ -201,7 +201,7 @@ export default function ProbeCalibrationPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">
               Actual reading (C) <span className="text-danger">*</span>
             </label>
             <input
@@ -215,7 +215,7 @@ export default function ProbeCalibrationPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Tolerance (+/-)</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Tolerance (+/-)</label>
             <input
               type="number"
               step="0.1"
@@ -237,7 +237,7 @@ export default function ProbeCalibrationPage() {
           )}
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Notes</label>
             <textarea
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}

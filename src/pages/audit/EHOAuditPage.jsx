@@ -25,7 +25,7 @@ function SectionCard({ title, status, children }) {
     <div className={`rounded-xl border p-5 ${statusColors[status] ?? statusColors.neutral}`}>
       <div className="flex items-center gap-2 mb-3">
         <span className={`w-2 h-2 rounded-full ${dotColors[status]}`} />
-        <h3 className="text-[10px] tracking-widest uppercase text-charcoal/50 font-medium">{title}</h3>
+        <h3 className="text-[11px] tracking-widest uppercase text-charcoal/50 font-medium">{title}</h3>
       </div>
       {children}
     </div>
@@ -38,7 +38,7 @@ function StatRow({ label, value, sub, warn }) {
       <span className="text-sm text-charcoal/70">{label}</span>
       <div className="text-right">
         <span className={`text-sm font-semibold ${warn ? 'text-danger' : 'text-charcoal'}`}>{value}</span>
-        {sub && <p className="text-[10px] text-charcoal/35">{sub}</p>}
+        {sub && <p className="text-[11px] text-charcoal/35">{sub}</p>}
       </div>
     </div>
   )
@@ -258,7 +258,7 @@ export default function EHOAuditPage() {
 
           {/* Data Export */}
           <div className="rounded-xl bg-white border border-charcoal/10 px-5 py-4">
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">Export Records (CSV)</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">Export Records (CSV)</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[
                 { label: 'Temp Logs', fn: () => exportTempLogs(venueId, range) },
@@ -287,7 +287,7 @@ export default function EHOAuditPage() {
 
           {/* Guidance note */}
           <div className="rounded-xl bg-charcoal/4 px-5 py-4">
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">EHO Inspection Tips</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">EHO Inspection Tips</p>
             <ul className="text-xs text-charcoal/50 space-y-1.5 list-disc list-inside">
               <li>Ensure all fridge temps are logged at least twice daily (opening and closing)</li>
               <li>Every delivery should have a temperature check recorded</li>

@@ -41,7 +41,7 @@ const TYPE_LABELS = {
 
 function StatusPill({ status }) {
   return (
-    <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full ${
+    <span className={`text-[11px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full ${
       status === 'resolved'
         ? 'bg-success/10 text-success'
         : 'bg-warning/10 text-warning'
@@ -65,14 +65,14 @@ function LogCard({ log, onResolve }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-charcoal/50 dark:text-white/40">
+            <span className="text-[11px] font-semibold tracking-widest uppercase text-charcoal/50 dark:text-white/40">
               {TYPE_LABELS[log.log_type] ?? log.log_type}
             </span>
             {pestLabel && (
-              <span className="text-[10px] font-medium text-charcoal/60 dark:text-white/50">· {pestLabel}</span>
+              <span className="text-[11px] font-medium text-charcoal/60 dark:text-white/50">· {pestLabel}</span>
             )}
             {showSeverity && sevStyle && (
-              <span className={`text-[10px] font-bold tracking-wide uppercase px-1.5 py-0.5 rounded-full ${sevStyle.badge}`}>
+              <span className={`text-[11px] font-bold tracking-wide uppercase px-1.5 py-0.5 rounded-full ${sevStyle.badge}`}>
                 {log.severity}
               </span>
             )}
@@ -218,7 +218,7 @@ export default function PestControlPage() {
       {/* ── Log Entry ─────────────────────────────────────────────────── */}
       {tab === 'log' && (
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-charcoal/10 dark:border-white/10 p-5 space-y-4">
-          <p className="text-[10px] tracking-widest uppercase text-charcoal/40 dark:text-white/35 font-semibold">New Entry</p>
+          <p className="text-[11px] tracking-widest uppercase text-charcoal/40 dark:text-white/35 font-semibold">New Entry</p>
 
           {/* Log type */}
           <div>

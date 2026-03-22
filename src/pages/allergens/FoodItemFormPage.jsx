@@ -8,7 +8,7 @@ import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 export default function FoodItemFormPage() {
@@ -95,7 +95,7 @@ export default function FoodItemFormPage() {
         <div className="bg-white rounded-xl border border-charcoal/10 p-5 flex flex-col gap-4">
           <SectionLabel>Dish Details</SectionLabel>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40">Name</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -105,7 +105,7 @@ export default function FoodItemFormPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40">Description (optional)</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Description (optional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

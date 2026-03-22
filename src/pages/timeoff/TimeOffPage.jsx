@@ -72,7 +72,7 @@ function CalendarView({ month, requests, onDayClick }) {
       <div style={{ minWidth: '320px' }}>
       <div className="grid grid-cols-7 gap-px bg-charcoal/8 rounded-t-xl overflow-hidden">
         {DAY_LABELS.map(d => (
-          <div key={d} className="bg-white py-2 text-center text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">
+          <div key={d} className="bg-white py-2 text-center text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">
             {d}
           </div>
         ))}
@@ -100,7 +100,7 @@ function CalendarView({ month, requests, onDayClick }) {
                 {dayRequests.slice(0, 2).map(r => (
                   <div
                     key={r.id}
-                    className={`rounded px-1 py-0.5 text-[9px] sm:text-[10px] font-medium truncate ${
+                    className={`rounded px-1 py-0.5 text-[9px] sm:text-[11px] font-medium truncate ${
                       r.status === 'approved'
                         ? 'bg-success/15 text-success'
                         : r.status === 'pending'
@@ -232,15 +232,15 @@ export default function TimeOffPage() {
       <div className="flex gap-4">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-warning/30" />
-          <span className="text-[10px] tracking-wider uppercase text-charcoal/40">Pending</span>
+          <span className="text-[11px] tracking-wider uppercase text-charcoal/40">Pending</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-success/30" />
-          <span className="text-[10px] tracking-wider uppercase text-charcoal/40">Approved</span>
+          <span className="text-[11px] tracking-wider uppercase text-charcoal/40">Approved</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-danger/20" />
-          <span className="text-[10px] tracking-wider uppercase text-charcoal/40">Rejected</span>
+          <span className="text-[11px] tracking-wider uppercase text-charcoal/40">Rejected</span>
         </div>
       </div>
 
@@ -267,7 +267,7 @@ export default function TimeOffPage() {
       {isManager && pendingRequests.length > 0 && (
         <div className="bg-white rounded-xl border border-warning/20 overflow-hidden">
           <div className="px-5 py-3 border-b border-warning/10 bg-warning/5">
-            <p className="text-[10px] tracking-widest uppercase text-warning font-medium">
+            <p className="text-[11px] tracking-widest uppercase text-warning font-medium">
               {pendingRequests.length} Pending Request{pendingRequests.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -282,7 +282,7 @@ export default function TimeOffPage() {
                     </p>
                     {r.reason && <p className="text-xs text-charcoal/40 mt-1 italic">"{r.reason}"</p>}
                   </div>
-                  <span className="text-[10px] tracking-wider uppercase font-medium px-2 py-0.5 rounded-full bg-warning/15 text-warning">
+                  <span className="text-[11px] tracking-wider uppercase font-medium px-2 py-0.5 rounded-full bg-warning/15 text-warning">
                     Pending
                   </span>
                 </div>
@@ -318,7 +318,7 @@ export default function TimeOffPage() {
       {/* My requests (staff or manager) */}
       {myRequests.length > 0 && (
         <div>
-          <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">My Requests</p>
+          <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">My Requests</p>
           <div className="flex flex-col gap-2">
             {myRequests.map(r => (
               <div key={r.id} className={`rounded-xl border px-4 py-3 ${statusColors[r.status]}`}>
@@ -330,7 +330,7 @@ export default function TimeOffPage() {
                     {r.reason && <p className="text-xs opacity-70 mt-0.5">{r.reason}</p>}
                     {r.manager_note && <p className="text-xs opacity-60 mt-0.5 italic">Note: {r.manager_note}</p>}
                   </div>
-                  <span className="text-[10px] tracking-wider uppercase font-semibold">
+                  <span className="text-[11px] tracking-wider uppercase font-semibold">
                     {r.status}
                   </span>
                 </div>
@@ -345,7 +345,7 @@ export default function TimeOffPage() {
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Start date</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Start date</label>
               <input
                 type="date"
                 value={form.startDate}
@@ -354,7 +354,7 @@ export default function TimeOffPage() {
               />
             </div>
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">End date</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">End date</label>
               <input
                 type="date"
                 value={form.endDate}
@@ -366,7 +366,7 @@ export default function TimeOffPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1">Reason (optional)</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Reason (optional)</label>
             <textarea
               value={form.reason}
               onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
@@ -406,7 +406,7 @@ export default function TimeOffPage() {
                     </p>
                     {r.reason && <p className="text-xs opacity-60 mt-0.5">{r.reason}</p>}
                   </div>
-                  <span className="text-[10px] tracking-wider uppercase font-semibold">
+                  <span className="text-[11px] tracking-wider uppercase font-semibold">
                     {r.status}
                   </span>
                 </div>

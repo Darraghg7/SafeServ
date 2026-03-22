@@ -17,7 +17,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Modal from '../../components/ui/Modal'
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">{children}</p>
 }
 
 function fmtDuration(startTime, endTime) {
@@ -41,7 +41,7 @@ export default function RotaPage() {
   const { staff, loading: staffLoading } = useStaffList()
   const { swaps, loading: swapsLoading, reload: reloadSwaps, pendingCount } = useShiftSwaps()
   const { unavailability, toggleAvailability, reload: reloadAvail } = useAvailability(weekStart, numWeeks)
-  const { customRoles, closedDays } = useAppSettings()
+  const { customRoles, closedDays, breakDurationMins } = useAppSettings()
 
   const [showBuilder, setShowBuilder]           = useState(false)
 
@@ -214,8 +214,8 @@ export default function RotaPage() {
   const hourlyRate  = staffMemberForModal?.hourly_rate ?? 0
   const isUnder18   = staffMemberForModal?.is_under_18 ?? false
   const rawHrs      = shiftDurationHours(form.startTime, form.endTime)
-  const breakMins   = duration ? unpaidBreakMins(rawHrs, isUnder18) : 0
-  const paidHrs     = duration ? paidShiftHours(form.startTime, form.endTime, isUnder18) : 0
+  const breakMins   = duration ? unpaidBreakMins(rawHrs, isUnder18, breakDurationMins) : 0
+  const paidHrs     = duration ? paidShiftHours(form.startTime, form.endTime, isUnder18, breakDurationMins) : 0
   const shiftWage   = hourlyRate > 0 && duration
     ? fmtGBP(paidHrs * hourlyRate)
     : null
@@ -259,23 +259,23 @@ export default function RotaPage() {
         <div className="flex items-center gap-4 flex-wrap px-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-success/30 border border-success/30" />
-            <span className="text-[10px] tracking-wider uppercase text-charcoal/30">Available</span>
+            <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Available</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-charcoal/15 border border-charcoal/20" />
-            <span className="text-[10px] tracking-wider uppercase text-charcoal/30">Unavailable</span>
+            <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Unavailable</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-amber-200 border border-amber-300" />
-            <span className="text-[10px] tracking-wider uppercase text-charcoal/30">Break Cover</span>
+            <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Break Cover</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-danger/20 border border-danger/25" />
-            <span className="text-[10px] tracking-wider uppercase text-charcoal/30">Time Off</span>
+            <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Time Off</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-charcoal/8 border border-charcoal/15" />
-            <span className="text-[10px] tracking-wider uppercase text-charcoal/30">Closed</span>
+            <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Closed</span>
           </div>
         </div>
       )}
@@ -305,7 +305,7 @@ export default function RotaPage() {
       {isManager && showSwaps && (
         <div className="bg-white rounded-xl border border-charcoal/10 overflow-hidden">
           <div className="px-5 py-4 border-b border-charcoal/8 flex items-center justify-between">
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40">Shift Swap Requests</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40">Shift Swap Requests</p>
             <button
               onClick={() => setShowSwaps(false)}
               className="text-xs text-charcoal/30 hover:text-charcoal transition-colors"
@@ -329,7 +329,7 @@ export default function RotaPage() {
                         <span className="font-semibold text-charcoal text-sm">{swap.requester_name}</span>
                         <span className="text-charcoal/30 text-xs">→ swap with</span>
                         <span className="font-semibold text-charcoal text-sm">{swap.target_staff_name}</span>
-                        <span className="text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-full bg-warning/15 text-warning font-medium">
+                        <span className="text-[11px] tracking-widest uppercase px-2 py-0.5 rounded-full bg-warning/15 text-warning font-medium">
                           Pending
                         </span>
                       </div>
@@ -375,14 +375,14 @@ export default function RotaPage() {
               {resolvedSwaps.length > 0 && (
                 <>
                   <div className="px-5 py-2 bg-charcoal/3">
-                    <p className="text-[10px] tracking-widest uppercase text-charcoal/30">Resolved</p>
+                    <p className="text-[11px] tracking-widest uppercase text-charcoal/30">Resolved</p>
                   </div>
                   {resolvedSwaps.map((swap) => (
                     <div key={swap.id} className="px-5 py-3 flex items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm text-charcoal/60">{swap.requester_name} → {swap.target_staff_name}</span>
-                          <span className={`text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-full font-medium ${
+                          <span className={`text-[11px] tracking-widest uppercase px-2 py-0.5 rounded-full font-medium ${
                             swap.status === 'approved'
                               ? 'bg-success/10 text-success'
                               : 'bg-danger/10 text-danger'
@@ -410,7 +410,7 @@ export default function RotaPage() {
         const myPending = mySwaps.filter((s) => s.status === 'pending')
         return (
           <div className={`rounded-xl border px-5 py-4 ${myPending.length > 0 ? 'bg-warning/5 border-warning/20' : 'bg-charcoal/4 border-charcoal/10'}`}>
-            <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">My Swap Requests</p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">My Swap Requests</p>
             <div className="flex flex-col gap-2">
               {mySwaps.slice(0, 3).map((swap) => (
                 <div key={swap.id} className="flex items-center justify-between text-sm">
@@ -418,7 +418,7 @@ export default function RotaPage() {
                     Swap with <span className="font-medium text-charcoal">{swap.target_staff_name}</span>
                     {swap.shift && <span className="text-xs text-charcoal/40 ml-1">({swap.shift.shift_date})</span>}
                   </span>
-                  <span className={`text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-full font-medium ${
+                  <span className={`text-[11px] tracking-widest uppercase px-2 py-0.5 rounded-full font-medium ${
                     swap.status === 'pending'   ? 'bg-warning/15 text-warning' :
                     swap.status === 'approved'  ? 'bg-success/10 text-success' :
                     'bg-danger/10 text-danger'
@@ -445,7 +445,7 @@ export default function RotaPage() {
       {/* ── Week count selector (manager only) ── */}
       {isManager && (
         <div className="flex items-center gap-2">
-          <span className="text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">View</span>
+          <span className="text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">View</span>
           {[1, 2, 3, 4].map((n) => (
             <button
               key={n}
@@ -484,7 +484,7 @@ export default function RotaPage() {
             {/* Week label for multi-week view */}
             {numWeeks > 1 && (
               <div className="px-5 py-2 bg-charcoal/4 border-b border-charcoal/8">
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/50 font-medium">
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/50 font-medium">
                   Week {wi + 1} — {format(thisWeekStart, 'd MMM')} – {format(addWeeks(thisWeekStart, 1), 'd MMM')}
                 </p>
               </div>
@@ -503,6 +503,7 @@ export default function RotaPage() {
                 isManager={isManager}
                 unavailability={unavailability}
                 closedDays={closedDays}
+                breakDurationMins={breakDurationMins}
               />
             )}
           </div>
@@ -523,7 +524,7 @@ export default function RotaPage() {
               {/* Existing shifts for this day */}
               {modal.dayShifts?.length > 0 && (
                 <div className="rounded-xl border border-warning/30 bg-warning/6 p-3 flex flex-col gap-2">
-                  <p className="text-[10px] tracking-widest uppercase text-warning/80 font-semibold flex items-center gap-1.5">
+                  <p className="text-[11px] tracking-widest uppercase text-warning/80 font-semibold flex items-center gap-1.5">
                     <span>⚠</span> Already scheduled this day
                   </p>
                   {modal.dayShifts.map((sh) => (
@@ -550,7 +551,7 @@ export default function RotaPage() {
 
               {/* Quick presets */}
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/30 mb-2">Quick Presets</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/30 mb-2">Quick Presets</p>
                 <div className="grid grid-cols-2 gap-2">
                   {SHIFT_PRESETS.map((p) => {
                     const active = form.startTime === p.start && form.endTime === p.end
@@ -567,7 +568,7 @@ export default function RotaPage() {
                         ].join(' ')}
                       >
                         <p className="font-semibold">{p.label}</p>
-                        <p className={`text-[10px] mt-0.5 ${active ? 'opacity-60' : 'text-charcoal/35'}`}>
+                        <p className={`text-[11px] mt-0.5 ${active ? 'opacity-60' : 'text-charcoal/35'}`}>
                           {p.start}–{p.end}
                         </p>
                       </button>
@@ -578,17 +579,17 @@ export default function RotaPage() {
 
               {/* Time pickers */}
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/30 mb-2">Custom Times</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/30 mb-2">Custom Times</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] tracking-widest uppercase text-charcoal/40">Start</label>
+                    <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Start</label>
                     <TimeSelect
                       value={form.startTime}
                       onChange={(v) => setForm((f) => ({ ...f, startTime: v }))}
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] tracking-widest uppercase text-charcoal/40">End</label>
+                    <label className="text-[11px] tracking-widest uppercase text-charcoal/40">End</label>
                     <TimeSelect
                       value={form.endTime}
                       onChange={(v) => setForm((f) => ({ ...f, endTime: v }))}
@@ -625,7 +626,7 @@ export default function RotaPage() {
 
               {/* Role selector — coloured chips */}
               <div>
-                <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-2">Role</p>
+                <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Role</p>
                 <div className="flex flex-wrap gap-2">
                   {ROLE_OPTIONS.map((r) => (
                     <button
@@ -703,7 +704,7 @@ export default function RotaPage() {
           <div className="bg-white rounded-2xl w-full max-w-md p-6 flex flex-col gap-5 shadow-2xl" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
 
             <div>
-              <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">Request Shift Swap</p>
+              <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">Request Shift Swap</p>
               <h3 className="font-semibold text-charcoal text-lg">
                 {swapModal.shift.start_time.slice(0,5)} – {swapModal.shift.end_time.slice(0,5)}
               </h3>
@@ -713,7 +714,7 @@ export default function RotaPage() {
             </div>
 
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">
                 Swap with <span className="text-danger">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
@@ -740,7 +741,7 @@ export default function RotaPage() {
             </div>
 
             <div>
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-2">
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">
                 Message (optional)
               </label>
               <textarea

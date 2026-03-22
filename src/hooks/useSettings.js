@@ -35,13 +35,14 @@ const COLOR_PALETTE = [
 
 /**
  * Shared hook for app-wide settings stored in `app_settings`.
- * Returns customRoles, closedDays and helpers to persist changes.
+ * Returns customRoles, closedDays, breakDurationMins and helpers to persist changes.
  */
 export function useAppSettings() {
   const { venueId } = useVenue()
-  const [customRoles, setCustomRoles] = useState(DEFAULT_ROLES)
-  const [closedDays, setClosedDays]   = useState([])   // indices 0=Mon..6=Sun
-  const [loading, setLoading]         = useState(true)
+  const [customRoles, setCustomRoles]           = useState(DEFAULT_ROLES)
+  const [closedDays, setClosedDays]             = useState([])   // indices 0=Mon..6=Sun
+  const [breakDurationMins, setBreakDurationMins] = useState(30) // unpaid break for adults >6h
+  const [loading, setLoading]                   = useState(true)
 
   const load = useCallback(async () => {
     if (!venueId) { setLoading(false); return }
@@ -49,7 +50,7 @@ export function useAppSettings() {
       .from('app_settings')
       .select('key, value')
       .eq('venue_id', venueId)
-      .in('key', ['custom_roles', 'closed_days'])
+      .in('key', ['custom_roles', 'closed_days', 'break_duration_mins'])
 
     if (data) {
       for (const row of data) {
@@ -60,6 +61,9 @@ export function useAppSettings() {
           }
           if (row.key === 'closed_days' && Array.isArray(parsed)) {
             setClosedDays(parsed)
+          }
+          if (row.key === 'break_duration_mins' && typeof parsed === 'number') {
+            setBreakDurationMins(parsed)
           }
         } catch { /* ignore bad JSON */ }
       }
@@ -85,11 +89,22 @@ export function useAppSettings() {
       .upsert({ venue_id: venueId, key: 'closed_days', value: JSON.stringify(days) })
   }, [venueId])
 
+  const saveBreakDuration = useCallback(async (mins) => {
+    if (!venueId) return
+    setBreakDurationMins(mins)
+    await supabase
+      .from('app_settings')
+      .upsert({ venue_id: venueId, key: 'break_duration_mins', value: JSON.stringify(mins) })
+  }, [venueId])
+
   /** Pick the next unused colour from the palette */
   const nextColor = useCallback(() => {
     const used = new Set(customRoles.map(r => r.color))
     return COLOR_PALETTE.find(c => !used.has(c)) || COLOR_PALETTE[customRoles.length % COLOR_PALETTE.length]
   }, [customRoles])
 
-  return { customRoles, closedDays, loading, saveCustomRoles, saveClosedDays, nextColor, reload: load }
+  return {
+    customRoles, closedDays, breakDurationMins,
+    loading, saveCustomRoles, saveClosedDays, saveBreakDuration, nextColor, reload: load,
+  }
 }

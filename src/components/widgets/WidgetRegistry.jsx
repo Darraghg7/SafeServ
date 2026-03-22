@@ -21,9 +21,9 @@ function WidgetShell({ title, to, children, status }) {
   return (
     <div className={`bg-white rounded-xl border border-charcoal/10 overflow-hidden ${status ? `border-l-4 ${statusBorder[status] ?? ''}` : ''}`}>
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
-        <p className="text-[10px] tracking-widest uppercase text-charcoal/40 font-medium">{title}</p>
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">{title}</p>
         {to && (
-          <Link to={to} className="text-[10px] tracking-widest uppercase text-charcoal/25 hover:text-charcoal/50 transition-colors">
+          <Link to={to} className="text-[11px] tracking-widest uppercase text-charcoal/25 hover:text-charcoal/50 transition-colors">
             View →
           </Link>
         )}
@@ -216,7 +216,7 @@ function CleaningOverdueWidget() {
           return (
             <div key={t.id} className="flex items-center justify-between gap-2 py-1 border-b border-charcoal/6 last:border-0">
               <p className="text-xs text-charcoal truncate flex-1">{t.title}</p>
-              <span className="text-[10px] text-danger/70 whitespace-nowrap shrink-0">
+              <span className="text-[11px] text-danger/70 whitespace-nowrap shrink-0">
                 {overBy !== null ? `${overBy}d overdue` : 'Never done'}
               </span>
             </div>
@@ -228,15 +228,15 @@ function CleaningOverdueWidget() {
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="text-[10px] text-charcoal/40 hover:text-charcoal disabled:opacity-20"
+            className="text-[11px] text-charcoal/40 hover:text-charcoal disabled:opacity-20"
           >
             ‹
           </button>
-          <span className="text-[10px] text-charcoal/30">{page + 1}/{totalPages}</span>
+          <span className="text-[11px] text-charcoal/30">{page + 1}/{totalPages}</span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            className="text-[10px] text-charcoal/40 hover:text-charcoal disabled:opacity-20"
+            className="text-[11px] text-charcoal/40 hover:text-charcoal disabled:opacity-20"
           >
             ›
           </button>
@@ -282,14 +282,14 @@ function StaffOnShiftWidget() {
                 <span className={`w-2 h-2 rounded-full shrink-0 ${active ? 'bg-success' : now > end ? 'bg-charcoal/20' : 'bg-warning'}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-charcoal truncate">{s.staff?.name ?? '—'}</p>
-                  <p className="text-[10px] text-charcoal/40">{s.role_label}</p>
+                  <p className="text-[11px] text-charcoal/40">{s.role_label}</p>
                 </div>
                 <p className="text-xs font-mono text-charcoal/50">{start}–{end}</p>
               </div>
             )
           })}
           {shifts.length > 5 && (
-            <p className="text-[10px] text-charcoal/30 px-5 py-2">+{shifts.length - 5} more</p>
+            <p className="text-[11px] text-charcoal/30 px-5 py-2">+{shifts.length - 5} more</p>
           )}
         </div>
       )}
@@ -325,8 +325,8 @@ function OpenActionsWidget() {
       <BigNumber value={data.total} label={data.total === 0 ? 'No open issues' : 'unresolved'} alert={data.critical > 0} />
       {data.total > 0 && (
         <div className="flex justify-center gap-3 mt-1">
-          {data.critical > 0 && <span className="text-[10px] text-danger font-medium">{data.critical} critical</span>}
-          {data.major > 0 && <span className="text-[10px] text-orange-600 font-medium">{data.major} major</span>}
+          {data.critical > 0 && <span className="text-[11px] text-danger font-medium">{data.critical} critical</span>}
+          {data.major > 0 && <span className="text-[11px] text-orange-600 font-medium">{data.major} major</span>}
         </div>
       )}
     </WidgetShell>
@@ -417,7 +417,7 @@ function TodaysDeliveriesWidget() {
             {data.items.map(c => (
               <div key={c.id} className="flex items-center justify-between py-0.5">
                 <span className="text-xs text-charcoal/60 truncate">{c.supplier_name}</span>
-                <span className={`text-[10px] font-medium ${c.overall_pass ? 'text-success' : 'text-danger'}`}>
+                <span className={`text-[11px] font-medium ${c.overall_pass ? 'text-success' : 'text-danger'}`}>
                   {c.overall_pass ? 'PASS' : 'FAIL'}
                 </span>
               </div>

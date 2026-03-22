@@ -20,14 +20,14 @@ const STATUS_ORDER = ['submitted', 'ordered', 'received', 'draft']
 function StatusChip({ status }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.draft
   return (
-    <span className={`text-[10px] tracking-widest uppercase font-medium px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>
+    <span className={`text-[11px] tracking-widest uppercase font-medium px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.text}`}>
       {cfg.label}
     </span>
   )
 }
 
 function SectionLabel({ children }) {
-  return <p className="text-[10px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+  return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
 }
 
 export default function SupplierOrdersPage() {
@@ -289,7 +289,7 @@ export default function SupplierOrdersPage() {
       <Modal open={showOrder} onClose={() => setShowOrder(false)} title="New Order">
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Supplier</label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Supplier</label>
             <select
               value={orderForm.supplier_id}
               onChange={e => setOrderForm(f => ({ ...f, supplier_id: e.target.value }))}
@@ -301,9 +301,9 @@ export default function SupplierOrdersPage() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] tracking-widest uppercase text-charcoal/40">Items</label>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Items</label>
               <button type="button" onClick={addItem}
-                className="text-[10px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20">
+                className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20">
                 + Add Item
               </button>
             </div>
@@ -334,7 +334,7 @@ export default function SupplierOrdersPage() {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Order Notes <span className="normal-case text-charcoal/30">(optional)</span></label>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Order Notes <span className="normal-case text-charcoal/30">(optional)</span></label>
             <textarea value={orderForm.notes} onChange={e => setOrderForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Any special instructions or notes for this order"
               rows={2}

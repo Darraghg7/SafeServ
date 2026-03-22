@@ -58,7 +58,7 @@ export default function NotificationBell({ variant = 'light' }) {
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {visible && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-sm ring-1 ring-white dark:ring-[#1a1a18]">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] bg-danger text-white text-[11px] font-bold rounded-full flex items-center justify-center px-0.5 shadow-sm ring-1 ring-white dark:ring-[#1a1a18]">
             {count > 9 ? '9+' : count}
           </span>
         )}
@@ -73,7 +73,7 @@ export default function NotificationBell({ variant = 'light' }) {
             {count > 0 && (
               <button
                 onClick={() => { setDismissed(true); setOpen(false) }}
-                className="text-[10px] tracking-widest uppercase text-charcoal/35 hover:text-charcoal/60 transition-colors"
+                className="text-[11px] tracking-widest uppercase text-charcoal/35 hover:text-charcoal/60 transition-colors"
               >
                 Dismiss all
               </button>

@@ -268,7 +268,7 @@ export default function MobileNav() {
               >
                 <Icon active={isActive} />
                 <span className={[
-                  'text-[10px] leading-none font-semibold tracking-wide',
+                  'text-[11px] leading-none font-semibold tracking-wide',
                   isActive ? 'text-accent' : '',
                 ].join(' ')}>
                   {tab.label}
