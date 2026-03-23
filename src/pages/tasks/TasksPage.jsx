@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import { useSession } from '../../contexts/SessionContext'
 import { useAllTasks, useTasksForRole } from '../../hooks/useTasks'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+
+function usePendingSignOffs(staffId, venueId) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!staffId || !venueId) return
+    supabase
+      .from('training_sign_offs')
+      .select('id', { count: 'exact', head: true })
+      .eq('staff_id', staffId)
+      .eq('venue_id', venueId)
+      .eq('staff_acknowledged', false)
+      .then(({ count: c }) => setCount(c ?? 0))
+  }, [staffId, venueId])
+  return count
+}
 
 const JOB_ROLES = ['kitchen', 'foh', 'bar', 'all']
 const ROLE_LABELS = { kitchen: 'Kitchen', foh: 'Front of House', bar: 'Bar', all: 'All Roles' }
@@ -365,8 +381,10 @@ function ManagerTasksView() {
 // ── Staff View ────────────────────────────────────────────
 function StaffTasksView({ session }) {
   const toast = useToast()
+  const { venueId, venueSlug } = useVenue()
   const jobRole = session?.jobRole ?? 'kitchen'
   const { templates, oneOffs, completions, loading, reload } = useTasksForRole(jobRole, session?.staffId)
+  const pendingSignOffs = usePendingSignOffs(session?.staffId, venueId)
   const [completing, setCompleting] = useState(null)
 
   const completeTask = async (templateId, oneOffId) => {
@@ -393,6 +411,26 @@ function StaffTasksView({ session }) {
 
   return (
     <div className="flex flex-col gap-6">
+
+      {/* Training sign-off notification */}
+      {pendingSignOffs > 0 && (
+        <Link
+          to={`/v/${venueSlug}/training`}
+          className="block bg-accent/10 border border-accent/20 rounded-xl px-5 py-4"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-accent">
+                Training record awaiting your signature
+              </p>
+              <p className="text-xs text-accent/70 mt-0.5">
+                Tap to view and sign your training record
+              </p>
+            </div>
+            <span className="text-accent text-lg shrink-0">→</span>
+          </div>
+        </Link>
+      )}
 
       {/* Progress summary */}
       <div className="bg-white rounded-xl border border-charcoal/10 p-5">

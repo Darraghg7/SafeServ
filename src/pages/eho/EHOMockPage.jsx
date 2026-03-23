@@ -62,6 +62,7 @@ const ANSWER_OPTIONS = [
   { value: 'yes',     label: 'Yes',     score: 1.0,  style: 'bg-success/10 text-success border-success/30 ring-success/40' },
   { value: 'partial', label: 'Partial', score: 0.5,  style: 'bg-warning/10 text-warning border-warning/30 ring-warning/40' },
   { value: 'no',      label: 'No',      score: 0.0,  style: 'bg-danger/10  text-danger  border-danger/30  ring-danger/40'  },
+  { value: 'na',      label: 'N/A',     score: null, style: 'bg-charcoal/8 text-charcoal/50 border-charcoal/20 ring-charcoal/20' },
 ]
 
 function scoreLabel(pct) {
@@ -81,18 +82,20 @@ export default function EHOMockPage() {
   const [submitted, setSubmitted] = useState(false)
 
   const allQuestions = SECTIONS.flatMap((s) => s.questions)
-  const totalWeight  = allQuestions.reduce((acc, q) => acc + q.weight, 0)
 
   const answeredCount = Object.keys(answers).length
   const allAnswered   = answeredCount === allQuestions.length
 
-  const rawScore = allQuestions.reduce((acc, q) => {
+  // N/A questions are excluded from both numerator and denominator
+  const eligibleQuestions = allQuestions.filter(q => answers[q.id] !== 'na')
+  const eligibleWeight    = eligibleQuestions.reduce((acc, q) => acc + q.weight, 0)
+  const rawScore = eligibleQuestions.reduce((acc, q) => {
     const ans = answers[q.id]
     const opt = ANSWER_OPTIONS.find((o) => o.value === ans)
-    return acc + (opt ? opt.score * q.weight : 0)
+    return acc + (opt && opt.score !== null ? opt.score * q.weight : 0)
   }, 0)
 
-  const pct = totalWeight > 0 ? Math.round((rawScore / totalWeight) * 100) : 0
+  const pct = eligibleWeight > 0 ? Math.round((rawScore / eligibleWeight) * 100) : 0
   const { label: scoreLabel_, color: scoreColor } = scoreLabel(pct)
 
   const setAnswer = (qId, value) => {
@@ -103,6 +106,8 @@ export default function EHOMockPage() {
     const ans = answers[q.id]
     return ans === 'no' || ans === 'partial'
   })
+
+  const naCount = allQuestions.filter(q => answers[q.id] === 'na').length
 
   const handlePrint = () => window.print()
 
@@ -137,7 +142,10 @@ export default function EHOMockPage() {
         <div className={`rounded-xl border p-5 ${submitted ? scoreBg(pct) : 'bg-white border-charcoal/10'}`}>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] tracking-widest uppercase text-charcoal/40">
-              {submitted ? 'Final Score' : `Progress · ${answeredCount}/${allQuestions.length} answered`}
+              {submitted
+              ? `Final Score${naCount > 0 ? ` · ${naCount} N/A` : ''}`
+              : `Progress · ${answeredCount}/${allQuestions.length} answered${naCount > 0 ? ` · ${naCount} N/A` : ''}`
+            }
             </p>
             <p className={`font-serif text-2xl font-semibold ${submitted ? scoreColor : 'text-charcoal'}`}>
               {submitted ? `${pct}/100` : `${pct}%`}
