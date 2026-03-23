@@ -19,6 +19,9 @@ export function VenueProvider({ children }) {
 
     const slug = venueSlug.toLowerCase()
 
+    // 8-second hard timeout — if Supabase hangs, show error instead of spinner forever
+    const timeoutId = setTimeout(() => { setError(true); setLoading(false) }, 8000)
+
     // Try with plan column first; fall back to base columns if plan doesn't exist yet
     supabase
       .from('venues')
@@ -27,6 +30,7 @@ export function VenueProvider({ children }) {
       .single()
       .then(({ data, error: err }) => {
         if (!err && data) {
+          clearTimeout(timeoutId)
           setVenue(data)
           setLoading(false)
           return
@@ -38,6 +42,7 @@ export function VenueProvider({ children }) {
           .eq('slug', slug)
           .single()
           .then(({ data: d2, error: err2 }) => {
+            clearTimeout(timeoutId)
             if (err2 || !d2) setError(true)
             else setVenue({ ...d2, plan: 'starter' })
             setLoading(false)

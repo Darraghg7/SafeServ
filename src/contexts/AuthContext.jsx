@@ -15,6 +15,15 @@ export function AuthProvider({ children }) {
   const [venueSlug, setVenueSlug]   = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
 
+  // ── Timeout-safe venue resolver ────────────────────────────────────────
+  // Wraps resolveVenue in a race so it NEVER blocks the spinner indefinitely.
+  // Resolves null on timeout — caller will just show the login form.
+  const resolveVenueSafe = (email, userId, ms = 5000) =>
+    Promise.race([
+      resolveVenue(email, userId),
+      new Promise(resolve => setTimeout(() => resolve(null), ms)),
+    ])
+
   // ── Resolve which venue this user owns ────────────────────────────────
   // Strategy 1: owner_id on venues (set by create_venue_with_owner RPC — all new accounts)
   // Strategy 2: manager_email in app_settings (legacy fallback for pre-RPC venues)
@@ -69,7 +78,7 @@ export function AuthProvider({ children }) {
         if (session?.user) {
           setUser(session.user)
           try {
-            const slug = await resolveVenue(session.user.email, session.user.id)
+            const slug = await resolveVenueSafe(session.user.email, session.user.id)
             if (!cancelled) setVenueSlug(slug)
           } catch (err) {
             console.warn('[AuthContext] resolveVenue failed:', err)
@@ -91,7 +100,7 @@ export function AuthProvider({ children }) {
             setUser(session.user)
             // Only re-resolve venue on actual sign-in, not every token refresh
             if (event === 'SIGNED_IN') {
-              const slug = await resolveVenue(session.user.email, session.user.id)
+              const slug = await resolveVenueSafe(session.user.email, session.user.id)
               setVenueSlug(slug)
             }
           }
@@ -113,8 +122,8 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { error }
 
-    // Resolve venue for this user
-    const slug = await resolveVenue(email, data.user.id)
+    // Resolve venue for this user (10s timeout for login flow — give it more time)
+    const slug = await resolveVenueSafe(email, data.user.id, 10000)
     if (!slug) {
       await supabase.auth.signOut()
       return { error: new Error('No venue found for this account. Contact support.') }
