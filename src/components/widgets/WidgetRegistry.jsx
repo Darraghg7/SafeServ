@@ -13,17 +13,19 @@ import LoadingSpinner from '../ui/LoadingSpinner'
 
 /* ── Shared components ─────────────────────────────────────────────────── */
 function WidgetShell({ title, to, children, status }) {
+  const { venueSlug } = useVenue()
   const statusBorder = {
     good: 'border-l-success',
     warning: 'border-l-warning',
     bad: 'border-l-danger',
   }
+  const href = to && venueSlug ? `/v/${venueSlug}${to}` : to
   return (
     <div className={`bg-white rounded-xl border border-charcoal/10 overflow-hidden ${status ? `border-l-4 ${statusBorder[status] ?? ''}` : ''}`}>
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <p className="text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">{title}</p>
-        {to && (
-          <Link to={to} className="text-[11px] tracking-widest uppercase text-charcoal/25 hover:text-charcoal/50 transition-colors">
+        {href && (
+          <Link to={href} className="text-[11px] tracking-widest uppercase text-charcoal/25 hover:text-charcoal/50 transition-colors">
             View →
           </Link>
         )}
