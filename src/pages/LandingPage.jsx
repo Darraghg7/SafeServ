@@ -34,9 +34,9 @@ export default function LandingPage() {
       return
     }
 
-    // Navigate directly — more reliable than waiting for useEffect to fire
-    // (avoids grey-button-stuck issue if React batches the state update)
-    navigate(`/v/${slug}`, { replace: true })
+    // Hard redirect — Supabase session is now in localStorage, so the app
+    // boots fresh and reads it cleanly. Eliminates all React state race conditions.
+    window.location.replace(`/v/${slug}`)
   }
 
   if (authLoading) {
