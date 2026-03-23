@@ -21,16 +21,9 @@ BEGIN
     WHERE check_id IN (SELECT id FROM opening_closing_checks WHERE venue_id = v_id);
   DELETE FROM opening_closing_checks WHERE venue_id = v_id;
 
-  -- Cleaning
-  DELETE FROM cleaning_completions
-    WHERE task_id IN (
-      SELECT ct.id FROM cleaning_tasks ct
-      JOIN cleaning_schedules cs ON cs.id = ct.schedule_id
-      WHERE cs.venue_id = v_id
-    );
-  DELETE FROM cleaning_tasks
-    WHERE schedule_id IN (SELECT id FROM cleaning_schedules WHERE venue_id = v_id);
-  DELETE FROM cleaning_schedules     WHERE venue_id = v_id;
+  -- Cleaning (both tables have direct venue_id columns)
+  DELETE FROM cleaning_completions   WHERE venue_id = v_id;
+  DELETE FROM cleaning_tasks         WHERE venue_id = v_id;
 
   -- Training
   DELETE FROM training_sign_offs     WHERE venue_id = v_id;
