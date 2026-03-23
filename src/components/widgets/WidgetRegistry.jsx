@@ -556,6 +556,111 @@ function ProbeCalDueWidget() {
   )
 }
 
+/* 11. Staff Notifications — leave requests + swap requests */
+function StaffNotificationsWidget() {
+  const { venueId, venueSlug } = useVenue()
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    if (!venueId) return
+    Promise.all([
+      supabase
+        .from('time_off_requests')
+        .select('id, start_date, end_date, reason, staff:staff_id(name)')
+        .eq('venue_id', venueId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('shift_swaps')
+        .select('id, requester_name, target_staff_name')
+        .eq('venue_id', venueId)
+        .eq('status', 'pending')
+        .limit(5),
+      supabase
+        .from('training_sign_offs')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .eq('staff_acknowledged', false),
+    ]).then(([{ data: leave }, { data: swaps }, { count: trainCount }]) => {
+      setData({
+        leave:      leave  ?? [],
+        swaps:      swaps  ?? [],
+        trainCount: trainCount ?? 0,
+      })
+    })
+  }, [venueId])
+
+  if (!data) {
+    return (
+      <WidgetShell title="Staff Notifications" to="/time-off">
+        <div className="flex justify-center py-4"><LoadingSpinner /></div>
+      </WidgetShell>
+    )
+  }
+
+  const total = data.leave.length + data.swaps.length + data.trainCount
+  const status = total > 0 ? 'warning' : undefined
+
+  return (
+    <WidgetShell title="Staff Notifications" status={status}>
+      {total === 0 ? (
+        <p className="text-sm text-charcoal/30 italic py-2">No pending notifications</p>
+      ) : (
+        <div className="flex flex-col gap-2 pt-1">
+          {data.leave.map(r => (
+            <a
+              key={r.id}
+              href={`/v/${venueSlug}/time-off`}
+              className="flex items-start gap-2 group"
+            >
+              <span className="text-warning text-xs mt-0.5 shrink-0">●</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-charcoal truncate group-hover:text-accent transition-colors">
+                  {r.staff?.name ?? 'Staff'} — Leave Request
+                </p>
+                <p className="text-[11px] text-charcoal/40">
+                  {format(new Date(r.start_date), 'd MMM')} – {format(new Date(r.end_date), 'd MMM yyyy')}
+                  {r.reason ? ` · ${r.reason}` : ''}
+                </p>
+              </div>
+            </a>
+          ))}
+          {data.swaps.map(s => (
+            <a
+              key={s.id}
+              href={`/v/${venueSlug}/rota`}
+              className="flex items-start gap-2 group"
+            >
+              <span className="text-accent text-xs mt-0.5 shrink-0">●</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-charcoal truncate group-hover:text-accent transition-colors">
+                  Swap: {s.requester_name} → {s.target_staff_name}
+                </p>
+                <p className="text-[11px] text-charcoal/40">Shift swap pending approval</p>
+              </div>
+            </a>
+          ))}
+          {data.trainCount > 0 && (
+            <a
+              href={`/v/${venueSlug}/training`}
+              className="flex items-start gap-2 group"
+            >
+              <span className="text-charcoal/40 text-xs mt-0.5 shrink-0">●</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-charcoal group-hover:text-accent transition-colors">
+                  {data.trainCount} training record{data.trainCount !== 1 ? 's' : ''} unsigned
+                </p>
+                <p className="text-[11px] text-charcoal/40">Awaiting employee signature</p>
+              </div>
+            </a>
+          )}
+        </div>
+      )}
+    </WidgetShell>
+  )
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    REGISTRY — maps widget IDs to components + metadata
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -569,8 +674,9 @@ export const WIDGET_REGISTRY = {
   expiring_training:  { id: 'expiring_training',  label: 'Training Expiry',       description: 'Staff certificates expiring within 30 days', component: ExpiringTrainingWidget },
   todays_deliveries:  { id: 'todays_deliveries',  label: 'Today\'s Deliveries',   description: 'Delivery checks logged today with pass/fail', component: TodaysDeliveriesWidget },
   weekly_labour:      { id: 'weekly_labour',      label: 'Weekly Labour Cost',    description: 'Total wage bill from this week\'s rota', component: WeeklyLabourWidget },
-  pending_swaps:      { id: 'pending_swaps',      label: 'Swap Requests',         description: 'Pending shift swap requests awaiting approval', component: PendingSwapsWidget },
-  probe_calibration:  { id: 'probe_calibration',  label: 'Probe Calibration',     description: 'Days since last calibration and recent failures', component: ProbeCalDueWidget },
+  pending_swaps:          { id: 'pending_swaps',          label: 'Swap Requests',         description: 'Pending shift swap requests awaiting approval', component: PendingSwapsWidget },
+  probe_calibration:      { id: 'probe_calibration',      label: 'Probe Calibration',     description: 'Days since last calibration and recent failures', component: ProbeCalDueWidget },
+  staff_notifications:    { id: 'staff_notifications',    label: 'Staff Notifications',   description: 'Pending leave requests, shift swaps, and training sign-offs', component: StaffNotificationsWidget },
 }
 
 export const DEFAULT_WIDGETS = [
@@ -578,6 +684,7 @@ export const DEFAULT_WIDGETS = [
   'fridge_alerts',
   'cleaning_overdue',
   'staff_on_shift',
+  'staff_notifications',
 ]
 
 export const ALL_WIDGET_IDS = Object.keys(WIDGET_REGISTRY)

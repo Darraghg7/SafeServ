@@ -160,6 +160,29 @@ export default function TimeOffPage() {
     setSaving(false)
     if (error) { toast(error.message, 'error'); return }
     toast('Time-off request submitted')
+
+    // Fire-and-forget: notify manager via email
+    supabase
+      .from('app_settings')
+      .select('key, value')
+      .eq('venue_id', venueId)
+      .in('key', ['manager_email', 'venue_name'])
+      .then(({ data: settings }) => {
+        const map = Object.fromEntries((settings ?? []).map(r => [r.key, r.value]))
+        if (map.manager_email) {
+          supabase.functions.invoke('notify-time-off', {
+            body: {
+              managerEmail: map.manager_email,
+              venueName:    map.venue_name ?? 'Your Venue',
+              staffName:    session?.staffName ?? 'A staff member',
+              startDate:    form.startDate,
+              endDate:      form.endDate,
+              reason:       form.reason.trim() || null,
+            },
+          }).catch(() => {}) // silent fail — don't block the user
+        }
+      })
+
     setForm({ startDate: '', endDate: '', reason: '' })
     setShowRequest(false)
     reload()
