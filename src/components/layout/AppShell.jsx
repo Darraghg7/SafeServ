@@ -163,6 +163,21 @@ function IcoRota() {
     </svg>
   )
 }
+function IcoClock() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  )
+}
+function IcoBoard() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  )
+}
 function IcoTimeOff() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -320,6 +335,9 @@ export default function AppShell({ children }) {
                 {isEnabled('pest_control')  && <SubItem to={vp('/pest-control')}   label="Pest Control"   isActive={isUnder('/pest-control')} />}
                 {isEnabled('cleaning')      && <SubItem to={vp('/cleaning')}       label="Cleaning"       badge={overdueCount} alert={overdueCount > 0} isActive={isUnder('/cleaning')} />}
                 {isEnabled('corrective')    && <SubItem to={vp('/corrective')}     label="Actions"        isActive={isUnder('/corrective')} />}
+                <SubItem to={vp('/suppliers')}  label="Suppliers"       isActive={isUnder('/suppliers')} />
+                <SubItem to={vp('/haccp')}      label="HACCP"           isActive={isUnder('/haccp')} />
+                <SubItem to={vp('/eho-mock')}   label="Mock Inspection" isActive={isUnder('/eho-mock')} />
               </div>
 
               <SideSection label="Team" />
@@ -328,6 +346,8 @@ export default function AppShell({ children }) {
                 {isEnabled('timesheet') && <SubItem to={vp('/timesheet')} label="Hours"     isActive={isUnder('/timesheet')} />}
                 {isEnabled('training')  && <SubItem to={vp('/training')}  label="Training"  isActive={isUnder('/training')} />}
                 {isEnabled('time_off')  && <SubItem to={vp('/time-off')}  label="Time Off"  isActive={isUnder('/time-off')} />}
+                <SubItem to={vp('/clock-in')}    label="Clock In / Out"  isActive={isUnder('/clock-in')} />
+                <SubItem to={vp('/noticeboard')} label="Noticeboard"     isActive={isUnder('/noticeboard')} />
               </div>
 
               <div className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
@@ -337,7 +357,9 @@ export default function AppShell({ children }) {
             </>
           ) : (
             <div className="space-y-0.5 pt-2">
-              <SideItem to={vp('/dashboard')}       icon={IcoUser}       label="My Shift"  isActive={isAt('/dashboard')} />
+              <SideItem to={vp('/dashboard')}       icon={IcoUser}       label="My Shift"      isActive={isAt('/dashboard')} />
+              <SideItem to={vp('/clock-in')}        icon={IcoClock}      label="Clock In / Out" isActive={isUnder('/clock-in')} />
+              <SideItem to={vp('/noticeboard')}     icon={IcoBoard}      label="Noticeboard"   isActive={isUnder('/noticeboard')} />
               {isEnabled('opening_closing') && <SideItem to={vp('/opening-closing')} icon={IcoChecks}     label="Checks"    isActive={isUnder('/opening-closing')} />}
               {isEnabled('cleaning')        && <SideItem to={vp('/cleaning')}        icon={IcoCompliance} label="Cleaning"  isActive={isUnder('/cleaning')} />}
               {isEnabled('fridge') && session?.showTempLogs && (

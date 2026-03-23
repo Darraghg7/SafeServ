@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { format } from 'date-fns'
+import { format, startOfDay, endOfDay } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 // Multi-venue is just Pro × number of venues — no separate tier in the app
 const PLAN_CONFIG = {
@@ -216,6 +217,138 @@ function WidgetPicker({ open, onClose, activeIds, onSave }) {
   )
 }
 
+/* ── Today at a Glance ───────────────────────────────────────────────────── */
+function useTodaySummary(venueId) {
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!venueId) return
+    const today = new Date()
+    const dayStart = startOfDay(today).toISOString()
+    const dayEnd   = endOfDay(today).toISOString()
+    const todayStr = format(today, 'yyyy-MM-dd')
+
+    const fetchAll = async () => {
+      setLoading(true)
+      const [cleaning, rota, opening] = await Promise.all([
+        // Overdue cleaning tasks
+        supabase.from('cleaning_tasks').select('id, frequency').eq('venue_id', venueId).eq('is_active', true),
+        // Staff on shift today
+        supabase.from('shifts').select('id', { count: 'exact', head: true }).eq('venue_id', venueId).eq('shift_date', todayStr),
+        // Opening checks completed today
+        supabase.from('opening_closing_completions')
+          .select('id', { count: 'exact', head: true })
+          .eq('venue_id', venueId)
+          .gte('completed_at', dayStart)
+          .lte('completed_at', dayEnd),
+      ])
+
+      // Calculate overdue cleaning
+      let overdueCount = 0
+      if (cleaning.data?.length) {
+        const { data: completions } = await supabase
+          .from('cleaning_completions')
+          .select('cleaning_task_id, completed_at')
+          .eq('venue_id', venueId)
+          .order('completed_at', { ascending: false })
+        const freqDays = { daily: 1, weekly: 7, fortnightly: 14, monthly: 30, quarterly: 90 }
+        const now = new Date()
+        for (const t of cleaning.data) {
+          const last = completions?.find((c) => c.cleaning_task_id === t.id)
+          if (!last) { overdueCount++; continue }
+          if ((now - new Date(last.completed_at)) / 86400000 > (freqDays[t.frequency] ?? 1)) overdueCount++
+        }
+      }
+
+      setSummary({
+        overdueClean:  overdueCount,
+        onShiftToday:  rota.count ?? 0,
+        checksToday:   opening.count ?? 0,
+      })
+      setLoading(false)
+    }
+    fetchAll()
+  }, [venueId])
+
+  return { summary, loading }
+}
+
+function TodaySummaryCard({ venueId }) {
+  const { summary, loading } = useTodaySummary(venueId)
+
+  return (
+    <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+      <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-4">Today at a Glance</p>
+      {loading || !summary ? (
+        <div className="flex gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex-1 h-14 rounded-lg bg-charcoal/5 animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-0.5">
+            <p className={`font-serif text-3xl font-semibold ${summary.onShiftToday > 0 ? 'text-charcoal' : 'text-charcoal/30'}`}>
+              {summary.onShiftToday}
+            </p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 leading-tight">On Shift</p>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <p className={`font-serif text-3xl font-semibold ${summary.checksToday > 0 ? 'text-success' : 'text-charcoal/30'}`}>
+              {summary.checksToday}
+            </p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 leading-tight">Checks Done</p>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <p className={`font-serif text-3xl font-semibold ${summary.overdueClean > 0 ? 'text-danger' : 'text-success'}`}>
+              {summary.overdueClean}
+            </p>
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 leading-tight">Overdue Cleans</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Push notification opt-in banner ─────────────────────────────────────── */
+const PUSH_DISMISS_KEY = 'safeserv_push_dismissed'
+
+function PushBanner({ staffId }) {
+  const { permission, subscribe, supported } = usePushNotifications(staffId)
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem(PUSH_DISMISS_KEY) === '1'
+  )
+
+  if (!supported || permission !== 'default' || dismissed) return null
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-brand/25 bg-brand/5 px-5 py-3">
+      <div className="flex items-center gap-3">
+        <span className="text-lg shrink-0">🔔</span>
+        <p className="text-sm text-charcoal/70">
+          Enable notifications to get alerts for overdue checks
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={subscribe}
+          className="text-xs font-semibold text-brand hover:text-brand/80 transition-colors border-b border-brand/30"
+        >
+          Enable
+        </button>
+        <button
+          onClick={() => { localStorage.setItem(PUSH_DISMISS_KEY, '1'); setDismissed(true) }}
+          className="text-xs text-charcoal/30 hover:text-charcoal transition-colors"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MANAGER DASHBOARD
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -262,6 +395,12 @@ export default function ManagerDashboardPage() {
           Customise
         </button>
       </div>
+
+      {/* Push notification opt-in banner */}
+      <PushBanner staffId={session?.staffId} />
+
+      {/* Today at a glance */}
+      <TodaySummaryCard venueId={venueId} />
 
       {/* Clock in/out */}
       <div className="bg-white rounded-xl border border-charcoal/10 p-5">

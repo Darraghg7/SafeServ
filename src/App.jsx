@@ -70,6 +70,21 @@ import SettingsPage from './pages/settings/SettingsPage'
 // Fitness to Work (SC7)
 import FitnessPage from './pages/fitness/FitnessPage'
 
+// Clock In / Out
+import ClockInPage from './pages/clockin/ClockInPage'
+
+// Noticeboard
+import NoticeBoardPage from './pages/noticeboard/NoticeBoardPage'
+
+// HACCP
+import HACCPPage from './pages/haccp/HACCPPage'
+
+// Suppliers (approved)
+import SuppliersPage from './pages/suppliers/SuppliersPage'
+
+// EHO Mock Inspection
+import EHOMockPage from './pages/eho/EHOMockPage'
+
 import NotFoundPage from './pages/NotFoundPage'
 
 // ── Guards ───────────────────────────────────────────────────────────────────
@@ -142,6 +157,8 @@ function VenueRoutes() {
 
             {/* Any authenticated user */}
             <Route path="dashboard"         element={wrap(DashboardPage)} />
+            <Route path="clock-in"          element={wrap(ClockInPage)} />
+            <Route path="noticeboard"       element={wrap(NoticeBoardPage)} />
             <Route path="fridge"            element={wrap(FridgeDashboardPage)} />
             <Route path="fridge/log"        element={wrap(FridgeLogFormPage)} />
             <Route path="fridge/history"    element={wrap(FridgeHistoryPage)} />
@@ -153,6 +170,9 @@ function VenueRoutes() {
             <Route path="time-off"          element={wrap(TimeOffPage)} />
 
             {/* Manager only */}
+            <Route path="haccp"              element={wrap(HACCPPage,              RequireManager)} />
+            <Route path="suppliers"          element={wrap(SuppliersPage,          RequireManager)} />
+            <Route path="eho-mock"           element={wrap(EHOMockPage,            RequireManager)} />
             <Route path="fitness"            element={wrap(FitnessPage,            RequireManager)} />
             <Route path="cooking-temps"      element={wrap(CookingTempsPage,       RequireManager)} />
             <Route path="hot-holding"        element={wrap(HotHoldingPage,         RequireManager)} />

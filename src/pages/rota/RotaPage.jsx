@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { format, addWeeks } from 'date-fns'
+import { format, addWeeks, addDays } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import { useShifts, useStaffList, shiftDurationHours, paidShiftHours, unpaidBreakMins } from '../../hooks/useShifts'
@@ -194,6 +194,32 @@ export default function RotaPage() {
     reloadSwaps()
   }
 
+  // ── WhatsApp rota share ──
+  const shareViaWhatsApp = () => {
+    const currentShifts = shifts.filter(
+      (sh) => sh.week_start === format(weekStart, 'yyyy-MM-dd')
+    )
+    const lines = [`SafeServ Rota — Week of ${format(weekStart, 'EEE d MMM')}\n`]
+    for (let d = 0; d < 7; d++) {
+      const date    = addDays(weekStart, d)
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const dayShifts = currentShifts.filter((sh) => sh.shift_date === dateStr)
+      if (dayShifts.length === 0) continue
+      lines.push(`${format(date, 'EEEE d MMM')}`)
+      for (const sh of dayShifts) {
+        const staffMember = staff.find((s) => s.id === sh.staff_id)
+        const name  = staffMember?.name ?? 'Unknown'
+        const start = sh.start_time?.slice(0, 5) ?? ''
+        const end   = sh.end_time?.slice(0, 5) ?? ''
+        const role  = sh.role_label ? ` (${sh.role_label})` : ''
+        lines.push(`• ${name} — ${start}–${end}${role}`)
+      }
+      lines.push('')
+    }
+    const text = lines.join('\n')
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+  }
+
   // ── Builder: batch save ──
   const batchSaveShifts = async (newShifts, isRebuild) => {
     if (isRebuild) {
@@ -249,6 +275,13 @@ export default function RotaPage() {
               className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {emailing ? 'Sending…' : '✉ Email'}
+            </button>
+            <button
+              onClick={shareViaWhatsApp}
+              disabled={shifts.length === 0}
+              className="text-[11px] tracking-widest uppercase text-green-600/70 hover:text-green-600 transition-colors border-b border-green-500/30 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              WhatsApp
             </button>
           </div>
         )}
