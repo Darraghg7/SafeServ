@@ -187,9 +187,9 @@ export default function MarketingPage() {
           <span className="font-serif text-xl tracking-tight text-brand">SafeServ</span>
           <Link
             to="/login"
-            className="text-sm font-medium text-charcoal/60 hover:text-charcoal transition-colors"
+            className="text-sm font-semibold text-cream bg-brand hover:bg-brand/90 transition-colors px-4 py-1.5 rounded-lg"
           >
-            Sign In →
+            Sign In
           </Link>
         </div>
       </nav>
@@ -197,14 +197,15 @@ export default function MarketingPage() {
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="bg-brand text-cream">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
+          <p className="font-serif text-3xl sm:text-4xl tracking-tight text-cream mb-2">SafeServ</p>
           <p className="text-[11px] tracking-[0.3em] uppercase text-cream/50 mb-1">
             Food Safety, Simplified
           </p>
-          <p className="text-[10px] tracking-[0.2em] uppercase text-cream/30 mb-5">
+          <p className="text-[10px] tracking-[0.2em] uppercase text-cream/30 mb-8">
             Food Safety &amp; Operations
           </p>
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-cream leading-tight mb-6">
-            Run a tighter kitchen.<br />Save hours every week.
+            Ditch the clipboard.<br />Keep the compliance.
           </h1>
           <p className="text-cream/65 text-base sm:text-lg max-w-xl mx-auto leading-relaxed mb-10">
             SafeServ replaces paper log books, rota spreadsheets and WhatsApp chaos with one affordable app built for independent hospitality. Stay EHO-ready without the admin.
@@ -247,7 +248,7 @@ export default function MarketingPage() {
       {/* ── Who it's for ───────────────────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-5 sm:px-8 py-16">
         <p className="text-[11px] tracking-widest uppercase text-charcoal/35 text-center mb-3">Built for</p>
-        <h2 className="font-serif text-3xl sm:text-4xl text-charcoal text-center mb-4">
+        <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
           Small businesses that can't afford to waste time
         </h2>
         <p className="text-charcoal/50 text-center max-w-lg mx-auto text-sm leading-relaxed mb-12">
@@ -270,10 +271,10 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Compliance Features ─────────────────────────────────────────────── */}
-      <section className="bg-white border-y border-charcoal/8">
+      <section className="bg-parchment border-y border-charcoal/8">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-16">
           <p className="text-[11px] tracking-widest uppercase text-charcoal/35 text-center mb-3">Compliance tools</p>
-          <h2 className="font-serif text-3xl sm:text-4xl text-charcoal text-center mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
             Everything the EHO expects to see
           </h2>
           <p className="text-charcoal/50 text-center max-w-lg mx-auto text-sm leading-relaxed mb-12">
@@ -282,8 +283,8 @@ export default function MarketingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {COMPLIANCE_FEATURES.map(({ icon, title, desc }) => (
-              <div key={title} className="rounded-2xl border border-charcoal/8 p-5 hover:border-charcoal/15 transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-3">
+              <div key={title} className="rounded-2xl bg-white border border-charcoal/8 p-5 hover:border-brand/20 transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-brand/8 text-brand flex items-center justify-center mb-3">
                   {icon}
                 </div>
                 <p className="text-sm font-semibold text-charcoal mb-1">{title}</p>
@@ -300,7 +301,7 @@ export default function MarketingPage() {
           <p className="text-[11px] tracking-widest uppercase text-charcoal/35">Pro plan</p>
           <span className="text-[10px] tracking-widest uppercase font-semibold px-2 py-0.5 rounded border bg-accent/10 text-accent border-accent/25">Pro</span>
         </div>
-        <h2 className="font-serif text-3xl sm:text-4xl text-charcoal text-center mb-4">
+        <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
           Plus rota &amp; team management
         </h2>
         <p className="text-charcoal/50 text-center max-w-lg mx-auto text-sm leading-relaxed mb-12">
@@ -321,10 +322,10 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Pricing ─────────────────────────────────────────────────────────── */}
-      <section id="pricing" className="bg-white border-y border-charcoal/8">
+      <section id="pricing" className="bg-parchment border-y border-charcoal/8">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-16">
           <p className="text-[11px] tracking-widest uppercase text-charcoal/35 text-center mb-3">Pricing</p>
-          <h2 className="font-serif text-3xl sm:text-4xl text-charcoal text-center mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
             Simple, honest pricing
           </h2>
           <p className="text-charcoal/50 text-center max-w-md mx-auto text-sm leading-relaxed mb-12">
@@ -365,7 +366,7 @@ export default function MarketingPage() {
               </ul>
               <Link
                 to="/login"
-                className="block text-center border border-charcoal/20 text-charcoal py-3 rounded-xl text-sm font-medium hover:bg-charcoal/4 transition-colors"
+                className="block text-center border border-brand/30 text-brand py-3 rounded-xl text-sm font-medium hover:bg-brand/5 transition-colors"
               >
                 Start Free Trial
               </Link>
@@ -441,7 +442,7 @@ export default function MarketingPage() {
       {/* ── How to Install ──────────────────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-5 sm:px-8 py-16">
         <p className="text-[11px] tracking-widest uppercase text-charcoal/35 text-center mb-3">No App Store needed</p>
-        <h2 className="font-serif text-3xl sm:text-4xl text-charcoal text-center mb-4">
+        <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
           Up and running in 3 steps
         </h2>
         <p className="text-charcoal/50 text-center max-w-lg mx-auto text-sm leading-relaxed mb-12">
@@ -470,7 +471,7 @@ export default function MarketingPage() {
             },
           ].map(({ step, icon, title, desc }) => (
             <div key={step} className="text-center">
-              <div className="w-12 h-12 rounded-2xl bg-charcoal text-cream flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-brand text-cream flex items-center justify-center mx-auto mb-4">
                 {icon}
               </div>
               <p className="text-[10px] tracking-widest uppercase text-charcoal/30 mb-1">Step {step}</p>
@@ -482,13 +483,13 @@ export default function MarketingPage() {
       </section>
 
       {/* ── FAQ ─────────────────────────────────────────────────────────────── */}
-      <section className="bg-white border-y border-charcoal/8">
+      <section className="bg-parchment border-y border-charcoal/8">
         <div className="max-w-2xl mx-auto px-5 sm:px-8 py-16">
           <p className="text-[11px] tracking-widest uppercase text-charcoal/35 text-center mb-3">Questions</p>
-          <h2 className="font-serif text-3xl sm:text-4xl text-charcoal text-center mb-10">
+          <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-10">
             Frequently asked
           </h2>
-          <div className="bg-white rounded-2xl border border-charcoal/8 px-6">
+          <div className="bg-white rounded-2xl border border-charcoal/6 px-6">
             {FAQS.map(({ q, a }) => <FaqItem key={q} q={q} a={a} />)}
           </div>
         </div>
