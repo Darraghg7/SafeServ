@@ -153,21 +153,21 @@ const FAQS = [
 function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border-b border-charcoal/10 last:border-0">
+    <div className="border-b border-charcoal/8 last:border-0">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between py-4 text-left gap-4"
       >
-        <span className="text-sm font-medium text-charcoal">{q}</span>
+        <span className="text-sm font-medium text-brand/80">{q}</span>
         <span
-          className="text-charcoal/40 shrink-0 transition-transform duration-200"
+          className="text-brand/30 shrink-0 transition-transform duration-200"
           style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
         >
           <IconChevronDown />
         </span>
       </button>
       {open && (
-        <p className="text-sm text-charcoal/60 pb-4 leading-relaxed">{a}</p>
+        <p className="text-sm text-charcoal/55 pb-4 leading-relaxed">{a}</p>
       )}
     </div>
   )
@@ -179,7 +179,7 @@ function FaqItem({ q, a }) {
 
 export default function MarketingPage() {
   return (
-    <div className="min-h-dvh bg-cream font-sans text-charcoal overflow-x-hidden">
+    <div className="min-h-dvh bg-cream font-sans text-charcoal">
 
       {/* ── Nav ────────────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-cream/90 backdrop-blur-sm border-b border-charcoal/8">
@@ -262,9 +262,9 @@ export default function MarketingPage() {
             { emoji: '🍺', label: 'Pubs & Bars' },
             { emoji: '🏨', label: 'Hotels & Hospitality' },
           ].map(({ emoji, label }) => (
-            <div key={label} className="bg-white rounded-2xl border border-charcoal/8 p-5 text-center">
+            <div key={label} className="bg-white rounded-2xl border border-charcoal/8 p-5 text-center hover:border-brand/20 transition-colors">
               <div className="text-3xl mb-3">{emoji}</div>
-              <p className="text-sm font-medium text-charcoal/70 leading-snug">{label}</p>
+              <p className="text-sm font-medium text-brand/70 leading-snug">{label}</p>
             </div>
           ))}
         </div>
@@ -287,8 +287,8 @@ export default function MarketingPage() {
                 <div className="w-9 h-9 rounded-xl bg-brand/8 text-brand flex items-center justify-center mb-3">
                   {icon}
                 </div>
-                <p className="text-sm font-semibold text-charcoal mb-1">{title}</p>
-                <p className="text-xs text-charcoal/45 leading-relaxed">{desc}</p>
+                <p className="text-sm font-semibold text-brand/80 mb-1">{title}</p>
+                <p className="text-xs text-charcoal/50 leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -314,8 +314,8 @@ export default function MarketingPage() {
               <div className="w-9 h-9 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-3">
                 {icon}
               </div>
-              <p className="text-sm font-semibold text-charcoal mb-1">{title}</p>
-              <p className="text-xs text-charcoal/45 leading-relaxed">{desc}</p>
+              <p className="text-sm font-semibold text-accent/80 mb-1">{title}</p>
+              <p className="text-xs text-charcoal/50 leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -337,9 +337,9 @@ export default function MarketingPage() {
             {/* Starter */}
             <div className="rounded-2xl border border-charcoal/10 p-7 flex flex-col">
               <div className="mb-5">
-                <p className="text-[11px] tracking-widest uppercase text-teal-600 font-semibold mb-1">Starter</p>
+                <p className="text-[11px] tracking-widest uppercase text-brand font-semibold mb-1">Starter</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-serif text-4xl text-charcoal">£15</span>
+                  <span className="font-serif text-4xl text-brand">£15</span>
                   <span className="text-charcoal/40 text-sm">/month</span>
                 </div>
                 <p className="text-xs text-charcoal/40 mt-1">per venue</p>
@@ -382,7 +382,7 @@ export default function MarketingPage() {
               <div className="mb-5">
                 <p className="text-[11px] tracking-widest uppercase text-accent font-semibold mb-1">Pro</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-serif text-4xl text-charcoal">£45</span>
+                  <span className="font-serif text-4xl text-accent">£45</span>
                   <span className="text-charcoal/40 text-sm">/month</span>
                 </div>
                 <p className="text-xs text-charcoal/40 mt-1">first venue · £15/month each additional</p>
@@ -404,7 +404,7 @@ export default function MarketingPage() {
                   ].map(([venues, price]) => (
                     <div key={venues} className="flex items-center justify-between">
                       <span className="text-xs text-charcoal/50">{venues}</span>
-                      <span className="text-xs font-semibold text-charcoal">{price}</span>
+                      <span className="text-xs font-semibold text-accent">{price}</span>
                     </div>
                   ))}
                 </div>
