@@ -9,6 +9,7 @@ import { ToastProvider }       from './components/ui/Toast'
 import SetupPage               from './pages/SetupPage'
 import AppShell                from './components/layout/AppShell'
 import { FullPageLoader }      from './components/ui/LoadingSpinner'
+import PlanGate                from './components/ui/PlanGate'
 
 // Auth
 import LoginPage from './pages/LoginPage'
@@ -131,6 +132,19 @@ function wrap(Component, Guard = RequireAuth) {
   )
 }
 
+/** Like wrap(), but gates the page behind PlanGate for Pro-only features. */
+function wrapPro(Component, Guard = RequireAuth, feature) {
+  return (
+    <Guard>
+      <AppShell>
+        <PlanGate feature={feature}>
+          <Component />
+        </PlanGate>
+      </AppShell>
+    </Guard>
+  )
+}
+
 // ── Landing route — redirect if already authenticated ────────────────────────
 
 function LandingRoute() {
@@ -170,13 +184,13 @@ function VenueRoutes() {
             <Route path="allergens/:id"     element={wrap(FoodItemDetailPage)} />
             <Route path="cleaning"          element={wrap(CleaningPage)} />
             <Route path="opening-closing"   element={wrap(OpeningClosingPage)} />
-            <Route path="rota"              element={wrap(RotaPage)} />
-            <Route path="time-off"          element={wrap(TimeOffPage)} />
+            <Route path="rota"              element={wrapPro(RotaPage,    RequireAuth, 'rota')} />
+            <Route path="time-off"          element={wrapPro(TimeOffPage, RequireAuth, 'time-off')} />
 
             {/* Manager only */}
-            <Route path="haccp"              element={wrap(HACCPPage,              RequireManager)} />
+            <Route path="haccp"              element={wrapPro(HACCPPage,            RequireManager, 'haccp')} />
             <Route path="suppliers"          element={wrap(SuppliersPage,          RequireManager)} />
-            <Route path="eho-mock"           element={wrap(EHOMockPage,            RequireManager)} />
+            <Route path="eho-mock"           element={wrapPro(EHOMockPage,         RequireManager, 'eho-mock')} />
             <Route path="fitness"            element={wrap(FitnessPage,            RequireManager)} />
             <Route path="cooking-temps"      element={wrap(CookingTempsPage,       RequireManager)} />
             <Route path="hot-holding"        element={wrap(HotHoldingPage,         RequireManager)} />
@@ -184,14 +198,14 @@ function VenueRoutes() {
             <Route path="pest-control"       element={wrap(PestControlPage,        RequireManager)} />
             <Route path="allergens/new"      element={wrap(FoodItemFormPage,       RequireManager)} />
             <Route path="allergens/:id/edit" element={wrap(FoodItemFormPage,       RequireManager)} />
-            <Route path="timesheet"          element={wrap(TimesheetPage,          RequireManager)} />
+            <Route path="timesheet"          element={wrapPro(TimesheetPage,       RequireManager, 'timesheet')} />
             <Route path="deliveries"         element={wrap(DeliveryChecksPage,     RequireManager)} />
             <Route path="probe"              element={wrap(ProbeCalibrationPage,   RequireManager)} />
             <Route path="corrective"         element={wrap(CorrectiveActionsPage,  RequireManager)} />
             <Route path="audit"              element={wrap(EHOAuditPage,           RequireManager)} />
-            <Route path="training"           element={wrap(TrainingPage,           RequireManager)} />
-            <Route path="waste"              element={wrap(WasteLogPage,           RequireManager)} />
-            <Route path="orders"             element={wrap(SupplierOrdersPage,     RequireManager)} />
+            <Route path="training"           element={wrapPro(TrainingPage,        RequireManager, 'training')} />
+            <Route path="waste"              element={wrapPro(WasteLogPage,        RequireManager, 'waste')} />
+            <Route path="orders"             element={wrapPro(SupplierOrdersPage,  RequireManager, 'orders')} />
             <Route path="settings"           element={wrap(SettingsPage,           RequireManager)} />
 
             <Route path="*" element={<NotFoundPage />} />

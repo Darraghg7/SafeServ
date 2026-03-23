@@ -249,6 +249,17 @@ function SubItem({ to, label, badge, alert, isActive }) {
   )
 }
 
+/* ── Pro-locked nav item (shown to starter users as an upsell hint) ─────────── */
+function LockedSubItem({ label }) {
+  return (
+    <div className="flex items-center gap-2 pl-10 pr-4 py-2 mx-2 rounded-lg text-[12.5px] text-charcoal/25 dark:text-white/20 cursor-default select-none">
+      <span className="w-1 h-1 rounded-full shrink-0 bg-charcoal/15 dark:bg-white/12" />
+      <span className="flex-1 truncate">{label}</span>
+      <span className="text-[9px] tracking-widest uppercase font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">Pro</span>
+    </div>
+  )
+}
+
 /* ── Section divider ────────────────────────────────────────────────────────── */
 function SideSection({ label }) {
   return (
@@ -268,7 +279,7 @@ export default function AppShell({ children }) {
   const pendingSwaps = usePendingSwaps(venueId)
   const logoUrl      = useVenueLogo(venueId)
 
-  const { isEnabled } = useVenueFeatures()
+  const { isEnabled, isPlanLocked, venuePlan } = useVenueFeatures()
 
   const name = session?.staffName ?? ''
 
@@ -351,10 +362,14 @@ export default function AppShell({ children }) {
 
               <SideSection label="Team" />
               <div className="space-y-0.5">
-                {isEnabled('rota')      && <SubItem to={vp('/rota')}      label="Rota"      badge={pendingSwaps} alert={pendingSwaps > 0} isActive={isUnder('/rota')} />}
-                {isEnabled('timesheet') && <SubItem to={vp('/timesheet')} label="Hours"     isActive={isUnder('/timesheet')} />}
-                {isEnabled('training')  && <SubItem to={vp('/training')}  label="Training"  isActive={isUnder('/training')} />}
-                {isEnabled('time_off')  && <SubItem to={vp('/time-off')}  label="Time Off"  isActive={isUnder('/time-off')} />}
+                {isPlanLocked('rota')      ? <LockedSubItem label="Rota" />
+                  : isEnabled('rota')      && <SubItem to={vp('/rota')}      label="Rota"      badge={pendingSwaps} alert={pendingSwaps > 0} isActive={isUnder('/rota')} />}
+                {isPlanLocked('timesheet') ? <LockedSubItem label="Hours" />
+                  : isEnabled('timesheet') && <SubItem to={vp('/timesheet')} label="Hours"     isActive={isUnder('/timesheet')} />}
+                {isPlanLocked('training')  ? <LockedSubItem label="Training" />
+                  : isEnabled('training')  && <SubItem to={vp('/training')}  label="Training"  isActive={isUnder('/training')} />}
+                {isPlanLocked('time_off')  ? <LockedSubItem label="Time Off" />
+                  : isEnabled('time_off')  && <SubItem to={vp('/time-off')}  label="Time Off"  isActive={isUnder('/time-off')} />}
                 <SubItem to={vp('/clock-in')}    label="Clock In / Out"  isActive={isUnder('/clock-in')} />
                 <SubItem to={vp('/noticeboard')} label="Noticeboard"     isActive={isUnder('/noticeboard')} />
               </div>

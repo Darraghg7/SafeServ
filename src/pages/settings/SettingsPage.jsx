@@ -9,7 +9,7 @@ import { useStaffTraining } from '../../hooks/useTraining'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { useAppSettings } from '../../hooks/useSettings'
 import { useTheme } from '../../contexts/ThemeContext'
-import { useVenueFeatures, FEATURE_GROUPS, ALL_FEATURE_IDS } from '../../hooks/useVenueFeatures'
+import { useVenueFeatures, FEATURE_GROUPS, ALL_FEATURE_IDS, PRO_ONLY_FEATURE_IDS } from '../../hooks/useVenueFeatures'
 import Toggle from '../../components/ui/Toggle'
 
 const PERMISSION_ROLES  = ['staff', 'manager', 'owner']
@@ -322,7 +322,7 @@ export default function SettingsPage() {
   const { staff, loading: staffLoading, reload: reloadStaff }   = useStaffManagement()
   const { customRoles, closedDays, breakDurationMins, saveCustomRoles, saveClosedDays, saveBreakDuration, nextColor } = useAppSettings()
   const { dark, toggle: toggleDark } = useTheme()
-  const { config: featuresConfig, save: saveFeatures } = useVenueFeatures()
+  const { config: featuresConfig, save: saveFeatures, venuePlan } = useVenueFeatures()
 
   // Venue form
   const [venueForm, setVenueForm]   = useState({ venue_name: '', manager_email: '' })
@@ -665,16 +665,23 @@ export default function SettingsPage() {
                   </div>
                   <div className="divide-y divide-charcoal/6 dark:divide-white/6">
                     {group.features.map(feature => {
-                      const on = featuresConfig.enabled?.includes(feature.id) ?? true
+                      const isProOnly = PRO_ONLY_FEATURE_IDS.includes(feature.id)
+                      const locked = isProOnly && venuePlan !== 'pro'
+                      const on = !locked && (featuresConfig.enabled?.includes(feature.id) ?? true)
                       return (
-                        <div key={feature.id} className="flex items-center justify-between px-4 py-3">
+                        <div key={feature.id} className={`flex items-center justify-between px-4 py-3 ${locked ? 'opacity-60' : ''}`}>
                           <div className="flex-1 min-w-0 pr-4">
-                            <p className={`text-sm font-medium ${on ? 'text-charcoal dark:text-white' : 'text-charcoal/35 dark:text-white/30'}`}>
-                              {feature.label}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm font-medium ${on ? 'text-charcoal dark:text-white' : 'text-charcoal/35 dark:text-white/30'}`}>
+                                {feature.label}
+                              </p>
+                              {locked && (
+                                <span className="text-[9px] tracking-widest uppercase font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">Pro</span>
+                              )}
+                            </div>
                             <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5 truncate">{feature.description}</p>
                           </div>
-                          <Toggle checked={on} onChange={() => toggleFeature(feature.id)} />
+                          <Toggle checked={on} onChange={locked ? undefined : () => toggleFeature(feature.id)} disabled={locked} />
                         </div>
                       )
                     })}

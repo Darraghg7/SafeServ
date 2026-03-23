@@ -56,13 +56,33 @@ export const FEATURE_GROUPS = [
 
 export const ALL_FEATURE_IDS = FEATURE_GROUPS.flatMap(g => g.features.map(f => f.id))
 
+// ── Plan feature split ────────────────────────────────────────────────────────
+// Starter: core compliance — everything a venue needs to pass an EHO inspection
+// Pro: team management + advanced ops on top of everything in Starter
+export const STARTER_FEATURE_IDS = [
+  'fridge', 'cooking_temps', 'hot_holding', 'cooling_logs',   // temperature
+  'deliveries', 'probe', 'allergens', 'pest_control',          // food safety
+  'opening_closing', 'cleaning', 'corrective',                 // daily ops
+]
+
+export const PRO_ONLY_FEATURE_IDS = [
+  'rota', 'timesheet', 'training', 'time_off',                 // team
+  'waste', 'orders',                                           // advanced ops
+]
+
+// Routes/pages that are Pro-only but aren't in the feature-toggle system
+export const PRO_ONLY_ROUTES = new Set([
+  'rota', 'timesheet', 'time-off', 'training', 'waste', 'orders',
+  'haccp', 'eho-mock',
+])
+
 const DEFAULT_CONFIG = { mode: 'all', enabled: ALL_FEATURE_IDS }
 
 // Module-level cache — avoids re-fetching on every navigation
 const _cache = {}
 
 export function useVenueFeatures() {
-  const { venueId } = useVenue()
+  const { venueId, venuePlan } = useVenue()
 
   const [config, setConfig] = useState(() => {
     if (venueId && _cache[venueId]) return _cache[venueId]
@@ -108,13 +128,21 @@ export function useVenueFeatures() {
       .upsert({ venue_id: venueId, key: 'features', value: JSON.stringify(newConfig) })
   }, [venueId])
 
+  /** True if the feature requires Pro and the venue is on Starter. */
+  const isPlanLocked = useCallback((featureId) => {
+    if (venuePlan === 'pro') return false
+    return PRO_ONLY_FEATURE_IDS.includes(featureId) || PRO_ONLY_ROUTES.has(featureId)
+  }, [venuePlan])
+
   /** Returns true if the feature should be visible.
-   *  In 'all' mode every feature is enabled.
+   *  Plan-locked features are hidden from nav (use isPlanLocked separately for upsell UI).
+   *  In 'all' mode every non-locked feature is enabled.
    *  In 'custom' mode only features in the enabled array are shown. */
   const isEnabled = useCallback((featureId) => {
+    if (isPlanLocked(featureId)) return false
     if (config.mode === 'all') return true
     return config.enabled?.includes(featureId) ?? true
-  }, [config])
+  }, [config, isPlanLocked])
 
-  return { config, isEnabled, save, loading, reload: load }
+  return { config, isEnabled, isPlanLocked, venuePlan, save, loading, reload: load }
 }
