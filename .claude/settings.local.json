@@ -103,7 +103,12 @@
       "Bash(gh run:*)",
       "Bash(find /Users/darraghguy/Desktop/Safeserv/public -name *.json)",
       "Bash(sed -i '' -e 's/<h1 className=\"\"font-serif text-4xl text-charcoal mb-1\"\">/<h1 className=\"\"font-serif text-4xl text-brand mb-1\"\">/g' /Users/darraghguy/Desktop/Safeserv/src/pages/SetupPage.jsx)",
-      "Bash(__NEW_LINE_fc1736f216baf411__ sed:*)"
+      "Bash(__NEW_LINE_fc1736f216baf411__ sed:*)",
+      "Bash(grep -l \"opening_closing\" /Users/darraghguy/Desktop/Safeserv/supabase/migrations/*.sql)",
+      "Bash(grep -h \"^CREATE TABLE\" /Users/darraghguy/Desktop/Safeserv/supabase/migrations/*.sql)",
+      "Bash(grep -h \"noticeboard\\\\|haccp_log\\\\|^CREATE TABLE.*orders\\\\b\\\\|temp_log\\\\b\" /Users/darraghguy/Desktop/Safeserv/supabase/migrations/*.sql)",
+      "Bash(grep -h \"ALTER TABLE.*ADD COLUMN venue_id\\\\|CREATE TABLE.*task_completions\\\\|noticeboard_posts.*venue_id\\\\|venue_id.*noticeboard\" /Users/darraghguy/Desktop/Safeserv/supabase/migrations/*.sql)",
+      "Bash(grep -h \"ALTER TABLE.*ADD COLUMN venue_id\" /Users/darraghguy/Desktop/Safeserv/supabase/migrations/*.sql)"
     ]
   }
 }

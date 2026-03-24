@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { format, isPast, parseISO } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useSession } from '../../contexts/SessionContext'
@@ -66,6 +66,24 @@ function useVenueSettings() {
   }
   useEffect(() => { load() }, [venueId])
   return { settings, loading, reload: load }
+}
+
+function useVenueClosures() {
+  const { venueId } = useVenue()
+  const [closures, setClosures] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const load = useCallback(async () => {
+    if (!venueId) { setLoading(false); return }
+    const { data } = await supabase
+      .from('venue_closures')
+      .select('*')
+      .eq('venue_id', venueId)
+      .order('start_date')
+    setClosures(data ?? [])
+    setLoading(false)
+  }, [venueId])
+  useEffect(() => { load() }, [load])
+  return { closures, loading, reload: load }
 }
 
 function useStaffManagement() {
@@ -320,9 +338,38 @@ export default function SettingsPage() {
   const { venueId } = useVenue()
   const { settings, loading: sLoading, reload: reloadSettings } = useVenueSettings()
   const { staff, loading: staffLoading, reload: reloadStaff }   = useStaffManagement()
+  const { closures, reload: reloadClosures } = useVenueClosures()
   const { customRoles, closedDays, breakDurationMins, saveCustomRoles, saveClosedDays, saveBreakDuration, nextColor } = useAppSettings()
   const { dark, toggle: toggleDark } = useTheme()
   const { config: featuresConfig, save: saveFeatures, venuePlan } = useVenueFeatures()
+
+  // Closed periods form
+  const [closureForm, setClosureForm] = useState({ start_date: '', end_date: '', reason: '' })
+  const [savingClosure, setSavingClosure] = useState(false)
+
+  const addClosure = async () => {
+    if (!closureForm.start_date || !closureForm.end_date) { toast('Start and end date are required', 'error'); return }
+    if (closureForm.end_date < closureForm.start_date) { toast('End date must be on or after start date', 'error'); return }
+    setSavingClosure(true)
+    const { error } = await supabase.from('venue_closures').insert({
+      venue_id:   venueId,
+      start_date: closureForm.start_date,
+      end_date:   closureForm.end_date,
+      reason:     closureForm.reason.trim() || null,
+    })
+    setSavingClosure(false)
+    if (error) { toast(error.message, 'error'); return }
+    toast('Closed period added')
+    setClosureForm({ start_date: '', end_date: '', reason: '' })
+    reloadClosures()
+  }
+
+  const deleteClosure = async (id) => {
+    const { error } = await supabase.from('venue_closures').delete().eq('id', id)
+    if (error) { toast(error.message, 'error'); return }
+    toast('Closed period removed')
+    reloadClosures()
+  }
 
   // Venue form
   const [venueForm, setVenueForm]   = useState({ venue_name: '', manager_email: '' })
@@ -792,6 +839,83 @@ export default function SettingsPage() {
         {breakDurationMins < 20 && (
           <p className="text-xs text-warning mt-3">Note: UK minimum break is 20 minutes.</p>
         )}
+      </SettingsSection>
+
+      {/* ── Closed Periods ─────────────────────────────────────────────────── */}
+      <SettingsSection
+        title="Closed Periods"
+        subtitle={closures.length > 0 ? `${closures.length} period${closures.length !== 1 ? 's' : ''} scheduled` : 'None scheduled'}
+      >
+        <p className="text-xs text-charcoal/40 mb-5">
+          Mark your venue as closed for a specific date range — e.g. Christmas week, annual holiday. This flags the period across the app so staff aren't expected to complete checks.
+        </p>
+
+        {/* Existing closures */}
+        {closures.length > 0 && (
+          <div className="flex flex-col gap-2 mb-5">
+            {closures.map(c => {
+              const past = c.end_date < format(new Date(), 'yyyy-MM-dd')
+              return (
+                <div key={c.id} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${past ? 'bg-charcoal/2 border-charcoal/8 opacity-50' : 'bg-cream/40 border-charcoal/10'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-charcoal">
+                      {format(parseISO(c.start_date), 'd MMM yyyy')}
+                      {c.start_date !== c.end_date && ` – ${format(parseISO(c.end_date), 'd MMM yyyy')}`}
+                    </p>
+                    {c.reason && <p className="text-xs text-charcoal/40 mt-0.5">{c.reason}</p>}
+                    {past && <p className="text-[11px] text-charcoal/30 italic mt-0.5">Past</p>}
+                  </div>
+                  <button
+                    onClick={() => deleteClosure(c.id)}
+                    className="text-xs text-charcoal/25 hover:text-danger transition-colors shrink-0"
+                  >×</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Add closure form */}
+        <div className="flex flex-col gap-3 p-4 rounded-xl bg-cream/40 border border-charcoal/10">
+          <p className="text-[11px] tracking-widest uppercase text-charcoal/40">Add Closed Period</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">From *</label>
+              <input
+                type="date"
+                value={closureForm.start_date}
+                onChange={e => setClosureForm(f => ({ ...f, start_date: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">To *</label>
+              <input
+                type="date"
+                value={closureForm.end_date}
+                min={closureForm.start_date}
+                onChange={e => setClosureForm(f => ({ ...f, end_date: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Reason (optional)</label>
+            <input
+              value={closureForm.reason}
+              onChange={e => setClosureForm(f => ({ ...f, reason: e.target.value }))}
+              placeholder="e.g. Christmas holiday, annual deep clean"
+              className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+            />
+          </div>
+          <button
+            onClick={addClosure}
+            disabled={savingClosure || !closureForm.start_date || !closureForm.end_date}
+            className="self-start bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-charcoal/90 transition-colors"
+          >
+            {savingClosure ? 'Saving…' : 'Add Closed Period →'}
+          </button>
+        </div>
       </SettingsSection>
 
       {/* ── Notifications & Reports ────────────────────────────────────────── */}

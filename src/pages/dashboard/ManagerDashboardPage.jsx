@@ -63,7 +63,7 @@ function useWidgetPreferences(staffId, venueId) {
       setWidgetIds(DEFAULT_WIDGETS)
     }
     setLoading(false)
-  }, [staffId])
+  }, [staffId, venueId])
 
   useEffect(() => { load() }, [load])
 

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useVenue } from '../contexts/VenueContext'
 
+const FEATURES_UPDATED_EVENT = 'safeserv:features-updated'
+
 /* ── Feature catalogue ───────────────────────────────────────────────────────
    Each feature has an id that maps directly to nav/route identifiers.
    FEATURE_GROUPS is used by the Settings UI to render the config panel.
@@ -117,12 +119,24 @@ export function useVenueFeatures() {
 
   useEffect(() => { load() }, [load])
 
+  // Listen for saves from other hook instances (e.g. SettingsPage → AppShell)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.venueId === venueId && _cache[venueId]) {
+        setConfig(_cache[venueId])
+      }
+    }
+    window.addEventListener(FEATURES_UPDATED_EVENT, handler)
+    return () => window.removeEventListener(FEATURES_UPDATED_EVENT, handler)
+  }, [venueId])
+
   const save = useCallback(async (newConfig) => {
     if (!venueId) return
     setConfig(newConfig)
-    // Bust cache so AppShell re-reads
+    // Update cache and notify all other hook instances
     _cache[venueId] = newConfig
     _cache[venueId + '_ts'] = Date.now()
+    window.dispatchEvent(new CustomEvent(FEATURES_UPDATED_EVENT, { detail: { venueId } }))
     await supabase
       .from('app_settings')
       .upsert({ venue_id: venueId, key: 'features', value: JSON.stringify(newConfig) })
