@@ -105,7 +105,8 @@ function MobileDayView({ days, shifts, staff, onCellClick, currentStaffId, isMan
         </div>
       ) : null}
 
-      {/* Staff list for this day */}
+      {/* Staff list for this day — hidden on closed days */}
+      {!isClosed && (
       <div className="flex flex-col gap-2">
         {staff.map(s => {
           const staffDayShifts = shifts.filter(sh => sh.staff_id === s.id && sh.shift_date === dateStr)
@@ -163,6 +164,7 @@ function MobileDayView({ days, shifts, staff, onCellClick, currentStaffId, isMan
           )
         })}
       </div>
+      )}
     </div>
   )
 }

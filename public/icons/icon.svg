@@ -2,11 +2,12 @@
   <rect width="512" height="512" rx="112" fill="#f5f0e8"/>
   <text
     x="256"
-    y="340"
+    y="256"
     font-family="Georgia, 'Times New Roman', serif"
-    font-size="300"
-    font-weight="400"
+    font-size="420"
+    font-weight="700"
     text-anchor="middle"
+    dominant-baseline="central"
     fill="#1a3c2e"
   >S</text>
 </svg>

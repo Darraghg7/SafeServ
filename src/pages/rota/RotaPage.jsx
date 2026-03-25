@@ -67,24 +67,65 @@ export default function RotaPage() {
     return set
   }, [closures])
 
-  const [closureMode, setClosureMode] = useState(false)
-  const [togglingClosure, setTogglingClosure] = useState(false)
+  // ── Closure mode: pending local state, saved on "Save" ──
+  const [closureMode, setClosureMode]       = useState(false)
+  const [pendingClosed, setPendingClosed]   = useState(null) // Set<string> while in mode
+  const [savingClosures, setSavingClosures] = useState(false)
 
-  const toggleDateClosure = async (dateStr) => {
-    if (togglingClosure) return
-    setTogglingClosure(true)
-    // Find if there's already a single-day closure for this exact date
-    const existing = closures.find(c => c.start_date === dateStr && c.end_date === dateStr)
-    if (existing) {
-      await supabase.from('venue_closures').delete().eq('id', existing.id)
-    } else {
-      await supabase.from('venue_closures').insert({
-        venue_id: venueId, start_date: dateStr, end_date: dateStr,
-      })
-    }
-    setTogglingClosure(false)
-    loadClosures()
+  const enterClosureMode = () => {
+    setPendingClosed(new Set(closedDates)) // copy current saved state
+    setClosureMode(true)
   }
+
+  const cancelClosureMode = () => {
+    setPendingClosed(null)
+    setClosureMode(false)
+  }
+
+  // Toggle a date locally — no DB write yet
+  const togglePendingClosure = (dateStr) => {
+    setPendingClosed(prev => {
+      const next = new Set(prev)
+      if (next.has(dateStr)) next.delete(dateStr)
+      else next.add(dateStr)
+      return next
+    })
+  }
+
+  // Save all pending changes to DB, then exit mode
+  const saveClosures = async () => {
+    if (!pendingClosed || savingClosures) return
+    setSavingClosures(true)
+
+    // Dates to add (in pending but not in DB)
+    const toAdd = [...pendingClosed].filter(d => !closedDates.has(d))
+    // Dates to remove (in DB but not in pending) — only single-day closures we manage here
+    const toDelete = [...closedDates].filter(d => !pendingClosed.has(d))
+
+    // Delete removed single-day closures
+    for (const dateStr of toDelete) {
+      const existing = closures.find(c => c.start_date === dateStr && c.end_date === dateStr)
+      if (existing) {
+        await supabase.from('venue_closures').delete().eq('id', existing.id)
+      }
+    }
+
+    // Insert new closures in a single batch
+    if (toAdd.length > 0) {
+      await supabase.from('venue_closures').insert(
+        toAdd.map(dateStr => ({ venue_id: venueId, start_date: dateStr, end_date: dateStr }))
+      )
+    }
+
+    await loadClosures()
+    setSavingClosures(false)
+    setPendingClosed(null)
+    setClosureMode(false)
+    toast(toAdd.length + toDelete.length > 0 ? 'Closed days saved ✓' : 'No changes made')
+  }
+
+  // The dates used for display/blocking: pending state while in mode, saved state otherwise
+  const effectiveClosedDates = closureMode && pendingClosed != null ? pendingClosed : closedDates
 
   const [showBuilder, setShowBuilder]           = useState(false)
 
@@ -113,7 +154,7 @@ export default function RotaPage() {
     if (!isManager) return // staff handled separately via RotaWeekView callback
     if (closureMode) return // in closure mode, day header handles clicks
     const dateStr = format(date, 'yyyy-MM-dd')
-    if (closedDates.has(dateStr)) return // can't add shifts on closed days
+    if (effectiveClosedDates.has(dateStr)) return // can't add shifts on closed days
     setModal({ staffMember, date, dayShifts })
     setForm({ staffId: staffMember.id, startTime: '09:00', endTime: '17:00', roleLabel: 'Chef' })
     setEditShift(null)
@@ -332,7 +373,7 @@ export default function RotaPage() {
                   WhatsApp
                 </button>
                 <button
-                  onClick={() => setClosureMode(true)}
+                  onClick={enterClosureMode}
                   className="text-[11px] tracking-widest uppercase text-danger/60 hover:text-danger transition-colors border-b border-danger/25 hover:border-danger/40"
                 >
                   Mark Closed
@@ -340,12 +381,21 @@ export default function RotaPage() {
               </>
             )}
             {closureMode && (
-              <button
-                onClick={() => setClosureMode(false)}
-                className="text-[11px] tracking-widest uppercase bg-danger/10 text-danger border border-danger/25 px-3 py-1.5 rounded-lg hover:bg-danger/15 transition-colors font-medium"
-              >
-                Done ✓
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={cancelClosureMode}
+                  className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveClosures}
+                  disabled={savingClosures}
+                  className="text-[11px] tracking-widest uppercase bg-brand text-cream border border-brand/80 px-3 py-1.5 rounded-lg hover:bg-brand/90 transition-colors font-medium disabled:opacity-50"
+                >
+                  {savingClosures ? 'Saving…' : 'Save ✓'}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -358,8 +408,8 @@ export default function RotaPage() {
           <div>
             <p className="text-sm font-semibold text-danger">Marking closed days</p>
             <p className="text-xs text-danger/70 mt-0.5">
-              Tap any day in the calendar below to mark it as closed. Tap again to unmark.
-              No shifts can be added on closed days. Tap <strong>Done</strong> when finished.
+              Tap any number of days to mark them closed — tap again to unmark.
+              No shifts can be added on closed days. Hit <strong>Save ✓</strong> when done, or <strong>Cancel</strong> to discard changes.
             </p>
           </div>
         </div>
@@ -614,9 +664,9 @@ export default function RotaPage() {
                 isManager={isManager}
                 unavailability={unavailability}
                 closedDays={closedDays}
-                closedDates={closedDates}
+                closedDates={effectiveClosedDates}
                 closureMode={closureMode}
-                onToggleClosure={toggleDateClosure}
+                onToggleClosure={togglePendingClosure}
                 breakDurationMins={breakDurationMins}
               />
             )}

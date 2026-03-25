@@ -2,7 +2,7 @@
   "name": "SafeServ",
   "short_name": "SafeServ",
   "description": "Food safety & operations management",
-  "start_url": "/?source=pwa",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f5f0e8",

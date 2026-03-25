@@ -74,7 +74,8 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-5 py-10 font-sans">
+    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-5 font-sans"
+         style={{ paddingTop: 'max(2.5rem, env(safe-area-inset-top))', paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
 
       {/* Branding */}
       <div className="mb-12 text-center">
