@@ -2,13 +2,21 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
-import { skipWaiting, clientsClaim } from 'workbox-core'
 
-// Immediately take control of all clients when a new SW version installs.
-// Without this, the new SW waits indefinitely in "waiting" state — causing
-// the app to keep serving stale cached JS chunks after a deployment.
-skipWaiting()
-clientsClaim()
+// Do NOT call skipWaiting() here.
+// Previously skipWaiting() + clientsClaim() caused the new service worker to
+// immediately hijack all open tabs on every deploy, deleting the old JS chunks
+// from the precache and crashing any tab that tried to load them mid-session.
+// Users would lose unsaved form data and see a blank screen.
+//
+// Instead: the new SW waits in "waiting" state until all tabs are closed, or
+// until the user manually accepts the update via the "Update ready" banner.
+// The app sends a SKIP_WAITING message to trigger the update on demand.
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
 
 // Workbox precaching — manifest injected by vite-plugin-pwa
 precacheAndRoute(self.__WB_MANIFEST)
