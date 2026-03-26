@@ -83,14 +83,40 @@ export default function FridgeHistoryPage() {
               </thead>
               <tbody>
                 {logs.map((log) => {
-                  const min = log.fridges?.min_temp ?? 0
-                  const max = log.fridges?.max_temp ?? 5
-                  const oor = isTempOutOfRange(log.temperature, min, max)
+                  const min       = log.fridges?.min_temp ?? 0
+                  const max       = log.fridges?.max_temp ?? 5
+                  const oor       = isTempOutOfRange(log.temperature, min, max)
+                  const explained = oor && log.exceedance_reason &&
+                    ['delivery', 'defrost', 'service_access'].includes(log.exceedance_reason)
+                  const REASON_LABELS = {
+                    delivery:       '📦 Delivery',
+                    defrost:        '🔄 Defrost',
+                    service_access: '👨‍🍳 Service access',
+                    equipment:      '🔧 Equipment',
+                    other:          '✏️ Other',
+                  }
                   return (
-                    <tr key={log.id} className={['border-t border-charcoal/6', oor ? 'bg-danger/4' : ''].join(' ')}>
+                    <tr key={log.id} className={[
+                      'border-t border-charcoal/6',
+                      oor && !explained ? 'bg-danger/4' : oor && explained ? 'bg-warning/4' : '',
+                    ].join(' ')}>
                       <td className="px-5 py-3 text-charcoal">{log.fridge_name}</td>
-                      <td className={`px-5 py-3 font-mono font-semibold ${oor ? 'text-danger' : 'text-charcoal'}`}>
-                        {formatTemp(log.temperature)}
+                      <td className="px-5 py-3">
+                        <span className={`font-mono font-semibold ${!oor ? 'text-charcoal' : explained ? 'text-warning' : 'text-danger'}`}>
+                          {formatTemp(log.temperature)}
+                        </span>
+                        {oor && (
+                          <span className={`ml-2 text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded-full ${
+                            explained
+                              ? 'bg-warning/15 text-warning'
+                              : 'bg-danger/12 text-danger'
+                          }`}>
+                            {explained ? REASON_LABELS[log.exceedance_reason] : '⚠ Action taken'}
+                          </span>
+                        )}
+                        {log.notes && (
+                          <p className="text-[11px] text-charcoal/40 mt-0.5 max-w-[200px] truncate">{log.notes}</p>
+                        )}
                       </td>
                       <td className="text-center px-3 py-3">
                         <span className="text-[11px] font-semibold tracking-wider uppercase text-charcoal/50">
