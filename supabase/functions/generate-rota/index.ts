@@ -57,7 +57,7 @@ serve(async (req) => {
         .eq('venue_id', venueId).order('day_of_week').order('start_time'),
 
       admin.from('staff')
-        .select('id, name, hourly_rate')
+        .select('id, name, hourly_rate, working_days')
         .eq('venue_id', venueId).eq('is_active', true).order('name'),
 
       admin.from('venue_roles')
@@ -119,6 +119,17 @@ serve(async (req) => {
     }
     for (const u of (unavailRows ?? [])) {
       if (u.available === false) unavailSet.add(`${u.staff_id}:${u.date}`)
+    }
+
+    // Respect per-staff working_days (1=Mon…7=Sun; empty array = all days available)
+    for (const s of (staffList ?? [])) {
+      const wdays = (s as any).working_days as number[] | null
+      if (!wdays?.length) continue // empty = no restriction
+      for (const { date, dow } of weekDates) {
+        if (!wdays.includes(dow)) {
+          unavailSet.add(`${s.id}:${date}`)
+        }
+      }
     }
 
     // Already has a shift this week

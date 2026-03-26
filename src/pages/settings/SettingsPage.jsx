@@ -96,8 +96,9 @@ function useStaffManagement() {
     setLoading(true)
     const { data } = await supabase
       .from('staff')
-      .select('id, name, email, job_role, role, hourly_rate, is_active, show_temp_logs, show_allergens, photo_url, skills, is_under_18')
+      .select('id, name, email, job_role, role, hourly_rate, is_active, show_temp_logs, show_allergens, photo_url, skills, is_under_18, working_days, sort_order')
       .eq('venue_id', venueId)
+      .order('sort_order')
       .order('name')
     setStaff(data ?? [])
     setLoading(false)
@@ -109,7 +110,10 @@ function useStaffManagement() {
 const EMPTY_FORM = {
   name: '', role: 'staff', job_role: 'kitchen', pin: '', email: '', hourly_rate: '',
   show_temp_logs: false, show_allergens: false, skills: [], is_under_18: false,
+  working_days: [],
 }
+
+const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 const EMPTY_TRAINING = { title: '', issued_date: '', expiry_date: '', notes: '' }
 
@@ -621,6 +625,7 @@ export default function SettingsPage() {
       show_allergens: s.show_allergens ?? false,
       skills:         s.skills ?? [],
       is_under_18:    s.is_under_18 ?? false,
+      working_days:   s.working_days ?? [],
     })
     setEditingId(s.id)
     setShowForm(true)
@@ -667,9 +672,12 @@ export default function SettingsPage() {
     setSavingStaff(false)
     if (error) { toast(error.message, 'error'); return }
 
-    // Persist is_under_18 directly (not in RPC)
+    // Persist fields not covered by RPC (is_under_18, working_days)
     if (editingId) {
-      await supabase.from('staff').update({ is_under_18: staffForm.is_under_18 }).eq('id', editingId)
+      await supabase.from('staff').update({
+        is_under_18:  staffForm.is_under_18,
+        working_days: staffForm.working_days,
+      }).eq('id', editingId)
     } else {
       // Find the newly created staff member by name + venue
       const { data: newRow } = await supabase
@@ -679,8 +687,11 @@ export default function SettingsPage() {
         .eq('name', staffForm.name.trim())
         .order('created_at', { ascending: false })
         .limit(1)
-      if (newRow?.[0]?.id && staffForm.is_under_18) {
-        await supabase.from('staff').update({ is_under_18: true }).eq('id', newRow[0].id)
+      if (newRow?.[0]?.id) {
+        await supabase.from('staff').update({
+          is_under_18:  staffForm.is_under_18,
+          working_days: staffForm.working_days,
+        }).eq('id', newRow[0].id)
       }
     }
 
@@ -698,6 +709,29 @@ export default function SettingsPage() {
     })
     if (error) { toast(error.message, 'error'); return }
     toast(s.is_active ? `${s.name} deactivated` : `${s.name} reactivated`)
+    reloadStaff()
+  }
+
+  const deleteStaffPermanently = async (s) => {
+    if (!window.confirm(
+      `Permanently delete ${s.name}?\n\nThis will remove them from the PIN screen and delete all their associated shifts, time off and training records.\n\nThis cannot be undone.`
+    )) return
+    const { error } = await supabase.from('staff').delete().eq('id', s.id)
+    if (error) { toast(error.message, 'error'); return }
+    toast(`${s.name} permanently deleted`)
+    reloadStaff()
+  }
+
+  const moveStaff = async (id, direction) => {
+    const list = [...staff]
+    const idx  = list.findIndex(s => s.id === id)
+    if (idx === -1) return
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= list.length) return
+    ;[list[idx], list[swapIdx]] = [list[swapIdx], list[idx]]
+    await Promise.all(list.map((s, i) =>
+      supabase.from('staff').update({ sort_order: i }).eq('id', s.id)
+    ))
     reloadStaff()
   }
 
@@ -1225,6 +1259,49 @@ export default function SettingsPage() {
               </p>
             </div>
 
+            {/* Working days */}
+            <div>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1.5">Working Days</label>
+              <p className="text-[11px] text-charcoal/35 mb-2">
+                Days this person is available to work. Leave all selected to indicate no restriction.
+              </p>
+              <div className="flex gap-1.5 flex-wrap">
+                {DOW_LABELS.map((day, i) => {
+                  const dow    = i + 1 // 1=Mon…7=Sun
+                  const allOn  = staffForm.working_days.length === 0
+                  const active = allOn || staffForm.working_days.includes(dow)
+                  return (
+                    <button
+                      key={dow}
+                      type="button"
+                      onClick={() => {
+                        const current = staffForm.working_days.length === 0
+                          ? [1, 2, 3, 4, 5, 6, 7]
+                          : [...staffForm.working_days]
+                        const next = current.includes(dow)
+                          ? current.filter(d => d !== dow)
+                          : [...current, dow].sort((a, b) => a - b)
+                        setStaffForm(f => ({ ...f, working_days: next.length === 7 ? [] : next }))
+                      }}
+                      className={[
+                        'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                        active
+                          ? 'bg-brand text-cream border-brand'
+                          : 'bg-charcoal/4 text-charcoal/30 border-charcoal/10',
+                      ].join(' ')}
+                    >
+                      {day}
+                    </button>
+                  )
+                })}
+              </div>
+              {staffForm.working_days.length > 0 && staffForm.working_days.length < 7 && (
+                <p className="text-[11px] text-brand mt-1.5">
+                  Works: {staffForm.working_days.map(d => DOW_LABELS[d - 1]).join(', ')} only
+                </p>
+              )}
+            </div>
+
             {/* Under-18 toggle */}
             <div className="flex items-center justify-between rounded-xl border border-charcoal/10 px-4 py-3 bg-charcoal/2">
               <div>
@@ -1281,8 +1358,22 @@ export default function SettingsPage() {
 
         {/* Staff list */}
         <div className="flex flex-col divide-y divide-charcoal/6">
-          {staff.map(s => (
-            <div key={s.id} className={`py-4 first:pt-0 last:pb-0 flex items-center gap-4 ${!s.is_active ? 'opacity-40' : ''}`}>
+          {staff.map((s, idx) => (
+            <div key={s.id} className={`py-4 first:pt-0 last:pb-0 flex items-center gap-3 ${!s.is_active ? 'opacity-40' : ''}`}>
+              {/* Reorder arrows */}
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button
+                  onClick={() => moveStaff(s.id, 'up')}
+                  disabled={idx === 0}
+                  className="w-6 h-5 flex items-center justify-center rounded text-charcoal/25 hover:text-charcoal hover:bg-charcoal/6 transition-colors disabled:opacity-0 text-[10px]"
+                >▲</button>
+                <button
+                  onClick={() => moveStaff(s.id, 'down')}
+                  disabled={idx === staff.length - 1}
+                  className="w-6 h-5 flex items-center justify-center rounded text-charcoal/25 hover:text-charcoal hover:bg-charcoal/6 transition-colors disabled:opacity-0 text-[10px]"
+                >▼</button>
+              </div>
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium text-charcoal text-sm">{s.name}</p>
@@ -1300,6 +1391,11 @@ export default function SettingsPage() {
                   {s.show_temp_logs  && <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Temp Logs</span>}
                   {s.show_allergens  && <span className="text-[11px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Allergens</span>}
                   {s.is_under_18     && <span className="text-[11px] bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded">Under 18</span>}
+                  {(s.working_days ?? []).length > 0 && (s.working_days ?? []).length < 7 && (
+                    <span className="text-[11px] bg-brand/8 text-brand px-1.5 py-0.5 rounded">
+                      {(s.working_days ?? []).map(d => DOW_LABELS[d - 1]).join('/')}
+                    </span>
+                  )}
                   {(s.skills ?? []).map(sk => {
                     const roleDef = customRoles.find(r => r.value === sk)
                     return roleDef ? (
@@ -1313,7 +1409,7 @@ export default function SettingsPage() {
                   {s.hourly_rate > 0 && <p className="text-xs text-charcoal/40 font-mono">£{Number(s.hourly_rate).toFixed(2)}/hr</p>}
                 </div>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-2 shrink-0 flex-wrap justify-end">
                 <button
                   onClick={() => openEdit(s)}
                   className="text-xs px-3 py-1.5 rounded-lg border border-charcoal/15 text-charcoal/60 hover:text-charcoal hover:border-charcoal/30 transition-colors"
@@ -1327,6 +1423,10 @@ export default function SettingsPage() {
                 >
                   {s.is_active ? 'Deactivate' : 'Reactivate'}
                 </button>
+                <button
+                  onClick={() => deleteStaffPermanently(s)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-danger/15 text-danger/40 hover:text-danger hover:border-danger/35 transition-colors"
+                >Delete</button>
               </div>
             </div>
           ))}

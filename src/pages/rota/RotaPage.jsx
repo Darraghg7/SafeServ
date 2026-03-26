@@ -9,8 +9,9 @@ import { useSession } from '../../contexts/SessionContext'
 import { getWeekStart, getWeekDays } from '../../lib/utils'
 import { useToast } from '../../components/ui/Toast'
 import TimeSelect from '../../components/ui/TimeSelect'
-import { ROLE_OPTIONS, SHIFT_PRESETS } from '../../lib/constants'
+import { SHIFT_PRESETS } from '../../lib/constants'
 import { useAppSettings } from '../../hooks/useSettings'
+import { useVenueRoles } from '../../hooks/useVenueRoles'
 import RotaWeekView from './RotaWeekView'
 import RotaBuilderModal from './RotaBuilderModal'
 import RotaAIModal from './RotaAIModal'
@@ -44,6 +45,7 @@ export default function RotaPage() {
   const { swaps, loading: swapsLoading, reload: reloadSwaps, pendingCount } = useShiftSwaps()
   const { unavailability, toggleAvailability, reload: reloadAvail } = useAvailability(weekStart, numWeeks)
   const { customRoles, closedDays, breakDurationMins } = useAppSettings()
+  const { roles: venueRoles } = useVenueRoles()
 
   // ── Venue closures ──
   const [closures, setClosures] = useState([])
@@ -160,7 +162,8 @@ export default function RotaPage() {
     const dateStr = format(date, 'yyyy-MM-dd')
     if (effectiveClosedDates.has(dateStr)) return // can't add shifts on closed days
     setModal({ staffMember, date, dayShifts })
-    setForm({ staffId: staffMember.id, startTime: '09:00', endTime: '17:00', roleLabel: 'Chef' })
+    const lastRole = localStorage.getItem(`mise_last_role_${staffMember.id}`) || venueRoles[0]?.name || ''
+    setForm({ staffId: staffMember.id, startTime: '09:00', endTime: '17:00', roleLabel: lastRole })
     setEditShift(null)
   }
 
@@ -208,6 +211,7 @@ export default function RotaPage() {
       : await supabase.from('shifts').insert(payload)
     setSaving(false)
     if (error) { toast(error.message, 'error'); return }
+    if (form.roleLabel) localStorage.setItem(`mise_last_role_${form.staffId}`, form.roleLabel)
     toast(editShift ? 'Shift updated' : 'Shift added')
     setModal(null)
     reload()
@@ -336,8 +340,6 @@ export default function RotaPage() {
   const shiftWage   = hourlyRate > 0 && duration
     ? fmtGBP(paidHrs * hourlyRate)
     : null
-
-  const selectedRole = ROLE_OPTIONS.find((r) => r.label === form.roleLabel)
 
   const pendingSwaps  = swaps.filter((s) => s.status === 'pending')
   const resolvedSwaps = swaps.filter((s) => s.status !== 'pending')
@@ -798,26 +800,39 @@ export default function RotaPage() {
                 )}
               </div>
 
-              {/* Role selector — coloured chips */}
+              {/* Role selector */}
               <div>
                 <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">Role</p>
-                <div className="flex flex-wrap gap-2">
-                  {ROLE_OPTIONS.map((r) => (
-                    <button
-                      key={r.label}
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, roleLabel: r.label }))}
-                      className={[
-                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
-                        form.roleLabel === r.label
-                          ? `${r.color} border-transparent ring-2 ring-offset-1 ring-charcoal/30`
-                          : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30',
-                      ].join(' ')}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
+                {venueRoles.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {venueRoles.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, roleLabel: r.name }))}
+                        className={[
+                          'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                          form.roleLabel === r.name
+                            ? 'bg-brand text-cream border-brand'
+                            : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30',
+                        ].join(' ')}
+                      >
+                        {r.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="text"
+                      value={form.roleLabel}
+                      onChange={(e) => setForm((f) => ({ ...f, roleLabel: e.target.value }))}
+                      placeholder="e.g. Chef, Barista, FOH…"
+                      className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+                    />
+                    <p className="text-[11px] text-charcoal/35">Add roles in Settings → Rota Roles to get quick-select chips here.</p>
+                  </div>
+                )}
               </div>
 
               {/* Action buttons */}
@@ -835,7 +850,11 @@ export default function RotaPage() {
                 <div className="flex gap-2">
                   {editShift && (
                     <button
-                      onClick={() => { setEditShift(null); setForm({ staffId: modal.staffMember.id, startTime: '09:00', endTime: '17:00', roleLabel: 'Chef' }) }}
+                      onClick={() => {
+                        const lastRole = localStorage.getItem(`mise_last_role_${modal.staffMember.id}`) || venueRoles[0]?.name || ''
+                        setEditShift(null)
+                        setForm({ staffId: modal.staffMember.id, startTime: '09:00', endTime: '17:00', roleLabel: lastRole })
+                      }}
                       className="px-4 py-2.5 rounded-lg border border-charcoal/15 text-sm text-charcoal/60 hover:text-charcoal hover:border-charcoal/30 transition-colors"
                     >
                       Cancel Edit

@@ -38,6 +38,7 @@ export default function LoginPage() {
       .select('id, name, role, photo_url')
       .eq('venue_id', venueId)
       .eq('is_active', true)
+      .order('sort_order')
       .order('name')
       .then(({ data }) => setStaff(data ?? []))
   }, [venueId])
