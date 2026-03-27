@@ -231,20 +231,19 @@ function useTodaySummary(venueId) {
 
     const fetchAll = async () => {
       setLoading(true)
-      const [cleaning, rota, opening] = await Promise.all([
-        // Overdue cleaning tasks
+      const [cleaning, rota, opening, fridges, fridgeLogs, leaveReqs, critActions] = await Promise.all([
         supabase.from('cleaning_tasks').select('id, frequency').eq('venue_id', venueId).eq('is_active', true),
-        // Staff on shift today
         supabase.from('shifts').select('id', { count: 'exact', head: true }).eq('venue_id', venueId).eq('shift_date', todayStr),
-        // Opening checks completed today
         supabase.from('opening_closing_completions')
           .select('id', { count: 'exact', head: true })
-          .eq('venue_id', venueId)
-          .gte('completed_at', dayStart)
-          .lte('completed_at', dayEnd),
+          .eq('venue_id', venueId).gte('completed_at', dayStart).lte('completed_at', dayEnd),
+        supabase.from('fridges').select('id').eq('venue_id', venueId).eq('is_active', true),
+        supabase.from('fridge_temperature_logs').select('fridge_id').eq('venue_id', venueId).gte('logged_at', dayStart).lte('logged_at', dayEnd),
+        supabase.from('time_off_requests').select('id', { count: 'exact', head: true }).eq('venue_id', venueId).eq('status', 'pending'),
+        supabase.from('corrective_actions').select('id', { count: 'exact', head: true }).eq('venue_id', venueId).eq('status', 'open').eq('severity', 'critical'),
       ])
 
-      // Calculate overdue cleaning
+      // Overdue cleaning
       let overdueCount = 0
       if (cleaning.data?.length) {
         const { data: completions } = await supabase
@@ -261,10 +260,17 @@ function useTodaySummary(venueId) {
         }
       }
 
+      // Unchecked fridges
+      const checkedIds = new Set((fridgeLogs.data ?? []).map(l => l.fridge_id))
+      const uncheckedFridges = (fridges.data ?? []).filter(f => !checkedIds.has(f.id)).length
+
       setSummary({
-        overdueClean:  overdueCount,
-        onShiftToday:  rota.count ?? 0,
-        checksToday:   opening.count ?? 0,
+        overdueClean:     overdueCount,
+        onShiftToday:     rota.count ?? 0,
+        checksToday:      opening.count ?? 0,
+        uncheckedFridges: uncheckedFridges,
+        pendingLeave:     leaveReqs.count ?? 0,
+        criticalActions:  critActions.count ?? 0,
       })
       setLoading(false)
     }
@@ -275,38 +281,73 @@ function useTodaySummary(venueId) {
 }
 
 function TodaySummaryCard({ venueId }) {
+  const { venueSlug } = useVenue()
   const { summary, loading } = useTodaySummary(venueId)
+  const vp = (p) => `/v/${venueSlug}${p}`
+
+  const actions = summary ? [
+    summary.checksToday === 0 && { label: 'Opening checks not done', to: vp('/opening-closing'), urgency: 'warn' },
+    summary.uncheckedFridges > 0 && { label: `${summary.uncheckedFridges} fridge${summary.uncheckedFridges > 1 ? 's' : ''} not logged today`, to: vp('/fridge'), urgency: 'warn' },
+    summary.overdueClean > 0 && { label: `${summary.overdueClean} cleaning task${summary.overdueClean > 1 ? 's' : ''} overdue`, to: vp('/cleaning'), urgency: 'danger' },
+    summary.criticalActions > 0 && { label: `${summary.criticalActions} critical action${summary.criticalActions > 1 ? 's' : ''} open`, to: vp('/corrective'), urgency: 'danger' },
+    summary.pendingLeave > 0 && { label: `${summary.pendingLeave} leave request${summary.pendingLeave > 1 ? 's' : ''} pending`, to: vp('/time-off'), urgency: 'info' },
+  ].filter(Boolean) : []
+
+  const urgencyDot = { warn: 'bg-warning', danger: 'bg-danger', info: 'bg-accent' }
+  const urgencyText = { warn: 'text-warning', danger: 'text-danger', info: 'text-accent' }
 
   return (
-    <div className="bg-white rounded-xl border border-charcoal/10 p-5">
-      <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-4">Today at a Glance</p>
-      {loading || !summary ? (
-        <div className="flex gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex-1 h-14 rounded-lg bg-charcoal/5 animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col gap-0.5">
-            <p className={`font-serif text-3xl font-semibold ${summary.onShiftToday > 0 ? 'text-charcoal' : 'text-charcoal/30'}`}>
-              {summary.onShiftToday}
-            </p>
-            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 leading-tight">On Shift</p>
+    <div className="bg-white rounded-xl border border-charcoal/10 overflow-hidden">
+      <div className="px-5 pt-4 pb-3">
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-4">Today</p>
+        {loading || !summary ? (
+          <div className="flex gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-1 h-14 rounded-lg bg-charcoal/5 animate-pulse" />
+            ))}
           </div>
-          <div className="flex flex-col gap-0.5">
-            <p className={`font-serif text-3xl font-semibold ${summary.checksToday > 0 ? 'text-success' : 'text-charcoal/30'}`}>
-              {summary.checksToday}
-            </p>
-            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 leading-tight">Checks Done</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col gap-0.5">
+              <p className={`font-serif text-3xl font-semibold ${summary.onShiftToday > 0 ? 'text-charcoal' : 'text-charcoal/30'}`}>
+                {summary.onShiftToday}
+              </p>
+              <p className="text-[11px] text-charcoal/40 leading-tight">On shift</p>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <p className={`font-serif text-3xl font-semibold ${summary.checksToday > 0 ? 'text-success' : 'text-charcoal/30'}`}>
+                {summary.checksToday}
+              </p>
+              <p className="text-[11px] text-charcoal/40 leading-tight">Checks done</p>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <p className={`font-serif text-3xl font-semibold ${summary.overdueClean > 0 ? 'text-danger' : 'text-success'}`}>
+                {summary.overdueClean}
+              </p>
+              <p className="text-[11px] text-charcoal/40 leading-tight">Overdue cleans</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <p className={`font-serif text-3xl font-semibold ${summary.overdueClean > 0 ? 'text-danger' : 'text-success'}`}>
-              {summary.overdueClean}
-            </p>
-            <p className="text-[11px] tracking-widest uppercase text-charcoal/40 leading-tight">Overdue Cleans</p>
+        )}
+      </div>
+
+      {/* Action items */}
+      {!loading && summary && (
+        actions.length === 0 ? (
+          <div className="border-t border-charcoal/6 px-5 py-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-success shrink-0" />
+            <p className="text-sm text-charcoal/50">All checks on track</p>
           </div>
-        </div>
+        ) : (
+          <div className="border-t border-charcoal/6 divide-y divide-charcoal/6">
+            {actions.map((a) => (
+              <a key={a.to} href={a.to} className="flex items-center gap-3 px-5 py-3 hover:bg-charcoal/3 transition-colors group">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${urgencyDot[a.urgency]}`} />
+                <p className={`text-sm flex-1 font-medium ${urgencyText[a.urgency]}`}>{a.label}</p>
+                <span className="text-charcoal/20 group-hover:text-charcoal/40 transition-colors text-sm">→</span>
+              </a>
+            ))}
+          </div>
+        )
       )}
     </div>
   )

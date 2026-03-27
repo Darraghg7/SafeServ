@@ -58,6 +58,78 @@ function MiniRow({ label, value, warn }) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* 1. Compliance Score */
+const SCORE_TIERS = [
+  { min: 90, label: 'Excellent',        color: '#15803d', status: 'good'    },
+  { min: 75, label: 'Good',             color: '#22c55e', status: 'good'    },
+  { min: 60, label: 'Needs Improvement',color: '#f59e0b', status: 'warning' },
+  { min: 0,  label: 'Poor',             color: '#ef4444', status: 'bad'     },
+]
+
+function getScoreTier(score) {
+  return SCORE_TIERS.find(t => score >= t.min) ?? SCORE_TIERS[SCORE_TIERS.length - 1]
+}
+
+function ComplianceGauge({ score }) {
+  const tier = getScoreTier(score)
+  const r = 48
+  const cx = 60
+  const cy = 60
+  const circumference = 2 * Math.PI * r
+  const filled = circumference * (score / 100)
+  const offset = circumference - filled
+
+  return (
+    <div className="flex flex-col items-center py-2">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        {/* Track */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="10"
+          className="text-charcoal/8"
+        />
+        {/* Progress arc — starts from 12 o'clock */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke={tier.color}
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${cx} ${cy})`}
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+        />
+        {/* Score text */}
+        <text
+          x={cx} y={cy - 4}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="22"
+          fontWeight="700"
+          fontFamily="serif"
+          fill={tier.color}
+        >
+          {score}%
+        </text>
+        {/* Label text */}
+        <text
+          x={cx} y={cy + 16}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="9"
+          fontWeight="600"
+          fill={tier.color}
+          letterSpacing="0.5"
+        >
+          {tier.label.toUpperCase()}
+        </text>
+      </svg>
+    </div>
+  )
+}
+
 function ComplianceScoreWidget() {
   const { venueId } = useVenue()
   const [data, setData] = useState(null)
@@ -66,7 +138,6 @@ function ComplianceScoreWidget() {
     if (!venueId) return
     const load = async () => {
       const since = subDays(new Date(), 30).toISOString()
-      const since90 = subDays(new Date(), 90).toISOString()
       const [temps, deliveries, calibrations, actions, training, coolingLogs, pestIssues] = await Promise.all([
         supabase.from('fridge_temperature_logs').select('id, temperature, fridge:fridge_id(min_temp, max_temp)').eq('venue_id', venueId).gte('logged_at', since),
         supabase.from('delivery_checks').select('id, overall_pass').eq('venue_id', venueId).gte('checked_at', since),
@@ -98,8 +169,8 @@ function ComplianceScoreWidget() {
       const coolingFails = cl.filter(x => Number(x.end_temp) > Number(x.target_temp ?? 8)).length
 
       const pi = pestIssues.data ?? []
-      const openHighPest   = pi.filter(x => x.severity === 'high').length
-      const openMedPest    = pi.filter(x => x.severity === 'medium').length
+      const openHighPest = pi.filter(x => x.severity === 'high').length
+      const openMedPest  = pi.filter(x => x.severity === 'medium').length
 
       let score = 100
       if (tempRate < 95) score -= 20
@@ -116,23 +187,16 @@ function ComplianceScoreWidget() {
       else if (openMedPest > 0) score -= 5
       score = Math.max(0, score)
 
-      const status = score >= 85 ? 'good' : score >= 60 ? 'warning' : 'bad'
-      setData({ score, status })
+      setData({ score, status: getScoreTier(score).status })
     }
     load()
   }, [venueId])
 
   if (!data) return <WidgetShell title="Compliance Score" to="/audit"><div className="flex justify-center py-4"><LoadingSpinner /></div></WidgetShell>
 
-  const colors = { good: 'text-success', warning: 'text-warning', bad: 'text-danger' }
-  const labels = { good: 'Inspection ready', warning: 'Needs attention', bad: 'Action required' }
-
   return (
     <WidgetShell title="Compliance Score" to="/audit" status={data.status}>
-      <div className="text-center py-2">
-        <p className={`font-serif text-4xl font-bold ${colors[data.status]}`}>{data.score}%</p>
-        <p className={`text-xs mt-1 ${colors[data.status]}`}>{labels[data.status]}</p>
-      </div>
+      <ComplianceGauge score={data.score} />
     </WidgetShell>
   )
 }

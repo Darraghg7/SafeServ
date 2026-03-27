@@ -8,6 +8,7 @@ import { useSession } from '../../contexts/SessionContext'
 import { isTempOutOfRange } from '../../lib/utils'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import NumPad from '../../components/ui/NumPad'
 
 function SectionLabel({ children }) {
   return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
@@ -145,21 +146,32 @@ export default function FridgeLogFormPage() {
 
         {/* Temperature + reason */}
         <div className="bg-white rounded-xl border border-charcoal/10 p-5 flex flex-col gap-4">
-          <div>
+          <div className="flex flex-col gap-3">
             <SectionLabel>Temperature (°C)</SectionLabel>
-            <input
-              type="number" step="0.1" min="-30" max="60"
-              value={temp}
-              onChange={(e) => { setTemp(e.target.value); setReason(null); setComment('') }}
-              required
-              placeholder="e.g. 3.5"
-              disabled={!fridgeId}
-              className={[
-                'w-full px-4 py-3 rounded-lg border bg-cream/30 focus:outline-none focus:ring-2 focus:ring-charcoal/20 text-2xl font-mono text-charcoal placeholder-charcoal/20 transition-colors',
-                outOfRange ? 'border-warning/50 bg-warning/5' : 'border-charcoal/15',
-                !fridgeId ? 'opacity-40 cursor-not-allowed' : '',
-              ].join(' ')}
-            />
+
+            {/* Big display */}
+            <div className={[
+              'w-full rounded-2xl border py-5 flex items-center justify-center gap-1 transition-colors',
+              !fridgeId          ? 'opacity-40 bg-charcoal/4 border-charcoal/10' :
+              outOfRange         ? 'border-warning/40 bg-warning/5' :
+                                   'border-charcoal/12 bg-cream/30',
+            ].join(' ')}>
+              <span className={[
+                'font-mono text-5xl font-bold tracking-tight transition-colors',
+                outOfRange ? 'text-warning' : temp ? 'text-charcoal' : 'text-charcoal/20',
+              ].join(' ')}>
+                {temp || '–'}
+              </span>
+              <span className="text-2xl text-charcoal/35 font-light ml-1 mt-1">°C</span>
+            </div>
+
+            {/* NumPad — only shown when a fridge is selected */}
+            {fridgeId && (
+              <NumPad
+                value={temp}
+                onChange={(v) => { setTemp(v); setReason(null); setComment('') }}
+              />
+            )}
           </div>
 
           {/* OOR: reason picker */}
