@@ -40,33 +40,35 @@ function useUpdateReady() {
 }
 
 /**
- * Floating update card — appears at the bottom-centre of the screen,
- * safely above the mobile nav bar and iPhone home indicator.
- * Mounted at the app root so it shows on every page including the PIN picker.
+ * Full-screen blocking update modal — prevents all app interaction until the
+ * user installs the update. Mounted at the app root so it covers every page.
  */
 export default function UpdateBanner() {
   const { updateReady, applyUpdate } = useUpdateReady()
 
+  // Lock body scroll while the modal is showing
+  useEffect(() => {
+    if (!updateReady) return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [updateReady])
+
   if (!updateReady) return null
 
   return (
-    <div
-      className="fixed bottom-24 inset-x-0 z-[200] flex justify-center px-5 pointer-events-none"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-    >
-      <div className="pointer-events-auto w-full max-w-sm bg-warning text-white rounded-2xl shadow-xl flex items-center justify-between gap-3 px-4 py-3.5">
-        <div className="flex items-center gap-3">
-          <span className="text-xl shrink-0">⬆️</span>
-          <div>
-            <p className="text-sm font-semibold leading-tight">Update available</p>
-            <p className="text-xs opacity-80 mt-0.5">Tap to get the latest version</p>
-          </div>
+    /* Full-screen backdrop — blocks all touches beneath it */
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-6">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl px-6 py-7 flex flex-col items-center text-center gap-4">
+        <span className="text-4xl">⬆️</span>
+        <div>
+          <h2 className="text-charcoal text-lg font-bold">Update available</h2>
+          <p className="text-charcoal/50 text-sm mt-1">Bug fixes and improvements — tap below to update and continue.</p>
         </div>
         <button
           onClick={applyUpdate}
-          className="shrink-0 text-xs font-bold bg-white/25 hover:bg-white/35 active:scale-95 transition-all px-4 py-2 rounded-xl whitespace-nowrap"
+          className="w-full bg-warning text-white font-bold text-sm py-3.5 rounded-xl active:scale-95 transition-transform"
         >
-          Update
+          Update Now
         </button>
       </div>
     </div>
