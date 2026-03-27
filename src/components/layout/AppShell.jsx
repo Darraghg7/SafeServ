@@ -363,7 +363,7 @@ export default function AppShell({ children }) {
 
       {/* ── Desktop sidebar (hidden on everything below 1024px — lg breakpoint) ─ */}
       <aside
-        className="hidden lg:flex flex-col w-[220px] fixed inset-y-0 left-0 z-30 bg-white dark:bg-[#1a1a18] border-r border-charcoal/10 dark:border-white/8 overflow-y-auto overflow-x-hidden"
+        className="hidden lg:flex flex-col w-[220px] fixed inset-y-0 left-0 z-30 bg-white dark:bg-[#1a1a18] border-r border-charcoal/10 dark:border-white/8"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
         aria-label="Sidebar navigation"
       >
@@ -385,7 +385,7 @@ export default function AppShell({ children }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-2" aria-label="Main navigation">
+        <nav className="flex-1 py-2 overflow-y-auto overflow-x-hidden" aria-label="Main navigation">
           {isManager ? (
             <>
               <div className="space-y-0.5 px-0 pt-2">

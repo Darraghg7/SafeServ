@@ -2,6 +2,7 @@ import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useSession } from '../../contexts/SessionContext'
 import { useVenue } from '../../contexts/VenueContext'
+import { useVenueFeatures } from '../../hooks/useVenueFeatures'
 
 /* ── SVG Icon components — thin outline, Revolut/Linear style ─────────────
    Active state: slightly bolder stroke + brand colour (via parent text-brand)
@@ -114,7 +115,25 @@ function SubNav({ items, currentPath }) {
 }
 
 /* ── Tab configurations ─────────────────────────────────────────────────── */
-function getManagerTabs(vp) {
+function getManagerTabs(vp, isEnabled) {
+  const complianceChildren = [
+    { to: vp('/opening-closing'), label: 'Checks',     feature: 'opening_closing' },
+    { to: vp('/fitness'),         label: 'Fitness',    feature: null },
+    { to: vp('/fridge'),          label: 'Temp Logs',  feature: 'fridge' },
+    { to: vp('/deliveries'),      label: 'Deliveries', feature: 'deliveries' },
+    { to: vp('/probe'),           label: 'Probe Cal.', feature: 'probe' },
+    { to: vp('/allergens'),       label: 'Allergens',  feature: 'allergens' },
+    { to: vp('/cleaning'),        label: 'Cleaning',   feature: 'cleaning' },
+    { to: vp('/corrective'),      label: 'Actions',    feature: 'corrective' },
+  ].filter(c => c.feature === null || isEnabled(c.feature))
+
+  const teamChildren = [
+    { to: vp('/rota'),      label: 'Rota',     feature: 'rota' },
+    { to: vp('/timesheet'), label: 'Hours',    feature: 'timesheet' },
+    { to: vp('/training'),  label: 'Training', feature: 'training' },
+    { to: vp('/time-off'),  label: 'Time Off', feature: 'time_off' },
+  ].filter(c => isEnabled(c.feature))
+
   return [
     {
       key: 'home',
@@ -126,32 +145,18 @@ function getManagerTabs(vp) {
     {
       key: 'compliance',
       label: 'Compliance',
-      to: vp('/opening-closing'),
+      to: complianceChildren[0]?.to ?? vp('/opening-closing'),
       icon: ClipboardIcon,
       match: ['/opening-closing', '/fitness', '/fridge', '/deliveries', '/probe', '/allergens', '/cleaning', '/corrective'],
-      children: [
-        { to: vp('/opening-closing'), label: 'Checks' },
-        { to: vp('/fitness'),         label: 'Fitness' },
-        { to: vp('/fridge'),          label: 'Temp Logs' },
-        { to: vp('/deliveries'),      label: 'Deliveries' },
-        { to: vp('/probe'),           label: 'Probe Cal.' },
-        { to: vp('/allergens'),       label: 'Allergens' },
-        { to: vp('/cleaning'),        label: 'Cleaning' },
-        { to: vp('/corrective'),      label: 'Actions' },
-      ],
+      children: complianceChildren,
     },
     {
       key: 'team',
       label: 'Team',
-      to: vp('/rota'),
+      to: teamChildren[0]?.to ?? vp('/rota'),
       icon: UsersIcon,
       match: ['/rota', '/timesheet', '/training', '/time-off'],
-      children: [
-        { to: vp('/rota'),       label: 'Rota' },
-        { to: vp('/timesheet'),  label: 'Hours' },
-        { to: vp('/training'),   label: 'Training' },
-        { to: vp('/time-off'),   label: 'Time Off' },
-      ],
+      children: teamChildren,
     },
     {
       key: 'audit',
@@ -170,12 +175,12 @@ function getManagerTabs(vp) {
   ]
 }
 
-function getStaffTabs(session, vp) {
+function getStaffTabs(session, vp, isEnabled) {
   const taskChildren = [
-    { to: vp('/opening-closing'), label: 'Checks' },
-    { to: vp('/cleaning'),        label: 'Cleaning' },
-    ...(session?.showTempLogs  ? [{ to: vp('/fridge'),    label: 'Temp Logs' }] : []),
-    { to: vp('/allergens'), label: 'Allergens' },
+    ...(isEnabled('opening_closing') ? [{ to: vp('/opening-closing'), label: 'Checks' }] : []),
+    ...(isEnabled('cleaning')        ? [{ to: vp('/cleaning'),        label: 'Cleaning' }] : []),
+    ...(isEnabled('fridge') && session?.showTempLogs ? [{ to: vp('/fridge'), label: 'Temp Logs' }] : []),
+    ...(isEnabled('allergens')       ? [{ to: vp('/allergens'),       label: 'Allergens' }] : []),
   ]
 
   return [
@@ -189,25 +194,25 @@ function getStaffTabs(session, vp) {
     {
       key: 'tasks',
       label: 'Tasks',
-      to: vp('/opening-closing'),
+      to: taskChildren[0]?.to ?? vp('/opening-closing'),
       icon: TasksIcon,
       match: ['/opening-closing', '/cleaning', '/fridge', '/allergens'],
       children: taskChildren.length > 1 ? taskChildren : undefined,
     },
-    {
+    ...(isEnabled('rota') ? [{
       key: 'rota',
       label: 'Rota',
       to: vp('/rota'),
       icon: CalendarIcon,
       match: ['/rota'],
-    },
-    {
+    }] : []),
+    ...(isEnabled('time_off') ? [{
       key: 'timeoff',
       label: 'Time Off',
       to: vp('/time-off'),
       icon: ClockIcon,
       match: ['/time-off'],
-    },
+    }] : []),
   ]
 }
 
@@ -216,6 +221,7 @@ export default function MobileNav() {
   const { session, isManager } = useSession()
   const { venueSlug } = useVenue()
   const { pathname } = useLocation()
+  const { isEnabled } = useVenueFeatures()
 
   const vp = (p) => `/v/${venueSlug}${p}`
 
@@ -224,7 +230,7 @@ export default function MobileNav() {
     ? (pathname.slice(base.length) || '/')
     : pathname
 
-  const tabs = isManager ? getManagerTabs(vp) : getStaffTabs(session, vp)
+  const tabs = isManager ? getManagerTabs(vp, isEnabled) : getStaffTabs(session, vp, isEnabled)
 
   const activeTab = tabs.find(t => t.match.some(m => localPath === m || (m !== '/dashboard' && localPath.startsWith(m))))
   const showSubNav = activeTab?.children && activeTab.children.length > 1

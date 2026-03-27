@@ -818,10 +818,10 @@ export default function SettingsPage() {
               {dark ? 'Dark theme is active.' : 'Switch to a darker colour scheme.'}
             </p>
           </div>
-          <button onClick={toggleDark} className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <span className="text-base">{dark ? '🌙' : '☀️'}</span>
             <Toggle checked={dark} onChange={toggleDark} />
-          </button>
+          </div>
         </div>
       </SettingsSection>
 

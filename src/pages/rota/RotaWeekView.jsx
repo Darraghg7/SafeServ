@@ -374,7 +374,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                         <p className="font-mono text-sm font-semibold text-charcoal">{fmtGBP(wageCost)}</p>
                         <p className="text-[11px] text-charcoal/35">{totalHrs.toFixed(1)}h paid</p>
                         {rawHrs !== totalHrs && (
-                          <p className="text-[9px] text-charcoal/25">{isUnder18 ? '30m' : '20m'} break</p>
+                          <p className="text-[9px] text-charcoal/25">{isUnder18 ? '30m' : `${breakDurationMins}m`} break</p>
                         )}
                       </div>
                     ) : (
