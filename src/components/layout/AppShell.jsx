@@ -270,57 +270,6 @@ function SideSection({ label }) {
 }
 
 /* ── Main AppShell ───────────────────────────────────────────────────────────── */
-/** Detects a waiting service worker and exposes an update trigger. */
-function useUpdateReady() {
-  const [waitingSW, setWaitingSW] = useState(null)
-
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return
-
-    const checkWaiting = async () => {
-      const reg = await navigator.serviceWorker.getRegistration()
-      if (reg?.waiting) setWaitingSW(reg.waiting)
-    }
-
-    // Check immediately (page may have loaded after SW was already waiting)
-    checkWaiting()
-
-    // Listen for future SW updates
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // New SW just took control — reload to use new assets
-      window.location.reload()
-    })
-
-    const handleUpdateFound = () => {
-      const reg = navigator.serviceWorker.controller?.registration
-      if (reg?.installing) {
-        reg.installing.addEventListener('statechange', (e) => {
-          if (e.target.state === 'installed') setWaitingSW(e.target)
-        })
-      }
-    }
-
-    navigator.serviceWorker.getRegistration().then(reg => {
-      if (!reg) return
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing
-        newSW?.addEventListener('statechange', (e) => {
-          if (e.target.state === 'installed' && navigator.serviceWorker.controller) {
-            setWaitingSW(e.target)
-          }
-        })
-      })
-    })
-  }, [])
-
-  const applyUpdate = () => {
-    if (!waitingSW) return
-    waitingSW.postMessage({ type: 'SKIP_WAITING' })
-  }
-
-  return { updateReady: !!waitingSW, applyUpdate }
-}
-
 export default function AppShell({ children }) {
   const { session, isManager, signOut } = useSession()
   const { venueId, venueSlug, venueName } = useVenue()
@@ -331,7 +280,6 @@ export default function AppShell({ children }) {
   const logoUrl      = useVenueLogo(venueId)
 
   const { isEnabled, isPlanLocked, venuePlan } = useVenueFeatures()
-  const { updateReady, applyUpdate } = useUpdateReady()
 
   const name = session?.staffName ?? ''
 
@@ -485,19 +433,6 @@ export default function AppShell({ children }) {
             </div>
           </div>
         </header>
-
-        {/* Update-ready banner — shown when a new version is waiting */}
-        {updateReady && (
-          <div className="flex items-center justify-between gap-3 bg-brand text-cream px-4 py-2.5 text-sm">
-            <span className="text-xs tracking-wide">A new version of SafeServ is available.</span>
-            <button
-              onClick={applyUpdate}
-              className="shrink-0 text-xs font-semibold bg-cream/15 hover:bg-cream/25 transition-colors px-3 py-1 rounded-lg"
-            >
-              Update now
-            </button>
-          </div>
-        )}
 
         {/* Offline banner */}
         <OfflineBanner />

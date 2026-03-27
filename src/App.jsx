@@ -10,6 +10,7 @@ import SetupPage               from './pages/SetupPage'
 import AppShell                from './components/layout/AppShell'
 import { FullPageLoader }      from './components/ui/LoadingSpinner'
 import PlanGate                from './components/ui/PlanGate'
+import UpdateBanner            from './components/ui/UpdateBanner'
 
 // Auth
 import LoginPage from './pages/LoginPage'
@@ -226,6 +227,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <UpdateBanner />
       <AuthProvider>
         <Routes>
           {/* Public: marketing homepage */}
