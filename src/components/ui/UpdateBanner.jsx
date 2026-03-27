@@ -40,9 +40,9 @@ function useUpdateReady() {
 }
 
 /**
- * Renders a slim banner at the top of the viewport when a new app version
- * is waiting. Works on every page — including the PIN picker login screen —
- * because it is mounted at the app root, not inside AppShell.
+ * Floating update card — appears at the bottom-centre of the screen,
+ * safely above the mobile nav bar and iPhone home indicator.
+ * Mounted at the app root so it shows on every page including the PIN picker.
  */
 export default function UpdateBanner() {
   const { updateReady, applyUpdate } = useUpdateReady()
@@ -50,17 +50,25 @@ export default function UpdateBanner() {
   if (!updateReady) return null
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[200] flex items-center justify-between gap-3 bg-warning text-white px-4 py-2.5">
-      <div className="flex items-center gap-2">
-        <span className="text-sm">⬆️</span>
-        <span className="text-xs font-medium">Update available — tap to get the latest version</span>
+    <div
+      className="fixed bottom-24 inset-x-0 z-[200] flex justify-center px-5 pointer-events-none"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="pointer-events-auto w-full max-w-sm bg-warning text-white rounded-2xl shadow-xl flex items-center justify-between gap-3 px-4 py-3.5">
+        <div className="flex items-center gap-3">
+          <span className="text-xl shrink-0">⬆️</span>
+          <div>
+            <p className="text-sm font-semibold leading-tight">Update available</p>
+            <p className="text-xs opacity-80 mt-0.5">Tap to get the latest version</p>
+          </div>
+        </div>
+        <button
+          onClick={applyUpdate}
+          className="shrink-0 text-xs font-bold bg-white/25 hover:bg-white/35 active:scale-95 transition-all px-4 py-2 rounded-xl whitespace-nowrap"
+        >
+          Update
+        </button>
       </div>
-      <button
-        onClick={applyUpdate}
-        className="shrink-0 text-xs font-bold bg-white/25 hover:bg-white/35 transition-colors px-3 py-1.5 rounded-lg whitespace-nowrap"
-      >
-        Update
-      </button>
     </div>
   )
 }
