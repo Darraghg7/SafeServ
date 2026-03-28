@@ -104,7 +104,7 @@ async function checkRepeatOffenders(items, vid) {
 }
 
 async function checkFridgeAlerts(items, today, vid) {
-  const { data: logs } = await supabase.from('fridge_temperature_logs').select('id, temperature, fridge:fridge_id(name, min_temp, max_temp)').eq('venue_id', vid).gte('logged_at', today + 'T00:00:00')
+  const { data: logs } = await supabase.from('fridge_temperature_logs').select('id, fridge_id, temperature, fridge:fridge_id(name, min_temp, max_temp)').eq('venue_id', vid).gte('logged_at', today + 'T00:00:00')
   const readings = logs ?? []
   const outOfRange = readings.filter(l => l.fridge && (l.temperature < l.fridge.min_temp || l.temperature > l.fridge.max_temp))
   if (outOfRange.length > 0) {
@@ -113,8 +113,8 @@ async function checkFridgeAlerts(items, today, vid) {
   }
   const { data: fridges } = await supabase.from('fridges').select('id, name').eq('venue_id', vid).eq('is_active', true)
   if (fridges?.length > 0) {
-    const checkedIds = new Set(readings.map(l => l.fridge?.name).filter(Boolean))
-    const unchecked = fridges.filter(f => !checkedIds.has(f.name))
+    const checkedIds = new Set((logs ?? []).map(l => l.fridge_id).filter(Boolean))
+    const unchecked = fridges.filter(f => !checkedIds.has(f.id))
     if (unchecked.length > 0 && new Date().getHours() >= 10) {
       items.push({ id: 'fridge-unchecked', type: 'fridge_unchecked', message: `${unchecked.length} fridge${unchecked.length > 1 ? 's' : ''} not checked today: ${unchecked.map(f => f.name).join(', ')}`, link: '/fridge', severity: 'warning' })
     }

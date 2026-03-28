@@ -1,8 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { format, startOfDay, endOfDay } from 'date-fns'
+import { Link } from 'react-router-dom'
+import { format, startOfDay, endOfDay, subDays } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
+import { useSession } from '../../contexts/SessionContext'
+import { useToast } from '../../components/ui/Toast'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { WIDGET_REGISTRY, DEFAULT_WIDGETS, ALL_WIDGET_IDS } from '../../components/widgets/WidgetRegistry'
+import ClockPanel from '../../components/ClockPanel'
+import Modal from '../../components/ui/Modal'
 
 // Multi-venue is just Pro × number of venues — no separate tier in the app
 const PLAN_CONFIG = {
@@ -17,27 +23,22 @@ function PlanBadge({ plan }) {
     </span>
   )
 }
-import { useSession } from '../../contexts/SessionContext'
-import { useToast } from '../../components/ui/Toast'
-import { WIDGET_REGISTRY, DEFAULT_WIDGETS, ALL_WIDGET_IDS } from '../../components/widgets/WidgetRegistry'
-import ClockPanel from '../../components/ClockPanel'
-import Modal from '../../components/ui/Modal'
-
 function useVenueBranding(venueId) {
   const [venueName, setVenueName] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
   useEffect(() => {
     if (!venueId) return
+    let cancelled = false
     supabase.from('app_settings').select('key, value')
       .eq('venue_id', venueId)
       .in('key', ['venue_name', 'logo_url'])
       .then(({ data }) => {
-        if (data) {
-          const map = Object.fromEntries(data.map(r => [r.key, r.value]))
-          setVenueName(map.venue_name ?? '')
-          setLogoUrl(map.logo_url ?? '')
-        }
+        if (cancelled || !data) return
+        const map = Object.fromEntries(data.map(r => [r.key, r.value]))
+        setVenueName(map.venue_name ?? '')
+        setLogoUrl(map.logo_url ?? '')
       })
+    return () => { cancelled = true }
   }, [venueId])
   return { venueName, logoUrl }
 }
@@ -49,6 +50,7 @@ function useWidgetPreferences(staffId, venueId) {
 
   const load = useCallback(async () => {
     if (!staffId || !venueId) return
+    let cancelled = false
     const { data } = await supabase
       .from('dashboard_widgets')
       .select('widget_id, position')
@@ -56,13 +58,14 @@ function useWidgetPreferences(staffId, venueId) {
       .eq('staff_id', staffId)
       .order('position')
 
+    if (cancelled) return
     if (data && data.length > 0) {
       setWidgetIds(data.map(d => d.widget_id))
     } else {
-      // No saved prefs — use defaults
       setWidgetIds(DEFAULT_WIDGETS)
     }
     setLoading(false)
+    return () => { cancelled = true }
   }, [staffId, venueId])
 
   useEffect(() => { load() }, [load])
@@ -229,6 +232,7 @@ function useTodaySummary(venueId) {
     const dayEnd   = endOfDay(today).toISOString()
     const todayStr = format(today, 'yyyy-MM-dd')
 
+    let cancelled = false
     const fetchAll = async () => {
       setLoading(true)
       const [cleaning, rota, opening, fridges, fridgeLogs, leaveReqs, critActions] = await Promise.all([
@@ -243,14 +247,19 @@ function useTodaySummary(venueId) {
         supabase.from('corrective_actions').select('id', { count: 'exact', head: true }).eq('venue_id', venueId).eq('status', 'open').eq('severity', 'critical'),
       ])
 
-      // Overdue cleaning
+      if (cancelled) return
+
+      // Overdue cleaning — limit completions to last 90 days (max frequency window)
       let overdueCount = 0
       if (cleaning.data?.length) {
+        const ninetyDaysAgo = subDays(new Date(), 90).toISOString()
         const { data: completions } = await supabase
           .from('cleaning_completions')
           .select('cleaning_task_id, completed_at')
           .eq('venue_id', venueId)
+          .gte('completed_at', ninetyDaysAgo)
           .order('completed_at', { ascending: false })
+        if (cancelled) return
         const freqDays = { daily: 1, weekly: 7, fortnightly: 14, monthly: 30, quarterly: 90 }
         const now = new Date()
         for (const t of cleaning.data) {
@@ -275,6 +284,7 @@ function useTodaySummary(venueId) {
       setLoading(false)
     }
     fetchAll()
+    return () => { cancelled = true }
   }, [venueId])
 
   return { summary, loading }
@@ -340,11 +350,11 @@ function TodaySummaryCard({ venueId }) {
         ) : (
           <div className="border-t border-charcoal/6 divide-y divide-charcoal/6">
             {actions.map((a) => (
-              <a key={a.to} href={a.to} className="flex items-center gap-3 px-5 py-3 hover:bg-charcoal/3 transition-colors group">
+              <Link key={a.to} to={a.to} className="flex items-center gap-3 px-5 py-3 hover:bg-charcoal/3 transition-colors group">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${urgencyDot[a.urgency]}`} />
                 <p className={`text-sm flex-1 font-medium ${urgencyText[a.urgency]}`}>{a.label}</p>
                 <span className="text-charcoal/20 group-hover:text-charcoal/40 transition-colors text-sm">→</span>
-              </a>
+              </Link>
             ))}
           </div>
         )

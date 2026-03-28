@@ -185,22 +185,16 @@ function AddShiftForm({ staffId, onSave, onCancel }) {
     if (newClockOut <= newClockIn) { toast('Clock out must be after clock in', 'error'); return }
 
     setSaving(true)
-    const { data: ciData, error: ciErr } = await supabase
-      .from('clock_events')
-      .insert({ staff_id: staffId, venue_id: venueId, event_type: 'clock_in', occurred_at: newClockIn.toISOString() })
-      .select('id')
-      .single()
-    if (ciErr) { toast(ciErr.message ?? 'Failed to save', 'error'); setSaving(false); return }
-
-    const { error: editErr } = await offlineRpc('edit_clock_session', {
-      p_clock_in_id:    ciData.id,
+    // Use SECURITY DEFINER RPC — safer than a direct anon-key insert
+    const { error } = await supabase.rpc('add_clock_session', {
+      p_staff_id:       staffId,
+      p_venue_id:       venueId,
       p_clock_in_time:  newClockIn.toISOString(),
-      p_clock_out_id:   null,
       p_clock_out_time: newClockOut.toISOString(),
       p_break_minutes:  parseInt(breakMin, 10) || 0,
     })
     setSaving(false)
-    if (editErr) { toast(editErr.message ?? 'Failed to save', 'error'); return }
+    if (error) { toast(error.message ?? 'Failed to save', 'error'); return }
     toast('Shift added')
     onSave()
   }

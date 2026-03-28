@@ -133,7 +133,7 @@ export function useClockStatus(staffId) {
   return { status, clockInAt, breakStartAt, totalBreakMs, loading, reload: load }
 }
 
-export function useTimesheetData(staffIds, dateFrom, dateTo) {
+export function useTimesheetData(dateFrom, dateTo) {
   const { venueId } = useVenue()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)

@@ -52,7 +52,7 @@ export default function TimesheetPage() {
   const dateFrom = weekStart.toISOString()
   const dateTo   = endOfWeek(weekStart, { weekStartsOn: 1 }).toISOString()
 
-  const { rows, loading, reload } = useTimesheetData(null, dateFrom, dateTo)
+  const { rows, loading, reload } = useTimesheetData(dateFrom, dateTo)
 
   // Load hourly rates once
   useEffect(() => {
