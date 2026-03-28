@@ -124,28 +124,40 @@ export default function EHOAuditPage() {
     setOpenSection(prev => prev === id ? null : id)
   }, [])
 
-  // Mark an out-of-range reading as resolved — removes it from the drill-down immediately
-  const resolveAlert = useCallback(async (id) => {
+  // Generic resolve for tables with is_resolved column
+  const resolveRecord = useCallback(async (table, id, listKey, countKey) => {
     setResolving(id)
     const { error } = await supabase
-      .from('fridge_temperature_logs')
+      .from(table)
       .update({ is_resolved: true, resolved_at: new Date().toISOString() })
       .eq('id', id)
     setResolving(null)
     if (error) { toast(error.message ?? 'Failed to resolve', 'error'); return }
     toast('Marked as resolved')
-    // Optimistically remove from local state so the row disappears instantly
     setData(prev => {
       if (!prev) return prev
-      const newFailed = prev.failedTemps.filter(t => t.id !== id)
-      return {
-        ...prev,
-        failedTemps: newFailed,
-        tempFails: newFailed.length,
-        tempPassRate: prev.tempTotal > 0
-          ? Math.round(((prev.tempTotal - newFailed.length) / prev.tempTotal) * 100)
-          : 100,
-      }
+      const newList = prev[listKey].filter(r => r.id !== id)
+      const extra = table === 'fridge_temperature_logs'
+        ? { tempPassRate: prev.tempTotal > 0 ? Math.round(((prev.tempTotal - newList.length) / prev.tempTotal) * 100) : 100 }
+        : {}
+      return { ...prev, [listKey]: newList, [countKey]: newList.length, ...extra }
+    })
+  }, [toast])
+
+  // Corrective actions use status field instead of is_resolved
+  const resolveAction = useCallback(async (id) => {
+    setResolving(id)
+    const { error } = await supabase
+      .from('corrective_actions')
+      .update({ status: 'resolved' })
+      .eq('id', id)
+    setResolving(null)
+    if (error) { toast(error.message ?? 'Failed to resolve', 'error'); return }
+    toast('Action marked resolved')
+    setData(prev => {
+      if (!prev) return prev
+      const newOpen = prev.openActions.filter(a => a.id !== id)
+      return { ...prev, openActions: newOpen, caOpen: newOpen.length, caCritical: newOpen.filter(a => a.severity === 'critical').length }
     })
   }, [toast])
 
@@ -173,16 +185,16 @@ export default function EHOAuditPage() {
         supabase.from('cleaning_completions')
           .select('id, cleaning_task_id, completed_at').eq('venue_id', venueId).gte('completed_at', sinceTs),
         supabase.from('delivery_checks')
-          .select('id, overall_pass, checked_at, supplier_name, temp_reading, temp_pass, packaging_ok, use_by_ok, notes')
+          .select('id, overall_pass, checked_at, supplier_name, temp_reading, temp_pass, packaging_ok, use_by_ok, notes, is_resolved')
           .eq('venue_id', venueId).gte('checked_at', sinceTs).order('checked_at', { ascending: false }),
         supabase.from('probe_calibrations')
-          .select('id, pass, calibrated_at, probe_name, expected_temp, actual_reading')
+          .select('id, pass, calibrated_at, probe_name, expected_temp, actual_reading, is_resolved')
           .eq('venue_id', venueId).gte('calibrated_at', sinceTs).order('calibrated_at', { ascending: false }),
         supabase.from('corrective_actions')
           .select('id, status, severity, reported_at, title, description')
           .eq('venue_id', venueId).gte('reported_at', sinceTs).order('reported_at', { ascending: false }),
         supabase.from('staff_training')
-          .select('id, expiry_date, title, staff:staff_id(name)').eq('venue_id', venueId).order('expiry_date'),
+          .select('id, expiry_date, title, is_resolved, staff:staff_id(name)').eq('venue_id', venueId).order('expiry_date'),
         supabase.from('staff')
           .select('id, name').eq('venue_id', venueId).eq('is_active', true),
       ])
@@ -211,12 +223,12 @@ export default function EHOAuditPage() {
 
       // ── Delivery analysis ─────────────────────────────────────────────
       const deliveryTotal = deliveries.length
-      const failedDeliveries = deliveries.filter(d => !d.overall_pass)
+      const failedDeliveries = deliveries.filter(d => !d.overall_pass && !d.is_resolved)
       const deliveryFails = failedDeliveries.length
 
       // ── Probe analysis ────────────────────────────────────────────────
       const probeTotal = calibrations.length
-      const failedProbes = calibrations.filter(p => !p.pass)
+      const failedProbes = calibrations.filter(p => !p.pass && !p.is_resolved)
       const probeFails = failedProbes.length
       const lastProbe = calibrations.length > 0
         ? format(new Date(calibrations[0].calibrated_at), 'd MMM yyyy')
@@ -229,7 +241,7 @@ export default function EHOAuditPage() {
 
       // ── Training ──────────────────────────────────────────────────────
       const today = new Date()
-      const expiredCertsList = certs.filter(c => c.expiry_date && new Date(c.expiry_date) < today)
+      const expiredCertsList = certs.filter(c => c.expiry_date && new Date(c.expiry_date) < today && !c.is_resolved)
       const expiredCerts = expiredCertsList.length
       const validCerts = certs.filter(c => !c.expiry_date || new Date(c.expiry_date) >= today).length
 
@@ -342,7 +354,7 @@ export default function EHOAuditPage() {
                       action: {
                         label: '✓ Resolved',
                         loading: resolving === t.id,
-                        fn: () => resolveAlert(t.id),
+                        fn: () => resolveRecord('fridge_temperature_logs', t.id, 'failedTemps', 'tempFails'),
                       },
                     }))}
                   />
@@ -394,10 +406,14 @@ export default function EHOAuditPage() {
                         { text: d.packaging_ok ? 'PASS' : 'FAIL', color: d.packaging_ok ? 'text-success' : 'text-danger', bold: true },
                         { text: d.use_by_ok ? 'PASS' : 'FAIL', color: d.use_by_ok ? 'text-success' : 'text-danger', bold: true },
                         { text: d.notes ?? '—' },
-                      ]
+                      ],
+                      action: { label: '✓ Resolved', loading: resolving === d.id, fn: () => resolveRecord('delivery_checks', d.id, 'failedDeliveries', 'deliveryFails') },
                     }))}
                   />
                 </div>
+              )}
+              {openSection === 'deliveries' && data.failedDeliveries.length === 0 && data.deliveryTotal > 0 && (
+                <p className="mt-3 pt-3 border-t border-charcoal/10 text-xs text-success font-medium">All delivery failures resolved ✓</p>
               )}
             </SectionCard>
 
@@ -428,10 +444,14 @@ export default function EHOAuditPage() {
                         { text: p.expected_temp != null ? `${p.expected_temp} °C` : '—' },
                         { text: p.actual_reading != null ? `${p.actual_reading} °C` : '—' },
                         { text: 'FAIL', color: 'text-danger', bold: true },
-                      ]
+                      ],
+                      action: { label: '✓ Resolved', loading: resolving === p.id, fn: () => resolveRecord('probe_calibrations', p.id, 'failedProbes', 'probeFails') },
                     }))}
                   />
                 </div>
+              )}
+              {openSection === 'probes' && data.failedProbes.length === 0 && data.probeTotal > 0 && (
+                <p className="mt-3 pt-3 border-t border-charcoal/10 text-xs text-success font-medium">All probe failures resolved ✓</p>
               )}
             </SectionCard>
 
@@ -462,10 +482,14 @@ export default function EHOAuditPage() {
                           bold: true,
                         },
                         { text: a.description ?? '—' },
-                      ]
+                      ],
+                      action: { label: '✓ Resolved', loading: resolving === a.id, fn: () => resolveAction(a.id) },
                     }))}
                   />
                 </div>
+              )}
+              {openSection === 'actions' && data.openActions.length === 0 && data.caTotal > 0 && (
+                <p className="mt-3 pt-3 border-t border-charcoal/10 text-xs text-success font-medium">All corrective actions resolved ✓</p>
               )}
             </SectionCard>
 
@@ -491,10 +515,14 @@ export default function EHOAuditPage() {
                         { text: c.staff?.name ?? '—', bold: true },
                         { text: c.title ?? '—' },
                         { text: format(new Date(c.expiry_date), 'dd/MM/yyyy'), color: 'text-danger', bold: true },
-                      ]
+                      ],
+                      action: { label: '✓ Renewed', loading: resolving === c.id, fn: () => resolveRecord('staff_training', c.id, 'expiredCertsList', 'expiredCerts') },
                     }))}
                   />
                 </div>
+              )}
+              {openSection === 'training' && data.expiredCertsList.length === 0 && (
+                <p className="mt-3 pt-3 border-t border-charcoal/10 text-xs text-success font-medium">All certificates up to date ✓</p>
               )}
             </SectionCard>
           </div>

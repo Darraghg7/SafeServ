@@ -119,10 +119,10 @@ function ComplianceScoreWidget() {
       const since = subDays(new Date(), 30).toISOString()
       const [temps, deliveries, calibrations, actions, training, coolingLogs, pestIssues] = await Promise.all([
         supabase.from('fridge_temperature_logs').select('id, temperature, exceedance_reason, is_resolved, fridge:fridge_id(min_temp, max_temp)').eq('venue_id', venueId).gte('logged_at', since),
-        supabase.from('delivery_checks').select('id, overall_pass').eq('venue_id', venueId).gte('checked_at', since),
-        supabase.from('probe_calibrations').select('id, pass').eq('venue_id', venueId).gte('calibrated_at', since),
+        supabase.from('delivery_checks').select('id, overall_pass, is_resolved').eq('venue_id', venueId).gte('checked_at', since),
+        supabase.from('probe_calibrations').select('id, pass, is_resolved').eq('venue_id', venueId).gte('calibrated_at', since),
         supabase.from('corrective_actions').select('id, status, severity').eq('venue_id', venueId),
-        supabase.from('staff_training').select('id, expiry_date').eq('venue_id', venueId),
+        supabase.from('staff_training').select('id, expiry_date, is_resolved').eq('venue_id', venueId),
         supabase.from('cooling_logs').select('id, end_temp, target_temp').eq('venue_id', venueId).gte('logged_at', since),
         supabase.from('pest_control_logs').select('id, status, severity, log_type, logged_at').eq('venue_id', venueId).in('log_type', ['sighting', 'treatment']).eq('status', 'open'),
       ])
@@ -138,17 +138,17 @@ function ComplianceScoreWidget() {
       const tempRate = t.length > 0 ? Math.round(((t.length - tempFails) / t.length) * 100) : 100
 
       const d = deliveries.data ?? []
-      const deliveryFails = d.filter(x => !x.overall_pass).length
+      const deliveryFails = d.filter(x => !x.overall_pass && !x.is_resolved).length
 
       const c = calibrations.data ?? []
-      const probeFails = c.filter(x => !x.pass).length
+      const probeFails = c.filter(x => !x.pass && !x.is_resolved).length
 
       const a = actions.data ?? []
       const openCritical = a.filter(x => x.status === 'open' && x.severity === 'critical').length
       const openActions  = a.filter(x => x.status === 'open').length
 
       const tr = training.data ?? []
-      const expired = tr.filter(x => x.expiry_date && new Date(x.expiry_date) < new Date()).length
+      const expired = tr.filter(x => x.expiry_date && new Date(x.expiry_date) < new Date() && !x.is_resolved).length
 
       const cl = coolingLogs.data ?? []
       const coolingFails = cl.filter(x => Number(x.end_temp) > Number(x.target_temp ?? 8)).length
