@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { useSession } from '../../contexts/SessionContext'
 import { useVenue } from '../../contexts/VenueContext'
 import { supabase } from '../../lib/supabase'
+import { offlineRpc } from '../../lib/offlineSupabase'
 import ClockPanel from '../../components/ClockPanel'
 import { useClockStatus } from '../../hooks/useClockEvents'
+import { useClockSessions } from '../../hooks/useClockSessions'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
-import { format } from 'date-fns'
+import { useToast } from '../../components/ui/Toast'
+import { format, isToday, isYesterday } from 'date-fns'
 
 function formatElapsed(ms) {
   if (!ms || ms < 0) ms = 0
@@ -15,6 +18,207 @@ function formatElapsed(ms) {
   const s = totalSec % 60
   const pad = (n) => String(n).padStart(2, '0')
   return `${pad(h)}:${pad(m)}:${pad(s)}`
+}
+
+/* ── Friendly date label ─────────────────────────────────────────── */
+function sessionDateLabel(date) {
+  if (isToday(date))     return 'Today'
+  if (isYesterday(date)) return 'Yesterday'
+  return format(date, 'EEE, d MMM')
+}
+
+/* ── Inline edit form for a single session ───────────────────────── */
+function EditSessionForm({ session, onSave, onCancel }) {
+  const toast = useToast()
+  const [clockIn,  setClockIn]  = useState(format(session.clockInAt,  'HH:mm'))
+  const [clockOut, setClockOut] = useState(session.clockOutAt ? format(session.clockOutAt, 'HH:mm') : '')
+  const [breakMin, setBreakMin] = useState(String(session.breakMinutes))
+  const [saving,   setSaving]   = useState(false)
+
+  const BREAK_OPTIONS = [0, 5, 10, 15, 20, 30, 45, 60, 90]
+
+  const handleSave = async () => {
+    // Build timestamptz values from the HH:mm inputs using the session date
+    const base = session.clockInAt
+
+    const parseTime = (timeStr, referenceDate) => {
+      const [h, m] = timeStr.split(':').map(Number)
+      const d = new Date(referenceDate)
+      d.setHours(h, m, 0, 0)
+      return d
+    }
+
+    const newClockIn  = parseTime(clockIn, base)
+    const newClockOut = clockOut ? parseTime(clockOut, base) : null
+
+    // Basic validation
+    if (newClockOut && newClockOut <= newClockIn) {
+      toast('Clock out must be after clock in', 'error')
+      return
+    }
+
+    setSaving(true)
+    const { error } = await offlineRpc('edit_clock_session', {
+      p_clock_in_id:    session.clockInId,
+      p_clock_in_time:  newClockIn.toISOString(),
+      p_clock_out_id:   session.clockOutId ?? null,
+      p_clock_out_time: newClockOut?.toISOString() ?? null,
+      p_break_minutes:  parseInt(breakMin, 10) || 0,
+    })
+    setSaving(false)
+
+    if (error) { toast(error.message ?? 'Failed to save', 'error'); return }
+    toast('Shift updated')
+    onSave()
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-charcoal/8 flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-3">
+        {/* Clock In */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Clock In</label>
+          <input
+            type="time"
+            value={clockIn}
+            onChange={(e) => setClockIn(e.target.value)}
+            className="bg-charcoal/4 rounded-lg px-3 py-2 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/30"
+          />
+        </div>
+
+        {/* Clock Out */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Clock Out</label>
+          <input
+            type="time"
+            value={clockOut}
+            onChange={(e) => setClockOut(e.target.value)}
+            placeholder="--:--"
+            className="bg-charcoal/4 rounded-lg px-3 py-2 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/30"
+          />
+        </div>
+      </div>
+
+      {/* Break */}
+      <div className="flex flex-col gap-1">
+        <label className="text-[11px] tracking-widest uppercase text-charcoal/40">Break</label>
+        <select
+          value={breakMin}
+          onChange={(e) => setBreakMin(e.target.value)}
+          className="bg-charcoal/4 rounded-lg px-3 py-2 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/30"
+        >
+          {BREAK_OPTIONS.map((m) => (
+            <option key={m} value={String(m)}>
+              {m === 0 ? 'No break' : `${m} min`}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-charcoal/60 bg-charcoal/6 hover:bg-charcoal/10 transition-colors disabled:opacity-40"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand hover:bg-brand/90 transition-colors disabled:opacity-40"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ── Single session row ──────────────────────────────────────────── */
+function SessionRow({ session, onReload }) {
+  const [editing, setEditing] = useState(false)
+
+  const durationMs = session.clockOutAt
+    ? session.clockOutAt - session.clockInAt - session.breakMinutes * 60000
+    : null
+
+  const handleSave = () => {
+    setEditing(false)
+    onReload()
+  }
+
+  return (
+    <div className="py-3 border-t border-charcoal/6 first:border-0">
+      {/* Summary row */}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-charcoal">
+            {sessionDateLabel(session.date)}
+          </p>
+          <p className="text-xs text-charcoal/40 mt-0.5">
+            {format(session.clockInAt, 'HH:mm')}
+            {' → '}
+            {session.clockOutAt ? format(session.clockOutAt, 'HH:mm') : <span className="text-warning">active</span>}
+            {session.breakMinutes > 0 && (
+              <span className="ml-1.5 text-charcoal/30">· {session.breakMinutes}m break</span>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {durationMs !== null && (
+            <span className="font-mono text-sm text-charcoal/60 tabular-nums">
+              {formatElapsed(durationMs)}
+            </span>
+          )}
+          <button
+            onClick={() => setEditing((v) => !v)}
+            className="text-xs font-medium text-brand/70 hover:text-brand transition-colors px-2 py-1 rounded-lg hover:bg-brand/8"
+          >
+            {editing ? 'Close' : 'Edit'}
+          </button>
+        </div>
+      </div>
+
+      {/* Inline edit form */}
+      {editing && (
+        <EditSessionForm
+          session={session}
+          onSave={handleSave}
+          onCancel={() => setEditing(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ── Recent shifts list ──────────────────────────────────────────── */
+function RecentShifts({ staffId }) {
+  const { sessions, loading, reload } = useClockSessions(staffId)
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl p-5">
+        <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">Recent Shifts</p>
+        <div className="flex justify-center py-4"><LoadingSpinner /></div>
+      </div>
+    )
+  }
+
+  if (sessions.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-xl p-5">
+      <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">Recent Shifts</p>
+      <p className="text-xs text-charcoal/30 mb-3">Tap Edit to correct a clock-in, clock-out or break time.</p>
+      <div className="flex flex-col">
+        {sessions.map((s) => (
+          <SessionRow key={s.clockInId} session={s} onReload={reload} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 /* ── Live elapsed timer for the manager's "who's in" view ─────────── */
@@ -92,13 +296,13 @@ function ManagerView({ venueId }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Manager's own clock */}
-      <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+      <div className="bg-white rounded-xl p-5">
         <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">My Clock</p>
         <ManagerOwnClock venueId={venueId} />
       </div>
 
       {/* Team status */}
-      <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+      <div className="bg-white rounded-xl p-5">
         <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">Team Status</p>
         {loading ? (
           <div className="flex justify-center py-6"><LoadingSpinner /></div>
@@ -122,13 +326,13 @@ function ManagerOwnClock({ venueId }) {
   return <ClockPanel staffId={session.staffId} hasShift />
 }
 
-/* ── Staff view: big clock in / out ──────────────────────────────── */
+/* ── Staff view: big clock in / out + recent shifts ──────────────── */
 function StaffView({ staffId, staffName }) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-white rounded-xl border border-charcoal/10 p-6">
+      <div className="bg-white rounded-xl p-6">
         {staffName && (
-          <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">
+          <p className="text-[11px] tracking-widests uppercase text-charcoal/40 mb-1">
             Hi, {staffName}
           </p>
         )}
@@ -137,6 +341,8 @@ function StaffView({ staffId, staffName }) {
         </p>
         <ClockPanel staffId={staffId} hasShift />
       </div>
+
+      <RecentShifts staffId={staffId} />
     </div>
   )
 }

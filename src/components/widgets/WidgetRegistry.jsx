@@ -117,7 +117,7 @@ function ComplianceScoreWidget() {
     const load = async () => {
       const since = subDays(new Date(), 30).toISOString()
       const [temps, deliveries, calibrations, actions, training, coolingLogs, pestIssues] = await Promise.all([
-        supabase.from('fridge_temperature_logs').select('id, temperature, fridge:fridge_id(min_temp, max_temp)').eq('venue_id', venueId).gte('logged_at', since),
+        supabase.from('fridge_temperature_logs').select('id, temperature, exceedance_reason, fridge:fridge_id(min_temp, max_temp)').eq('venue_id', venueId).gte('logged_at', since),
         supabase.from('delivery_checks').select('id, overall_pass').eq('venue_id', venueId).gte('checked_at', since),
         supabase.from('probe_calibrations').select('id, pass').eq('venue_id', venueId).gte('calibrated_at', since),
         supabase.from('corrective_actions').select('id, status, severity').eq('venue_id', venueId),
@@ -126,8 +126,13 @@ function ComplianceScoreWidget() {
         supabase.from('pest_control_logs').select('id, status, severity, log_type, logged_at').eq('venue_id', venueId).in('log_type', ['sighting', 'treatment']).eq('status', 'open'),
       ])
 
+      const EXPLAINED_REASONS = ['delivery', 'defrost', 'service_access']
       const t = temps.data ?? []
-      const tempFails = t.filter(x => x.fridge && (x.temperature < x.fridge.min_temp || x.temperature > x.fridge.max_temp)).length
+      const tempFails = t.filter(x =>
+        x.fridge &&
+        (x.temperature < x.fridge.min_temp || x.temperature > x.fridge.max_temp) &&
+        !EXPLAINED_REASONS.includes(x.exceedance_reason)
+      ).length
       const tempRate = t.length > 0 ? Math.round(((t.length - tempFails) / t.length) * 100) : 100
 
       const d = deliveries.data ?? []
