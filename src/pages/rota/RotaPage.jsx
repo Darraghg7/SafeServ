@@ -200,7 +200,7 @@ export default function RotaPage() {
     const payload = {
       staff_id:   form.staffId,
       shift_date: format(modal.date, 'yyyy-MM-dd'),
-      week_start: format(weekStart, 'yyyy-MM-dd'),
+      week_start: format(getWeekStart(modal.date), 'yyyy-MM-dd'),
       start_time: form.startTime,
       end_time:   form.endTime,
       role_label: form.roleLabel,
