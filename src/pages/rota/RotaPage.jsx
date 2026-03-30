@@ -439,10 +439,6 @@ export default function RotaPage() {
             <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Unavailable</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded bg-amber-200 border border-amber-300" />
-            <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Break Cover</span>
-          </div>
-          <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-danger/20 border border-danger/25" />
             <span className="text-[11px] tracking-wider uppercase text-charcoal/30">Time Off</span>
           </div>

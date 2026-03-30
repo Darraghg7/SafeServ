@@ -249,8 +249,8 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                   const dayShifts = shifts.filter((sh) => sh.staff_id === s.id && sh.shift_date === dateStr)
                   const unavail   = unavailability[`${s.id}:${dateStr}`]
                   const isTimeOff = unavail?.type === 'time_off'
-                  const isManualOff = unavail?.type === 'manual' && unavail?.subtype !== 'break_cover'
-                  const isBreakCover = unavail?.type === 'manual' && unavail?.subtype === 'break_cover'
+                  const isManualOff = unavail?.type === 'manual'
+                  const isBreakCover = false
 
                   if (isClosed) {
                     return (
@@ -269,11 +269,9 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                         'border-b border-charcoal/5 px-2 py-2 align-top transition-colors min-w-[96px]',
                         isTimeOff && dayShifts.length === 0
                           ? 'bg-danger/8'
-                          : isBreakCover && dayShifts.length === 0
-                            ? 'bg-amber-50'
-                            : isManualOff && dayShifts.length === 0
-                              ? 'bg-charcoal/6'
-                              : today ? 'bg-accent/5' : '',
+                          : isManualOff && dayShifts.length === 0
+                            ? 'bg-charcoal/6'
+                            : today ? 'bg-accent/5' : '',
                       ].join(' ')}
                     >
                       {dayShifts.length === 0 ? (
@@ -282,20 +280,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                             <span className="text-[9px] tracking-widest uppercase text-danger/70 font-semibold">Time Off</span>
                           </div>
                         ) : isBreakCover ? (
-                          <div className="flex flex-col gap-1">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); onToggleAvailability?.(s.id, d) }}
-                              className="h-7 flex items-center justify-center rounded bg-amber-100 border border-amber-200 hover:bg-amber-200 transition-colors cursor-pointer"
-                            >
-                              <span className="text-[8px] tracking-widest uppercase text-amber-600 font-semibold">Break Cover</span>
-                            </button>
-                            {isManager && (
-                              <button
-                                onClick={() => onCellClick(s, d, dayShifts)}
-                                className="h-6 flex items-center justify-center text-[11px] rounded border border-dashed border-charcoal/12 hover:border-charcoal/25 text-charcoal/20 hover:text-charcoal/40 transition-colors cursor-pointer"
-                              >+</button>
-                            )}
-                          </div>
+                          null
                         ) : isManualOff ? (
                           <div className="flex flex-col gap-1">
                             <button
@@ -359,7 +344,7 @@ function DesktopWeekTable({ days, shifts, staff, onCellClick, onToggleAvailabili
                               onClick={(e) => { e.stopPropagation(); onToggleAvailability?.(s.id, d) }}
                               className="h-4 flex items-center justify-center text-[7px] tracking-wider uppercase rounded text-charcoal/15 hover:text-charcoal/40 hover:bg-charcoal/5 transition-colors cursor-pointer"
                             >
-                              {isManualOff ? 'unavail' : isBreakCover ? 'break' : ''}
+                              {isManualOff ? 'unavail' : ''}
                             </button>
                           )}
                         </div>
