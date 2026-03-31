@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { format, endOfWeek, addWeeks } from 'date-fns'
+import { format, endOfWeek, addWeeks, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useTimesheetData } from '../../hooks/useClockEvents'
-import { formatMinutes, getWeekStart } from '../../lib/utils'
+import { formatMinutes, getWeekStart, downloadCsv } from '../../lib/utils'
 import { buildPdfReport } from '../../lib/pdfUtils'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 
@@ -45,16 +45,75 @@ function buildTimesheets(events, staffRates) {
   return Object.values(results).sort((a, b) => a.name.localeCompare(b.name))
 }
 
+const PERIODS = [
+  { key: 'this_week',  label: 'This Week' },
+  { key: 'last_week',  label: 'Last Week' },
+  { key: 'this_month', label: 'This Month' },
+  { key: 'last_month', label: 'Last Month' },
+  { key: 'custom',     label: 'Custom' },
+]
+
+function periodToDates(period, customFrom, customTo) {
+  const now = new Date()
+  const thisWeekStart = getWeekStart(now)
+  const thisWeekEnd   = endOfWeek(thisWeekStart, { weekStartsOn: 1 })
+
+  if (period === 'this_week') return {
+    dateFrom: thisWeekStart.toISOString(),
+    dateTo:   thisWeekEnd.toISOString(),
+    label: `${format(thisWeekStart, 'd MMM')} – ${format(thisWeekEnd, 'd MMM yyyy')}`,
+  }
+  if (period === 'last_week') {
+    const start = addWeeks(thisWeekStart, -1)
+    const end   = endOfWeek(start, { weekStartsOn: 1 })
+    return {
+      dateFrom: start.toISOString(),
+      dateTo:   end.toISOString(),
+      label: `${format(start, 'd MMM')} – ${format(end, 'd MMM yyyy')}`,
+    }
+  }
+  if (period === 'this_month') {
+    const start = startOfMonth(now)
+    const end   = endOfMonth(now)
+    return {
+      dateFrom: start.toISOString(),
+      dateTo:   end.toISOString(),
+      label: format(now, 'MMMM yyyy'),
+    }
+  }
+  if (period === 'last_month') {
+    const last  = subMonths(now, 1)
+    const start = startOfMonth(last)
+    const end   = endOfMonth(last)
+    return {
+      dateFrom: start.toISOString(),
+      dateTo:   end.toISOString(),
+      label: format(last, 'MMMM yyyy'),
+    }
+  }
+  // custom
+  if (customFrom && customTo) {
+    const start = parseISO(customFrom)
+    const end   = parseISO(customTo)
+    return {
+      dateFrom: start.toISOString(),
+      dateTo:   new Date(end.getTime() + 86399999).toISOString(), // end of day
+      label: `${format(start, 'd MMM yyyy')} – ${format(end, 'd MMM yyyy')}`,
+    }
+  }
+  return { dateFrom: '', dateTo: '', label: '—' }
+}
+
 export default function TimesheetPage() {
-  const [weekStart, setWeekStart] = useState(() => getWeekStart())
+  const [period,     setPeriod]     = useState('this_week')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo,   setCustomTo]   = useState('')
   const [staffRates, setStaffRates] = useState({})
 
-  const dateFrom = weekStart.toISOString()
-  const dateTo   = endOfWeek(weekStart, { weekStartsOn: 1 }).toISOString()
+  const { dateFrom, dateTo, label: periodLabel } = periodToDates(period, customFrom, customTo)
 
   const { rows, loading, reload } = useTimesheetData(dateFrom, dateTo)
 
-  // Load hourly rates once
   useEffect(() => {
     supabase
       .from('staff')
@@ -67,44 +126,56 @@ export default function TimesheetPage() {
   useEffect(() => { reload() }, [reload])
 
   const timesheets = buildTimesheets(rows, staffRates)
-  const weekEnd    = endOfWeek(weekStart, { weekStartsOn: 1 })
   const totalMins  = timesheets.reduce((a, t) => a + t.totalMinutes, 0)
   const totalWage  = timesheets.reduce((a, t) => a + (t.totalMinutes / 60) * t.hourlyRate, 0)
 
-  const prevWeek = () => setWeekStart((w) => addWeeks(w, -1))
-  const nextWeek = () => setWeekStart((w) => addWeeks(w, 1))
-
   const exportPdf = () => {
-    const rows = timesheets.map((t) => {
-      const hrs = (t.totalMinutes / 60).toFixed(2)
+    const pdfRows = timesheets.map((t) => {
+      const hrs  = (t.totalMinutes / 60).toFixed(2)
       const rate = Number(t.hourlyRate).toFixed(2)
-      const pay = ((t.totalMinutes / 60) * t.hourlyRate).toFixed(2)
+      const pay  = ((t.totalMinutes / 60) * t.hourlyRate).toFixed(2)
       return [t.name, `${hrs} hrs`, rate > 0 ? `£${rate}/hr` : '—', pay > 0 ? `£${pay}` : '—']
     })
-
-    // Totals row
-    rows.push([
+    pdfRows.push([
       'TOTAL',
       `${(totalMins / 60).toFixed(2)} hrs`,
       '',
       totalWage > 0 ? `£${totalWage.toFixed(2)}` : '—',
     ])
-
     buildPdfReport({
       title: 'SafeServ',
       subtitle: 'Timesheet Report',
-      periodLabel: `${format(weekStart, 'd MMM yyyy')} – ${format(weekEnd, 'd MMM yyyy')}`,
+      periodLabel,
       columns: ['Staff Member', 'Hours Worked', 'Hourly Rate', 'Est. Pay'],
-      rows,
+      rows: pdfRows,
       didParseCell(hookData) {
-        // Bold the totals row
-        if (hookData.section === 'body' && hookData.row.index === rows.length - 1) {
+        if (hookData.section === 'body' && hookData.row.index === pdfRows.length - 1) {
           hookData.cell.styles.fontStyle = 'bold'
           hookData.cell.styles.fillColor = [240, 240, 240]
         }
       },
-      filename: `timesheet-${format(weekStart, 'yyyy-MM-dd')}.pdf`,
+      filename: `timesheet-${dateFrom.slice(0, 10)}.pdf`,
     })
+  }
+
+  const exportCsv = () => {
+    const escape = (v) => `"${String(v).replace(/"/g, '""')}"`
+    const header = ['Name', 'Hours Worked', 'Hourly Rate (£)', 'Gross Pay (£)'].map(escape).join(',')
+    const dataRows = timesheets.map((t) => {
+      const hrs  = (t.totalMinutes / 60).toFixed(2)
+      const rate = Number(t.hourlyRate).toFixed(2)
+      const pay  = ((t.totalMinutes / 60) * t.hourlyRate).toFixed(2)
+      return [t.name, hrs, rate, pay].map(escape).join(',')
+    })
+    const totalRow = [
+      'TOTAL',
+      (totalMins / 60).toFixed(2),
+      '',
+      totalWage.toFixed(2),
+    ].map(escape).join(',')
+
+    const csv = [header, ...dataRows, totalRow].join('\n')
+    downloadCsv(csv, `payroll-${dateFrom.slice(0, 10)}-to-${dateTo.slice(0, 10)}.csv`)
   }
 
   return (
@@ -112,31 +183,73 @@ export default function TimesheetPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-brand">Timesheets</h1>
-        <button
-          onClick={exportPdf}
-          className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
-        >
-          ↓ Export PDF
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={exportCsv}
+            className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+          >
+            ↓ Export CSV
+          </button>
+          <button
+            onClick={exportPdf}
+            className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
+          >
+            ↓ Export PDF
+          </button>
+        </div>
       </div>
 
-      {/* Week summary card */}
+      {/* Pay period card */}
       <div className="bg-white rounded-xl border border-charcoal/10 p-5">
-        <SectionLabel>Weekly Summary</SectionLabel>
+        <SectionLabel>Pay Period Summary</SectionLabel>
 
-        {/* Week nav */}
-        <div className="flex items-center gap-3 mb-4">
-          <button onClick={prevWeek} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-charcoal/8 text-charcoal/50 hover:text-charcoal transition-colors text-sm">‹</button>
-          <span className="text-sm font-medium text-charcoal">
-            {format(weekStart, 'd MMM')} – {format(weekEnd, 'd MMM yyyy')}
-          </span>
-          <button onClick={nextWeek} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-charcoal/8 text-charcoal/50 hover:text-charcoal transition-colors text-sm">›</button>
+        {/* Period selector */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {PERIODS.map(p => (
+            <button
+              key={p.key}
+              onClick={() => setPeriod(p.key)}
+              className={[
+                'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                period === p.key
+                  ? 'bg-charcoal text-cream border-charcoal'
+                  : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30',
+              ].join(' ')}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
+
+        {/* Custom date inputs */}
+        {period === 'custom' && (
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="date"
+              value={customFrom}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+            />
+            <span className="text-xs text-charcoal/40">to</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom}
+              onChange={e => setCustomTo(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+            />
+          </div>
+        )}
+
+        {/* Period label */}
+        {periodLabel && periodLabel !== '—' && (
+          <p className="text-sm font-medium text-charcoal mb-4">{periodLabel}</p>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-6"><LoadingSpinner /></div>
         ) : timesheets.length === 0 ? (
-          <p className="text-sm text-charcoal/35 italic py-4">No clock events recorded this week.</p>
+          <p className="text-sm text-charcoal/35 italic py-4">No clock events recorded for this period.</p>
         ) : (
           <>
             {/* Totals */}
@@ -155,19 +268,22 @@ export default function TimesheetPage() {
 
             {/* Per-staff table */}
             <div className="flex flex-col gap-0">
-              {/* Header */}
-              <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 pb-2 text-[11px] tracking-widest uppercase text-charcoal/40">
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 pb-2 text-[11px] tracking-widest uppercase text-charcoal/40">
                 <span>Staff</span>
                 <span className="text-right">Hours</span>
+                <span className="text-right">Rate</span>
                 <span className="text-right">Est. Pay</span>
               </div>
               {timesheets.map((t) => {
                 const pay = (t.totalMinutes / 60) * t.hourlyRate
                 return (
-                  <div key={t.name} className="grid grid-cols-[1fr_auto_auto] gap-x-4 py-3 border-t border-charcoal/5 items-center">
+                  <div key={t.name} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 py-3 border-t border-charcoal/5 items-center">
                     <span className="text-sm font-medium text-charcoal truncate">{t.name}</span>
                     <span className="text-right font-mono text-sm font-semibold text-charcoal whitespace-nowrap">
                       {formatMinutes(Math.round(t.totalMinutes))}
+                    </span>
+                    <span className="text-right font-mono text-xs text-charcoal/40 whitespace-nowrap">
+                      {t.hourlyRate > 0 ? `£${Number(t.hourlyRate).toFixed(2)}/hr` : '—'}
                     </span>
                     <div className="text-right whitespace-nowrap">
                       {pay > 0 ? (
