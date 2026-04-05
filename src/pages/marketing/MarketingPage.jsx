@@ -1,5 +1,9 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  STARTER_PRICE, PRO_PRICE, EXTRA_VENUE_PRICE,
+  PRO_PRICE_NUM, EXTRA_VENUE_PRICE_NUM,
+} from '../../lib/pricing'
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 function IconThermometer() {
@@ -119,10 +123,12 @@ const COMPLIANCE_FEATURES = [
 ]
 
 const PRO_FEATURES = [
-  { icon: <IconCalendar />, title: 'Rota & Shift Management', desc: 'Build weekly rotas, publish to staff, track actual hours against scheduled.' },
-  { icon: <IconShield />, title: 'Staff Cost Tracking', desc: 'See projected wage costs per rota week. Spot overspend before payroll.' },
-  { icon: <IconUsers />, title: 'Unlimited Staff', desc: 'No cap on team size. Add as many staff as you need across any number of venues.' },
-  { icon: <IconClipboard />, title: 'Multi-Venue Management', desc: 'Manage multiple venues from a single account. Each venue billed at just £14.99/month extra.' },
+  { icon: <IconCalendar />, title: 'Rota & Shift Management', desc: 'Build weekly rotas with an AI-powered builder. Publish to staff, manage swaps, track against actual hours.' },
+  { icon: <IconClipboard />, title: 'Timesheets & Payroll Export', desc: 'Automatic timesheet generation from clock-in data. Export to CSV for payroll in one click.' },
+  { icon: <IconShield />, title: 'Staff Training Records', desc: 'Track food hygiene certs, allergen training and expiry dates. Get alerted 30 days before anything lapses.' },
+  { icon: <IconUsers />, title: 'Clock In / Out & Time Off', desc: 'Staff clock in on-device. Manage time-off requests and shift swaps with a manager approval flow.' },
+  { icon: <IconShield />, title: 'HACCP Generator & EHO Mock', desc: 'Generate your HACCP documentation and run a mock EHO inspection to spot gaps before the real thing.' },
+  { icon: <IconClipboard />, title: 'Multi-Venue Support', desc: 'Manage multiple sites from one account. Each additional venue is just £15/month.' },
 ]
 
 /* ── FAQ data ───────────────────────────────────────────────────────────────── */
@@ -137,7 +143,7 @@ const FAQS = [
   },
   {
     q: 'What counts as "multi-venue"?',
-    a: "Each venue is managed separately and billed individually. The first venue on Pro is £25.99/month; each additional venue you add is £14.99/month. There's no separate multi-venue tier — you just add venues as you grow.",
+    a: "Each venue is managed separately and billed individually. The first venue on Pro is £25/month; each additional venue you add is £15/month. There's no separate multi-venue tier — you just add venues as you grow.",
   },
   {
     q: 'Is my data secure?',
@@ -212,7 +218,7 @@ export default function MarketingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/login"
+              to="/signup"
               className="w-full sm:w-auto bg-accent text-cream px-7 py-3.5 rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors text-center"
             >
               Start Free Trial
@@ -249,18 +255,18 @@ export default function MarketingPage() {
       <section className="max-w-5xl mx-auto px-5 sm:px-8 py-16">
         <p className="text-[11px] tracking-widest uppercase text-charcoal/35 text-center mb-3">Built for</p>
         <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
-          Small businesses that can't afford to waste time
+          Built for every hospitality business
         </h2>
         <p className="text-charcoal/50 text-center max-w-lg mx-auto text-sm leading-relaxed mb-12">
-          Most compliance tools are built for big chains with big budgets. SafeServ is built for independent operators — straightforward to set up, simple enough for every member of staff, and priced so it actually makes sense.
+          Most compliance tools are built for big chains with big budgets. SafeServ is built for independent operators — easy to set up, simple enough for every member of staff, and priced so it actually makes sense.
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { emoji: '☕', label: 'Cafés & Coffee Shops' },
-            { emoji: '🍽️', label: 'Restaurants' },
+            { emoji: '🍽️', label: 'Restaurants & Takeaways' },
             { emoji: '🍺', label: 'Pubs & Bars' },
-            { emoji: '🏨', label: 'Hotels & Hospitality' },
+            { emoji: '🏨', label: 'Hotels & Catering' },
           ].map(({ emoji, label }) => (
             <div key={label} className="bg-white rounded-2xl border border-charcoal/8 p-5 text-center hover:border-brand/20 transition-colors">
               <div className="text-3xl mb-3">{emoji}</div>
@@ -302,13 +308,13 @@ export default function MarketingPage() {
           <span className="text-[10px] tracking-widest uppercase font-semibold px-2 py-0.5 rounded border bg-accent/10 text-accent border-accent/25">Pro</span>
         </div>
         <h2 className="font-serif text-3xl sm:text-4xl text-brand text-center mb-4">
-          Plus rota &amp; team management
+          Run your team. Stay compliant.
         </h2>
         <p className="text-charcoal/50 text-center max-w-lg mx-auto text-sm leading-relaxed mb-12">
-          Take compliance further with full rota management, UK break law enforcement, and one-click EHO audit reports.
+          Once you're managing a team — whether that's 3 staff or 30 — Pro replaces your rota tool, timesheet app, and training tracker for less than £1 a day per venue.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {PRO_FEATURES.map(({ icon, title, desc }) => (
             <div key={title} className="rounded-2xl border border-accent/20 bg-accent/[0.03] p-5">
               <div className="w-9 h-9 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-3">
@@ -339,24 +345,25 @@ export default function MarketingPage() {
               <div className="mb-5">
                 <p className="text-[11px] tracking-widest uppercase text-brand font-semibold mb-1">Starter</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-serif text-4xl text-brand">£5.99</span>
+                  <span className="font-serif text-4xl text-brand">{STARTER_PRICE}</span>
                   <span className="text-charcoal/40 text-sm">/month</span>
                 </div>
                 <p className="text-xs text-charcoal/40 mt-1">per venue</p>
               </div>
               <p className="text-xs text-charcoal/50 mb-6 leading-relaxed">
-                Perfect for small cafés and independent coffee shops that need their compliance records in order.
+                Everything you need to pass an EHO inspection and replace paper records. Perfect for any hospitality business getting started with digital compliance.
               </p>
               <ul className="flex flex-col gap-2.5 mb-8 flex-1">
                 {[
-                  'Temperature logs (fridge, freezer, cooking)',
-                  'Cleaning schedules',
-                  'Allergen registry',
+                  'Temperature logs (fridge, cooking, hot holding)',
+                  'Cleaning schedules & records',
+                  'Allergen registry (Natasha\'s Law)',
                   'Delivery checks',
-                  'Probe calibration',
+                  'Probe calibration records',
                   'Opening & closing checklists',
-                  'EHO audit-ready reports',
-                  'Up to 10 staff · 1 venue',
+                  'Pest control logs',
+                  'Corrective actions',
+                  'EHO audit-ready compliance reports',
                 ].map(f => (
                   <li key={f} className="flex items-start gap-2.5 text-xs text-charcoal/60">
                     <span className="text-teal-500 mt-0.5 shrink-0"><IconCheck /></span>
@@ -365,11 +372,14 @@ export default function MarketingPage() {
                 ))}
               </ul>
               <Link
-                to="/login"
+                to="/signup?plan=starter"
                 className="block text-center border border-brand/30 text-brand py-3 rounded-xl text-sm font-medium hover:bg-brand/5 transition-colors"
               >
                 Start Free Trial
               </Link>
+              <p className="text-[11px] text-charcoal/35 text-center mt-3 leading-relaxed">
+                Need rotas &amp; timesheets? <Link to="/signup?plan=pro" className="text-accent font-medium hover:underline">Upgrade to Pro →</Link>
+              </p>
             </div>
 
             {/* Pro */}
@@ -382,41 +392,41 @@ export default function MarketingPage() {
               <div className="mb-5">
                 <p className="text-[11px] tracking-widest uppercase text-accent font-semibold mb-1">Pro</p>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-serif text-4xl text-accent">£25.99</span>
+                  <span className="font-serif text-4xl text-accent">{PRO_PRICE}</span>
                   <span className="text-charcoal/40 text-sm">/month</span>
                 </div>
-                <p className="text-xs text-charcoal/40 mt-1">first venue · £14.99/month each additional</p>
+                <p className="text-xs text-charcoal/40 mt-1">first venue · {EXTRA_VENUE_PRICE}/month each additional</p>
               </div>
               <p className="text-xs text-charcoal/50 mb-5 leading-relaxed">
-                For restaurants, pubs and growing operations that need full rota management alongside compliance.
+                For any hospitality business that manages a team. Replaces your rota tool, timesheet app, and training tracker — all in one place.
               </p>
 
-              {/* Price ladder */}
+              {/* Price ladder — computed from pricing constants */}
               <div className="bg-white rounded-xl border border-charcoal/8 p-4 mb-6">
                 <p className="text-[10px] tracking-widest uppercase text-charcoal/30 mb-3">Price as you grow</p>
                 <div className="flex flex-col gap-1.5">
-                  {[
-                    ['1 venue', '£25.99/mo'],
-                    ['2 venues', '£40.98/mo'],
-                    ['3 venues', '£55.97/mo'],
-                    ['5 venues', '£85.95/mo'],
-                    ['10 venues', '£160.90/mo'],
-                  ].map(([venues, price]) => (
-                    <div key={venues} className="flex items-center justify-between">
-                      <span className="text-xs text-charcoal/50">{venues}</span>
-                      <span className="text-xs font-semibold text-accent">{price}</span>
-                    </div>
-                  ))}
+                  {[1, 2, 3, 5, 10].map(n => {
+                    const price = PRO_PRICE_NUM + (n - 1) * EXTRA_VENUE_PRICE_NUM
+                    return (
+                      <div key={n} className="flex items-center justify-between">
+                        <span className="text-xs text-charcoal/50">{n} venue{n > 1 ? 's' : ''}</span>
+                        <span className="text-xs font-semibold text-accent">£{price}/mo</span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
               <ul className="flex flex-col gap-2.5 mb-8 flex-1">
                 {[
                   'Everything in Starter',
-                  'Unlimited staff',
-                  'Rota & shift management',
-                  'Staff cost tracking',
-                  'Multi-venue support',
+                  'Rota & shift management + AI Builder',
+                  'Timesheets & payroll CSV export',
+                  'Staff training records & expiry alerts',
+                  'Clock in / out & time off management',
+                  'HACCP generator & EHO Mock Inspection',
+                  'Supplier orders & waste logging',
+                  'Unlimited staff · multi-venue',
                 ].map((f, i) => (
                   <li key={f} className="flex items-start gap-2.5 text-xs text-charcoal/60">
                     <span className="text-accent mt-0.5 shrink-0"><IconCheck /></span>
@@ -425,7 +435,7 @@ export default function MarketingPage() {
                 ))}
               </ul>
               <Link
-                to="/login"
+                to="/signup?plan=pro"
                 className="block text-center bg-accent text-cream py-3 rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
               >
                 Start Free Trial
@@ -505,7 +515,7 @@ export default function MarketingPage() {
             Start your free 7-day trial today. No credit card, no commitment — just better food safety records from day one.
           </p>
           <Link
-            to="/login"
+            to="/signup"
             className="inline-block bg-accent text-cream px-8 py-4 rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
           >
             Start Free Trial — No Card Required

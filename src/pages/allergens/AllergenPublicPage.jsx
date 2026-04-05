@@ -30,7 +30,16 @@ export default function AllergenPublicPage() {
         setLoading(false)
         return
       }
-      setVenue(venueData)
+
+      // Fetch logo from app_settings
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .eq('venue_id', venueData.id)
+        .eq('key', 'logo_url')
+        .maybeSingle()
+
+      setVenue({ ...venueData, logo_url: settingsData?.value ?? null })
 
       // Fetch food items + allergens
       const { data: foodItems } = await supabase
@@ -64,6 +73,13 @@ export default function AllergenPublicPage() {
 
         {/* Header */}
         <div className="mb-8">
+          {venue?.logo_url && (
+            <img
+              src={venue.logo_url}
+              alt={venue.name}
+              className="h-14 w-auto object-contain mb-5"
+            />
+          )}
           <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">Allergen Information</p>
           <h1 className="text-3xl font-bold text-[#1a3c2e]">{venue?.name}</h1>
           <p className="text-sm text-charcoal/50 mt-2">

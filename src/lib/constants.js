@@ -67,6 +67,15 @@ export const SHIFT_PRESETS = [
   { label: 'Day',     start: '08:00', end: '15:00' },
 ]
 
+// Subscription plan identifiers — single source of truth
+export const PLANS = {
+  STARTER: 'starter',
+  PRO:     'pro',
+}
+
+// Temperature exceedance reasons that are considered "explained" (not a compliance failure)
+export const EXPLAINED_EXCEEDANCE_REASONS = ['delivery', 'defrost', 'service_access']
+
 // Legacy aliases — kept so old code doesn't break during migration
 export const STAFF_SESSION_KEY  = SESSION_TOKEN_KEY
 export const STAFF_ID_KEY       = SESSION_ID_KEY

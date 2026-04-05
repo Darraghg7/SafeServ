@@ -1,6 +1,13 @@
 /**
  * SessionContext — single auth source for all users (staff + managers).
  *
+ * Multi-device support:
+ *  - Each device login creates its own row in staff_sessions (unique token).
+ *  - Multiple devices can be active simultaneously — sessions are never
+ *    invalidated by a login on a different device.
+ *  - Sessions last 30 days. refresh_staff_session is called every 12 hours
+ *    while the app is open, keeping active devices logged in indefinitely.
+ *
  * Offline support:
  *  - Session restore: if validate_staff_session times out, restores from
  *    localStorage instead of clearing (prevents logout when WiFi drops).
@@ -102,8 +109,12 @@ export function SessionProvider({ children }) {
       .then(({ data: venueId, error }) => {
         if (!error && venueId) {
           setSession(sessionFromStorage(token))
+          // Opportunistically extend the session while we have a confirmed
+          // valid token — fire-and-forget, failure is non-critical
+          supabase.rpc('refresh_staff_session', { p_token: token }).catch(() => {})
         } else {
-          // Server says token is invalid — clear it
+          // Server explicitly says the token is invalid — clear it so the
+          // user is prompted to re-enter their PIN
           clearStorage()
         }
         setLoading(false)
@@ -117,6 +128,19 @@ export function SessionProvider({ children }) {
         setLoading(false)
       })
   }, [])
+
+  // ── Periodic session refresh (every 12 h while app is open) ─────────────
+  // Keeps 30-day sessions alive on active devices without requiring re-login.
+  useEffect(() => {
+    if (!session?.token) return
+
+    const TWELVE_HOURS = 12 * 60 * 60 * 1000
+    const id = setInterval(() => {
+      supabase.rpc('refresh_staff_session', { p_token: session.token }).catch(() => {})
+    }, TWELVE_HOURS)
+
+    return () => clearInterval(id)
+  }, [session?.token])
 
   // ── Sign in ──────────────────────────────────────────────────────────────
   const signIn = useCallback(async (staffId, pin, venueId, venueSlug) => {

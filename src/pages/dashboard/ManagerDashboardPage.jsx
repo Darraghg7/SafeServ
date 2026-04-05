@@ -7,8 +7,9 @@ import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { WIDGET_REGISTRY, DEFAULT_WIDGETS, ALL_WIDGET_IDS } from '../../components/widgets/WidgetRegistry'
-import ClockPanel from '../../components/ClockPanel'
+import ClockPanel from '../../components/shifts/ClockPanel'
 import Modal from '../../components/ui/Modal'
+import { useVenueBranding } from '../../hooks/useVenueBranding'
 
 // Multi-venue is just Pro × number of venues — no separate tier in the app
 const PLAN_CONFIG = {
@@ -23,24 +24,33 @@ function PlanBadge({ plan }) {
     </span>
   )
 }
-function useVenueBranding(venueId) {
-  const [venueName, setVenueName] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
-  useEffect(() => {
-    if (!venueId) return
-    let cancelled = false
-    supabase.from('app_settings').select('key, value')
-      .eq('venue_id', venueId)
-      .in('key', ['venue_name', 'logo_url'])
-      .then(({ data }) => {
-        if (cancelled || !data) return
-        const map = Object.fromEntries(data.map(r => [r.key, r.value]))
-        setVenueName(map.venue_name ?? '')
-        setLogoUrl(map.logo_url ?? '')
-      })
-    return () => { cancelled = true }
-  }, [venueId])
-  return { venueName, logoUrl }
+
+function UpgradeButton() {
+  return (
+    <a
+      href="mailto:hello@safeserv.app?subject=Upgrade to Pro"
+      className="relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-md shadow-accent/30 transition-all hover:shadow-lg hover:shadow-accent/40 hover:scale-[1.02] active:scale-[0.98]"
+      style={{
+        background: 'linear-gradient(135deg, #c94f2a 0%, #e06535 50%, #c94f2a 100%)',
+        backgroundSize: '200% 100%',
+      }}
+    >
+      {/* Shimmer overlay */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 animate-[shimmer_2.5s_ease-in-out_infinite]"
+        style={{
+          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%)',
+          backgroundSize: '200% 100%',
+        }}
+      />
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 relative">
+        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+      </svg>
+      <span className="relative">Upgrade to Pro</span>
+      <span className="relative font-normal opacity-75">· £25/mo</span>
+    </a>
+  )
 }
 
 /* ── Widget preferences hook ─────────────────────────────────────────────── */
@@ -445,12 +455,15 @@ export default function ManagerDashboardPage() {
             )}
           </div>
         </div>
-        <button
-          onClick={() => setShowPicker(true)}
-          className="text-[11px] tracking-widest uppercase text-charcoal/30 hover:text-charcoal/60 border border-charcoal/15 hover:border-charcoal/30 px-2.5 py-1.5 rounded-lg transition-colors mt-1"
-        >
-          Customise
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          {venuePlan === 'starter' && <UpgradeButton />}
+          <button
+            onClick={() => setShowPicker(true)}
+            className="text-[11px] tracking-widest uppercase text-charcoal/30 hover:text-charcoal/60 border border-charcoal/15 hover:border-charcoal/30 px-2.5 py-1.5 rounded-lg transition-colors"
+          >
+            Customise
+          </button>
+        </div>
       </div>
 
       {/* Push notification opt-in banner */}

@@ -24,6 +24,15 @@ export default {
         mono: ['DM Mono', 'monospace'],
         serif: ['Plus Jakarta Sans', 'sans-serif'],
       },
+      keyframes: {
+        shimmer: {
+          '0%':   { backgroundPosition: '200% center' },
+          '100%': { backgroundPosition: '-200% center' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 2.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

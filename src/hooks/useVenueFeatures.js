@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useVenue } from '../contexts/VenueContext'
+import { PLANS } from '../lib/constants'
 
 const FEATURES_UPDATED_EVENT = 'safeserv:features-updated'
 
@@ -144,7 +145,7 @@ export function useVenueFeatures() {
 
   /** True if the feature requires Pro and the venue is on Starter. */
   const isPlanLocked = useCallback((featureId) => {
-    if (venuePlan === 'pro') return false
+    if (venuePlan === PLANS.PRO) return false
     return PRO_ONLY_FEATURE_IDS.includes(featureId) || PRO_ONLY_ROUTES.has(featureId)
   }, [venuePlan])
 

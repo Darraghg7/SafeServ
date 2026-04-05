@@ -6,6 +6,8 @@ import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import Modal from '../../components/ui/Modal'
+import useDeliveryChecks from '../../hooks/useDeliveryChecks'
+import useDeliverySuppliers from '../../hooks/useDeliverySuppliers'
 // tesseract.js is ~7 MB — dynamically imported only when OCR is actually used
 
 function nowDatetimeLocal() {
@@ -17,43 +19,6 @@ function nowDatetimeLocal() {
 /* ═══════════════════════════════════════════════════════════════════════════
    HOOKS
    ═══════════════════════════════════════════════════════════════════════════ */
-
-function useDeliveryChecks(venueId) {
-  const [checks, setChecks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const load = useCallback(async () => {
-    if (!venueId) return
-    setLoading(true)
-    const { data } = await supabase
-      .from('delivery_checks')
-      .select('*, checker:staff!checked_by(name), supplier:suppliers(name)')
-      .eq('venue_id', venueId)
-      .order('checked_at', { ascending: false })
-      .limit(100)
-    setChecks(data ?? [])
-    setLoading(false)
-  }, [venueId])
-  useEffect(() => { load() }, [load])
-  return { checks, loading, reload: load }
-}
-
-function useDeliverySuppliers(venueId) {
-  const [suppliers, setSuppliers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const load = useCallback(async () => {
-    if (!venueId) return
-    const { data } = await supabase
-      .from('suppliers')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('is_active', true)
-      .order('name')
-    setSuppliers(data ?? [])
-    setLoading(false)
-  }, [venueId])
-  useEffect(() => { load() }, [load])
-  return { suppliers, loading, reload: load }
-}
 
 function useSupplierItems(supplierId) {
   const [items, setItems] = useState([])

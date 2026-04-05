@@ -1,0 +1,30 @@
+{
+  "appId": "app.safeserv",
+  "appName": "SafeServ",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always",
+    "scrollEnabled": false,
+    "backgroundColor": "#1a1a18"
+  },
+  "android": {
+    "backgroundColor": "#1a1a18"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#1a3c2e"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#1a3c2e",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    }
+  }
+}

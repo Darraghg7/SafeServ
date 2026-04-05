@@ -7,10 +7,11 @@ import NotificationBell from '../notifications/NotificationBell'
 import OfflineBanner from '../ui/OfflineBanner'
 import MobileNav from './MobileNav'
 import { useVenueFeatures } from '../../hooks/useVenueFeatures'
+import { useVenueBranding } from '../../hooks/useVenueBranding'
 
 // Per-venue cache — busted automatically after TTL or on app restart
 const CACHE_TTL = 60_000 // 1 minute
-const _cache = { cleaning: {}, swaps: {}, logo: {} }
+const _cache = { cleaning: {}, swaps: {} }
 
 /** True if a cache entry exists and is still within the TTL window. */
 function isFresh(bucket, key) {
@@ -80,28 +81,6 @@ function usePendingSwaps(venueId) {
   return count
 }
 
-function useVenueLogo(venueId) {
-  const [logoUrl, setLogoUrl] = useState('')
-  useEffect(() => {
-    if (!venueId) return
-    if (isFresh('logo', venueId)) {
-      setLogoUrl(_cache.logo[venueId] ?? '')
-      return
-    }
-    let cancelled = false
-    supabase.from('app_settings').select('value').eq('venue_id', venueId).eq('key', 'logo_url').maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return
-        const url = data?.value ?? ''
-        _cache.logo[venueId] = url
-        _cache.logo[venueId + '_ts'] = Date.now()
-        setLogoUrl(url)
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [venueId])
-  return logoUrl
-}
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 function IcoDashboard() {
@@ -277,7 +256,7 @@ export default function AppShell({ children }) {
   const navigate     = useNavigate()
   const overdueCount = useOverdueCleaning(venueId)
   const pendingSwaps = usePendingSwaps(venueId)
-  const logoUrl      = useVenueLogo(venueId)
+  const { logoUrl }  = useVenueBranding(venueId)
 
   const { isEnabled, isPlanLocked, venuePlan } = useVenueFeatures()
 
@@ -370,8 +349,10 @@ export default function AppShell({ children }) {
                   : isEnabled('training')  && <SubItem to={vp('/training')}  label="Training"  isActive={isUnder('/training')} />}
                 {isPlanLocked('time_off')  ? <LockedSubItem label="Time Off" />
                   : isEnabled('time_off')  && <SubItem to={vp('/time-off')}  label="Time Off"  isActive={isUnder('/time-off')} />}
-                <SubItem to={vp('/clock-in')}    label="Clock In / Out"  isActive={isUnder('/clock-in')} />
-                <SubItem to={vp('/noticeboard')} label="Noticeboard"     isActive={isUnder('/noticeboard')} />
+                {isPlanLocked('clock-in')    ? <LockedSubItem label="Clock In / Out" />
+                  : <SubItem to={vp('/clock-in')}    label="Clock In / Out"  isActive={isUnder('/clock-in')} />}
+                {isPlanLocked('noticeboard') ? <LockedSubItem label="Noticeboard" />
+                  : <SubItem to={vp('/noticeboard')} label="Noticeboard"     isActive={isUnder('/noticeboard')} />}
               </div>
 
               <div className="mt-2 space-y-0.5 border-t border-white/8 pt-2">
@@ -383,8 +364,8 @@ export default function AppShell({ children }) {
             <div className="space-y-0.5 pt-2">
               <SideItem to={vp('/dashboard')}       icon={IcoUser}       label="My Shift"      isActive={isAt('/dashboard')} />
               <SideItem to={vp('/tasks')}           icon={IcoTasks}      label="Tasks"         isActive={isUnder('/tasks')} />
-              <SideItem to={vp('/clock-in')}        icon={IcoClock}      label="Clock In / Out" isActive={isUnder('/clock-in')} />
-              <SideItem to={vp('/noticeboard')}     icon={IcoBoard}      label="Noticeboard"   isActive={isUnder('/noticeboard')} />
+              {!isPlanLocked('clock-in')    && <SideItem to={vp('/clock-in')}    icon={IcoClock} label="Clock In / Out" isActive={isUnder('/clock-in')} />}
+              {!isPlanLocked('noticeboard') && <SideItem to={vp('/noticeboard')} icon={IcoBoard} label="Noticeboard"   isActive={isUnder('/noticeboard')} />}
               {isEnabled('opening_closing') && <SideItem to={vp('/opening-closing')} icon={IcoChecks}     label="Checks"    isActive={isUnder('/opening-closing')} />}
               {isEnabled('cleaning')        && <SideItem to={vp('/cleaning')}        icon={IcoCompliance} label="Cleaning"  isActive={isUnder('/cleaning')} />}
               {isEnabled('fridge') && session?.showTempLogs && (

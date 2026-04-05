@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 
 import { isConfigured }        from './lib/supabase'
@@ -13,85 +13,88 @@ import PlanGate                from './components/ui/PlanGate'
 import UpdateBanner            from './components/ui/UpdateBanner'
 
 // Auth
-import LoginPage from './pages/LoginPage'
+const LoginPage = lazy(() => import('./pages/LoginPage'))
 
 // Landing (login)
-import LandingPage from './pages/LandingPage'
+const LandingPage = lazy(() => import('./pages/LandingPage'))
 
 // Marketing page
-import MarketingPage from './pages/marketing/MarketingPage'
+const MarketingPage = lazy(() => import('./pages/marketing/MarketingPage'))
+
+// Signup flow
+const SignupFlowPage = lazy(() => import('./pages/signup/SignupFlowPage'))
 
 // Dashboard (role-aware)
-import DashboardPage from './pages/DashboardPage'
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 
 // Fridge
-import FridgeDashboardPage from './pages/fridge/FridgeDashboardPage'
-import FridgeLogFormPage   from './pages/fridge/FridgeLogFormPage'
-import FridgeHistoryPage   from './pages/fridge/FridgeHistoryPage'
+const FridgeDashboardPage = lazy(() => import('./pages/fridge/FridgeDashboardPage'))
+const FridgeLogFormPage   = lazy(() => import('./pages/fridge/FridgeLogFormPage'))
+const FridgeHistoryPage   = lazy(() => import('./pages/fridge/FridgeHistoryPage'))
 
 // Allergens
-import AllergenRegistryPage from './pages/allergens/AllergenRegistryPage'
-import FoodItemFormPage     from './pages/allergens/FoodItemFormPage'
-import FoodItemDetailPage   from './pages/allergens/FoodItemDetailPage'
-import AllergenPublicPage   from './pages/allergens/AllergenPublicPage'
+const AllergenRegistryPage = lazy(() => import('./pages/allergens/AllergenRegistryPage'))
+const FoodItemFormPage     = lazy(() => import('./pages/allergens/FoodItemFormPage'))
+const FoodItemDetailPage   = lazy(() => import('./pages/allergens/FoodItemDetailPage'))
+const AllergenPublicPage   = lazy(() => import('./pages/allergens/AllergenPublicPage'))
 
 // Cleaning
-import CleaningPage from './pages/cleaning/CleaningPage'
+const CleaningPage = lazy(() => import('./pages/cleaning/CleaningPage'))
 
 // Opening / Closing
-import OpeningClosingPage from './pages/opening/OpeningClosingPage'
+const OpeningClosingPage = lazy(() => import('./pages/opening/OpeningClosingPage'))
 
 // Rota + Timesheet
-import RotaPage     from './pages/rota/RotaPage'
-import TimesheetPage from './pages/clockin/TimesheetPage'
+const RotaPage     = lazy(() => import('./pages/rota/RotaPage'))
+const TimesheetPage = lazy(() => import('./pages/clockin/TimesheetPage'))
 
 // Compliance
-import DeliveryChecksPage    from './pages/deliveries/DeliveryChecksPage'
-import ProbeCalibrationPage  from './pages/probe/ProbeCalibrationPage'
-import CorrectiveActionsPage from './pages/corrective/CorrectiveActionsPage'
-import EHOAuditPage          from './pages/audit/EHOAuditPage'
-import CookingTempsPage      from './pages/cooking/CookingTempsPage'
-import HotHoldingPage        from './pages/hotholding/HotHoldingPage'
-import CoolingLogsPage       from './pages/cooling/CoolingLogsPage'
-import PestControlPage       from './pages/pestcontrol/PestControlPage'
+const DeliveryChecksPage    = lazy(() => import('./pages/deliveries/DeliveryChecksPage'))
+const ProbeCalibrationPage  = lazy(() => import('./pages/probe/ProbeCalibrationPage'))
+const CorrectiveActionsPage = lazy(() => import('./pages/corrective/CorrectiveActionsPage'))
+const EHOAuditPage          = lazy(() => import('./pages/audit/EHOAuditPage'))
+const CookingTempsPage      = lazy(() => import('./pages/cooking/CookingTempsPage'))
+const HotHoldingPage        = lazy(() => import('./pages/hotholding/HotHoldingPage'))
+const CoolingLogsPage       = lazy(() => import('./pages/cooling/CoolingLogsPage'))
+const PestControlPage       = lazy(() => import('./pages/pestcontrol/PestControlPage'))
 
 // Training
-import TrainingPage from './pages/training/TrainingPage'
+const TrainingPage = lazy(() => import('./pages/training/TrainingPage'))
 
 // Waste
-import WasteLogPage from './pages/waste/WasteLogPage'
+const WasteLogPage = lazy(() => import('./pages/waste/WasteLogPage'))
 
 // Suppliers
-import SupplierOrdersPage from './pages/orders/SupplierOrdersPage'
+const SupplierOrdersPage = lazy(() => import('./pages/orders/SupplierOrdersPage'))
 
 // Time Off
-import TimeOffPage from './pages/timeoff/TimeOffPage'
+const TimeOffPage = lazy(() => import('./pages/timeoff/TimeOffPage'))
 
 // Settings
-import SettingsPage from './pages/settings/SettingsPage'
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
 
 // Fitness to Work (SC7)
-import FitnessPage from './pages/fitness/FitnessPage'
+const FitnessPage = lazy(() => import('./pages/fitness/FitnessPage'))
 
 // Clock In / Out
-import ClockInPage from './pages/clockin/ClockInPage'
+const ClockInPage = lazy(() => import('./pages/clockin/ClockInPage'))
 
 // Noticeboard
-import NoticeBoardPage from './pages/noticeboard/NoticeBoardPage'
+const NoticeBoardPage = lazy(() => import('./pages/noticeboard/NoticeBoardPage'))
 
 // HACCP
-import HACCPPage from './pages/haccp/HACCPPage'
+const HACCPPage = lazy(() => import('./pages/haccp/HACCPPage'))
 
 // Suppliers (approved)
-import SuppliersPage from './pages/suppliers/SuppliersPage'
+const SuppliersPage = lazy(() => import('./pages/suppliers/SuppliersPage'))
 
 // EHO Mock Inspection
-import EHOMockPage from './pages/eho/EHOMockPage'
+const EHOMockPage = lazy(() => import('./pages/eho/EHOMockPage'))
 
 // Tasks (daily recurring + one-off)
-import TasksPage from './pages/tasks/TasksPage'
+const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 
-import NotFoundPage from './pages/NotFoundPage'
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 // ── Guards ───────────────────────────────────────────────────────────────────
 
@@ -180,8 +183,8 @@ function VenueRoutes() {
             {/* Any authenticated user */}
             <Route path="dashboard"         element={wrap(DashboardPage)} />
             <Route path="tasks"             element={wrap(TasksPage)} />
-            <Route path="clock-in"          element={wrap(ClockInPage)} />
-            <Route path="noticeboard"       element={wrap(NoticeBoardPage)} />
+            <Route path="clock-in"          element={wrapPro(ClockInPage,    RequireAuth, 'clock-in')} />
+            <Route path="noticeboard"       element={wrapPro(NoticeBoardPage, RequireAuth, 'noticeboard')} />
             <Route path="fridge"            element={wrap(FridgeDashboardPage)} />
             <Route path="fridge/log"        element={wrap(FridgeLogFormPage)} />
             <Route path="fridge/history"    element={wrap(FridgeHistoryPage)} />
@@ -230,12 +233,16 @@ export default function App() {
     <BrowserRouter>
       <UpdateBanner />
       <AuthProvider>
+        <Suspense fallback={<FullPageLoader />}>
         <Routes>
           {/* Public: marketing homepage */}
           <Route path="/" element={<MarketingPage />} />
 
           {/* Public: allergen matrix (no auth required, accessible via QR code) */}
           <Route path="/allergens/:venueSlug" element={<AllergenPublicPage />} />
+
+          {/* Sign up */}
+          <Route path="/signup" element={<SignupFlowPage />} />
 
           {/* Login — redirects to venue if already authenticated */}
           <Route path="/login" element={<LandingRoute />} />
@@ -269,6 +276,7 @@ export default function App() {
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

@@ -6,22 +6,28 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useVenue } from '../../contexts/VenueContext'
+import { STARTER_PRICE, PRO_PRICE } from '../../lib/pricing'
+import { PLANS } from '../../lib/constants'
 
 const FEATURE_LABELS = {
-  rota:       'Rota & Shift Management',
-  timesheet:  'Timesheets & Hour Tracking',
-  'time-off': 'Time Off Requests',
-  training:   'Staff Training Records',
-  waste:      'Waste Logging',
-  orders:     'Supplier Orders',
-  haccp:      'HACCP Generator',
-  'eho-mock': 'EHO Mock Inspection',
+  rota:        'Rota & Shift Management',
+  timesheet:   'Timesheets & Hour Tracking',
+  'time-off':  'Time Off Requests',
+  training:    'Staff Training Records',
+  waste:       'Waste Logging',
+  orders:      'Supplier Orders',
+  haccp:       'HACCP Generator',
+  'eho-mock':  'EHO Mock Inspection',
+  staff:       'Staff Management',
+  'clock-in':  'Clock In / Out',
+  noticeboard: 'Noticeboard',
+  'shift-swaps': 'Shift Swaps',
 }
 
 export default function PlanGate({ feature, children }) {
   const { venuePlan } = useVenue()
 
-  if (venuePlan === 'pro') return children
+  if (venuePlan === PLANS.PRO) return children
 
   const label = FEATURE_LABELS[feature] ?? 'This feature'
 
@@ -48,8 +54,8 @@ export default function PlanGate({ feature, children }) {
           href="mailto:hello@safeserv.app?subject=Upgrade to Pro"
           className="flex-1 bg-accent text-cream py-3 rounded-xl text-sm font-semibold text-center hover:bg-accent/90 transition-colors"
         >
-          Upgrade to Pro — £45/mo
-        </a>
+          Upgrade to Pro — {PRO_PRICE}/mo
+</a>
         <Link
           to="../dashboard"
           relative="path"
@@ -60,7 +66,7 @@ export default function PlanGate({ feature, children }) {
       </div>
 
       <p className="text-[11px] text-charcoal/30 mt-5">
-        Current plan: <strong className="text-brand">Starter</strong> · £15/month
+        Current plan: <strong className="text-brand">Starter</strong> · {STARTER_PRICE}/month
       </p>
     </div>
   )

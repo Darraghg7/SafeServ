@@ -350,12 +350,12 @@ export default function RotaPage() {
   return (
     <div className="flex flex-col gap-6">
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-y-3">
         <h1 className="font-serif text-3xl text-brand">
           {isManager ? 'Rota Manager' : 'Rota'}
         </h1>
         {isManager && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             {!closureMode && (
               <>
                 <button
@@ -613,7 +613,7 @@ export default function RotaPage() {
 
       {/* ── Week count selector (manager only) ── */}
       {isManager && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] tracking-widest uppercase text-charcoal/40 font-medium">View</span>
           {[1, 2, 3, 4].map((n) => (
             <button

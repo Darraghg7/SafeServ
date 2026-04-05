@@ -3,15 +3,43 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { ThemeProvider } from './contexts/ThemeContext'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 )
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {})
+// Only register service worker in browser/PWA context — not inside Capacitor native shell
+// (Capacitor serves assets from the bundle; SW caching would conflict)
+async function initNative() {
+  const { Capacitor } = await import('@capacitor/core')
+  if (Capacitor.isNativePlatform()) {
+    const [{ StatusBar, Style }, { SplashScreen }, { App: CapApp }] = await Promise.all([
+      import('@capacitor/status-bar'),
+      import('@capacitor/splash-screen'),
+      import('@capacitor/app'),
+    ])
+    StatusBar.setStyle({ style: Style.Dark })
+    StatusBar.setBackgroundColor({ color: '#1a3c2e' }).catch(() => {}) // Android only
+    SplashScreen.hide()
+
+    // Android hardware back button: go back in history or exit app
+    CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) window.history.back()
+      else CapApp.exitApp()
+    })
+  } else {
+    // Browser / PWA — register service worker as normal
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }
 }
+
+initNative()

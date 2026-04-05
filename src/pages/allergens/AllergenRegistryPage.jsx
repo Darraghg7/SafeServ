@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
+import React, { useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import { useFoodItems } from '../../hooks/useFoodItems'
 import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { useVenueBranding } from '../../hooks/useVenueBranding'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 
 function SectionLabel({ children, action }) {
   return (
@@ -20,20 +22,64 @@ function SectionLabel({ children, action }) {
 export default function AllergenRegistryPage() {
   const [search, setSearch] = useState('')
   const { items, loading, reload } = useFoodItems(search)
-  const { venueId, venueSlug } = useVenue()
+  const { venueId, venueSlug, venueName } = useVenue()
   const { isManager } = useSession()
-  const toast         = useToast()
-  const navigate      = useNavigate()
-  const [deleting, setDeleting]   = useState(null)
-  const [showQR, setShowQR]       = useState(false)
+  const toast                     = useToast()
+  const [deleting, setDeleting]     = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [showQR, setShowQR]         = useState(false)
+  const qrRef                     = useRef(null)
+  const { logoUrl }               = useVenueBranding(venueId)
 
   const publicUrl = `${window.location.origin}/allergens/${venueSlug}`
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this item?')) return
-    setDeleting(id)
-    const { error } = await supabase.from('food_items').update({ is_active: false }).eq('id', id).eq('venue_id', venueId)
+  const downloadQR = () => {
+    const canvas = qrRef.current?.querySelector('canvas')
+    if (!canvas) return
+    const link = document.createElement('a')
+    link.download = 'allergen-qr.png'
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+  }
+
+  const printCard = () => {
+    const win = window.open('', '_blank', 'width=420,height=560')
+    const logoHtml = logoUrl
+      ? `<img src="${logoUrl}" alt="Logo" style="height:56px;width:auto;object-fit:contain;display:block;margin:0 auto 16px;" />`
+      : ''
+    const canvas = qrRef.current?.querySelector('canvas')
+    const qrDataUrl = canvas?.toDataURL('image/png') ?? ''
+    win.document.write(`<!DOCTYPE html><html><head><title>Allergen QR</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:system-ui,sans-serif;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}
+        .card{text-align:center;padding:40px 36px;border:1px solid #e0ddd8;border-radius:16px;max-width:320px;width:100%}
+        .venue{font-size:1.1rem;font-weight:700;color:#1a2e2a;margin-bottom:4px}
+        .sub{font-size:.72rem;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px}
+        .qr{margin:0 auto 20px}
+        .cta{font-size:.75rem;color:#555;line-height:1.6}
+        .cta strong{display:block;font-size:.85rem;color:#1a2e2a;margin-bottom:4px}
+        .badge{font-size:.6rem;color:#bbb;margin-top:20px;letter-spacing:.06em}
+        @media print{body{min-height:auto}.card{border:none;padding:20px}}
+      </style></head><body>
+      <div class="card">
+        ${logoHtml}
+        <div class="venue">${venueName || 'Allergen Information'}</div>
+        <div class="sub">Allergen Information</div>
+        <div class="qr"><img src="${qrDataUrl}" width="180" height="180" /></div>
+        <div class="cta"><strong>Scan to view allergens</strong>Updated in real-time. Ask staff if you have any dietary requirements.</div>
+        <div class="badge">Powered by SafeServ</div>
+      </div>
+      <script>window.onload=()=>{window.print()}<\/script>
+      </body></html>`)
+    win.document.close()
+  }
+
+  const confirmDelete = async () => {
+    setDeleting(deleteTarget.id)
+    const { error } = await supabase.from('food_items').update({ is_active: false }).eq('id', deleteTarget.id).eq('venue_id', venueId)
     setDeleting(null)
+    setDeleteTarget(null)
     if (error) { toast(error.message, 'error'); return }
     toast('Item removed')
     reload()
@@ -70,19 +116,36 @@ export default function AllergenRegistryPage() {
           </div>
           {showQR && (
             <div className="mt-4 flex flex-col sm:flex-row items-start gap-5">
-              <div className="p-3 bg-white rounded-xl border border-charcoal/10 shadow-sm">
-                <QRCodeSVG value={publicUrl} size={140} />
+              <div ref={qrRef} className="p-3 bg-white rounded-xl border border-charcoal/10 shadow-sm shrink-0">
+                <QRCodeCanvas value={publicUrl} size={140} />
               </div>
-              <div className="flex flex-col gap-2 min-w-0">
+              <div className="flex flex-col gap-2 min-w-0 flex-1">
                 <p className="text-[11px] tracking-widest uppercase text-charcoal/35">Public URL</p>
                 <p className="text-xs font-mono text-charcoal/60 break-all bg-charcoal/4 px-3 py-2 rounded-lg">{publicUrl}</p>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(publicUrl); toast('URL copied') }}
-                  className="self-start text-xs px-3 py-1.5 rounded-lg border border-charcoal/15 text-charcoal/55 hover:text-charcoal hover:border-charcoal/30 transition-colors"
-                >
-                  Copy URL
-                </button>
-                <p className="text-[11px] text-charcoal/35 mt-1">Print or display the QR code at your counter or on menus. It updates automatically when you edit allergen information.</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(publicUrl); toast('URL copied') }}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-charcoal/15 text-charcoal/55 hover:text-charcoal hover:border-charcoal/30 transition-colors"
+                  >
+                    Copy URL
+                  </button>
+                  <button
+                    onClick={downloadQR}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-charcoal/15 text-charcoal/55 hover:text-charcoal hover:border-charcoal/30 transition-colors"
+                  >
+                    Download PNG
+                  </button>
+                  <button
+                    onClick={printCard}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-brand text-cream hover:bg-brand/90 transition-colors"
+                  >
+                    Print Table Card
+                  </button>
+                </div>
+                <p className="text-[11px] text-charcoal/35 mt-1">
+                  <strong className="text-charcoal/50">Print Table Card</strong> opens a ready-to-print card with your venue logo, QR code and instructions — place on tables or counters.
+                  {!logoUrl && <span className="block mt-0.5 text-accent/70">Add your logo in Settings to include it on the card.</span>}
+                </p>
               </div>
             </div>
           )}
@@ -152,7 +215,7 @@ export default function AllergenRegistryPage() {
                           Edit
                         </Link>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => setDeleteTarget({ id: item.id, name: item.name })}
                           disabled={deleting === item.id}
                           className="text-xs text-charcoal/35 hover:text-danger border border-charcoal/12 px-2 py-1 rounded-md hover:border-danger/30 transition-colors"
                         >
@@ -167,6 +230,16 @@ export default function AllergenRegistryPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove item?"
+        message={`Remove "${deleteTarget?.name}" from the allergen registry?`}
+        confirmLabel="Remove"
+        danger
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

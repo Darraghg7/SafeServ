@@ -3,11 +3,11 @@
  * Persists across logouts: timer is derived from DB timestamps, not local state.
  */
 import React, { useEffect, useState } from 'react'
-import { offlineRpc } from '../lib/offlineSupabase'
-import { useClockStatus, saveClockStatusCache } from '../hooks/useClockEvents'
-import { useVenue } from '../contexts/VenueContext'
-import { useToast } from './ui/Toast'
-import LoadingSpinner from './ui/LoadingSpinner'
+import { offlineRpc } from '../../lib/offlineSupabase'
+import { useClockStatus, saveClockStatusCache } from '../../hooks/useClockEvents'
+import { useVenue } from '../../contexts/VenueContext'
+import { useToast } from '../ui/Toast'
+import LoadingSpinner from '../ui/LoadingSpinner'
 
 const STATUS_CONFIG = {
   clocked_out: { label: 'Not Clocked In', color: 'text-charcoal/50', dot: 'bg-charcoal/25' },

@@ -3,33 +3,14 @@ import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
+import { useVenueBranding } from '../../hooks/useVenueBranding'
 import { useSession } from '../../contexts/SessionContext'
 import { formatMinutes } from '../../lib/utils'
-import ClockPanel from '../../components/ClockPanel'
+import ClockPanel from '../../components/shifts/ClockPanel'
 import RecentShifts from '../../components/shifts/RecentShifts'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { useClockSessions } from '../../hooks/useClockSessions'
 
-function useVenueBranding(venueId) {
-  const [venueName, setVenueName] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
-  useEffect(() => {
-    if (!venueId) return
-    let cancelled = false
-    supabase.from('app_settings').select('key, value')
-      .eq('venue_id', venueId)
-      .in('key', ['venue_name', 'logo_url'])
-      .then(({ data }) => {
-        if (cancelled || !data) return
-        const map = Object.fromEntries(data.map(r => [r.key, r.value]))
-        setVenueName(map.venue_name ?? '')
-        setLogoUrl(map.logo_url ?? '')
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [venueId])
-  return { venueName, logoUrl }
-}
 
 function SectionLabel({ children }) {
   return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
