@@ -191,12 +191,20 @@ export default function MarketingPage() {
       <nav className="sticky top-0 z-50 bg-cream/90 backdrop-blur-sm border-b border-charcoal/8">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
           <span className="font-serif text-xl tracking-tight text-brand">SafeServ</span>
-          <Link
-            to="/login"
-            className="text-sm font-semibold text-cream bg-brand hover:bg-brand/90 transition-colors px-4 py-1.5 rounded-lg"
-          >
-            Sign In
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              className="text-sm font-medium text-charcoal/60 hover:text-charcoal transition-colors px-4 py-1.5 rounded-lg"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/signup"
+              className="text-sm font-semibold text-cream bg-brand hover:bg-brand/90 transition-colors px-4 py-1.5 rounded-lg"
+            >
+              Start Free Trial
+            </Link>
+          </div>
         </div>
       </nav>
 
