@@ -393,7 +393,7 @@ export default function AppShell({ children }) {
       </aside>
 
       {/* ── Content area (offset by sidebar on desktop) ───────────────────── */}
-      <div className={`flex-1 lg:ml-[236px] flex flex-col min-h-dvh ${bgClass}`}>
+      <div className={`flex-1 lg:ml-[236px] flex flex-col min-h-dvh overflow-x-hidden ${bgClass}`}>
 
         {/* Mobile-only header (shown below lg breakpoint) */}
         <header
