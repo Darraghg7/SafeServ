@@ -27,7 +27,7 @@ export default function SettingsPage() {
   const { venueId } = useVenue()
   const { settings, loading: sLoading, reload: reloadSettings } = useVenueSettings()
   const { closures, reload: reloadClosures } = useVenueClosures()
-  const { closedDays, breakDurationMins, saveClosedDays, saveBreakDuration } = useAppSettings()
+  const { closedDays, breakDurationMins, cleanupMinutes, saveClosedDays, saveBreakDuration, saveCleanupMinutes } = useAppSettings()
   const { dark, toggle: toggleDark } = useTheme()
   const { config: featuresConfig, save: saveFeatures, venuePlan } = useVenueFeatures()
 
@@ -351,6 +351,29 @@ export default function SettingsPage() {
         {breakDurationMins < 20 && (
           <p className="text-xs text-warning mt-3">Note: UK minimum break is 20 minutes.</p>
         )}
+
+        <div className="mt-5 pt-5 border-t border-charcoal/6">
+          <p className="text-sm font-medium text-charcoal mb-0.5">Clean-up time</p>
+          <p className="text-xs text-charcoal/40 mt-0.5 mb-3">
+            Grace period after shift end for cleaning and closing tasks. Clock-outs within this window won't show as a discrepancy on timesheets.
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {[0, 15, 30, 45, 60].map(mins => (
+              <button
+                key={mins}
+                onClick={() => saveCleanupMinutes(mins)}
+                className={[
+                  'px-3 py-1.5 rounded-lg text-sm font-medium border transition-all',
+                  cleanupMinutes === mins
+                    ? 'bg-charcoal text-cream border-charcoal'
+                    : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30',
+                ].join(' ')}
+              >
+                {mins === 0 ? 'None' : `${mins}m`}
+              </button>
+            ))}
+          </div>
+        </div>
       </SettingsSection>
 
       {/* ── Closed Periods ─────────────────────────────────────────────────── */}

@@ -42,6 +42,7 @@ export function useAppSettings() {
   const [customRoles, setCustomRoles]           = useState(DEFAULT_ROLES)
   const [closedDays, setClosedDays]             = useState([])   // indices 0=Mon..6=Sun
   const [breakDurationMins, setBreakDurationMins] = useState(30) // unpaid break for adults >6h
+  const [cleanupMinutes, setCleanupMinutes]     = useState(0)   // grace period after shift end
   const [loading, setLoading]                   = useState(true)
 
   const load = useCallback(async () => {
@@ -50,7 +51,7 @@ export function useAppSettings() {
       .from('app_settings')
       .select('key, value')
       .eq('venue_id', venueId)
-      .in('key', ['custom_roles', 'closed_days', 'break_duration_mins'])
+      .in('key', ['custom_roles', 'closed_days', 'break_duration_mins', 'cleanup_minutes'])
 
     if (data) {
       for (const row of data) {
@@ -64,6 +65,9 @@ export function useAppSettings() {
           }
           if (row.key === 'break_duration_mins' && typeof parsed === 'number') {
             setBreakDurationMins(parsed)
+          }
+          if (row.key === 'cleanup_minutes' && typeof parsed === 'number') {
+            setCleanupMinutes(parsed)
           }
         } catch { /* ignore bad JSON */ }
       }
@@ -97,6 +101,14 @@ export function useAppSettings() {
       .upsert({ venue_id: venueId, key: 'break_duration_mins', value: JSON.stringify(mins) })
   }, [venueId])
 
+  const saveCleanupMinutes = useCallback(async (mins) => {
+    if (!venueId) return
+    setCleanupMinutes(mins)
+    await supabase
+      .from('app_settings')
+      .upsert({ venue_id: venueId, key: 'cleanup_minutes', value: JSON.stringify(mins) })
+  }, [venueId])
+
   /** Pick the next unused colour from the palette */
   const nextColor = useCallback(() => {
     const used = new Set(customRoles.map(r => r.color))
@@ -104,7 +116,7 @@ export function useAppSettings() {
   }, [customRoles])
 
   return {
-    customRoles, closedDays, breakDurationMins,
-    loading, saveCustomRoles, saveClosedDays, saveBreakDuration, nextColor, reload: load,
+    customRoles, closedDays, breakDurationMins, cleanupMinutes,
+    loading, saveCustomRoles, saveClosedDays, saveBreakDuration, saveCleanupMinutes, nextColor, reload: load,
   }
 }
