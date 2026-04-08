@@ -189,10 +189,11 @@ export default function StaffMembersSection() {
 
     // Persist fields not covered by RPC (is_under_18, working_days)
     if (editingId) {
-      await supabase.from('staff').update({
+      const { error: extraErr } = await supabase.from('staff').update({
         is_under_18:  staffForm.is_under_18,
         working_days: staffForm.working_days,
       }).eq('id', editingId)
+      if (extraErr) { toast('Saved, but failed to update some fields: ' + extraErr.message, 'error') }
     } else {
       // Find the newly created staff member by name + venue
       const { data: newRow } = await supabase
@@ -203,10 +204,11 @@ export default function StaffMembersSection() {
         .order('created_at', { ascending: false })
         .limit(1)
       if (newRow?.[0]?.id) {
-        await supabase.from('staff').update({
+        const { error: extraErr } = await supabase.from('staff').update({
           is_under_18:  staffForm.is_under_18,
           working_days: staffForm.working_days,
         }).eq('id', newRow[0].id)
+        if (extraErr) { toast('Saved, but failed to update some fields: ' + extraErr.message, 'error') }
       }
     }
 

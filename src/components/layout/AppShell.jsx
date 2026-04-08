@@ -23,11 +23,12 @@ function isFresh(bucket, key) {
 function useOverdueCleaning(venueId) {
   const [count, setCount] = useState(0)
   useEffect(() => {
-    if (!venueId) return
+    if (!venueId) { setCount(0); return }
     if (isFresh('cleaning', venueId)) {
       setCount(_cache.cleaning[venueId] ?? 0)
       return
     }
+    setCount(0) // reset while fetching for the new venue
     let cancelled = false
     const load = async () => {
       try {
@@ -61,11 +62,12 @@ function useOverdueCleaning(venueId) {
 function usePendingSwaps(venueId) {
   const [count, setCount] = useState(0)
   useEffect(() => {
-    if (!venueId) return
+    if (!venueId) { setCount(0); return }
     if (isFresh('swaps', venueId)) {
       setCount(_cache.swaps[venueId] ?? 0)
       return
     }
+    setCount(0) // reset while fetching for the new venue
     let cancelled = false
     supabase.from('shift_swaps').select('id', { count: 'exact', head: true })
       .eq('venue_id', venueId)

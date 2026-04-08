@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useVenue } from '../contexts/VenueContext'
 
@@ -47,7 +47,16 @@ export function useClockStatus(staffId) {
   const [totalBreakMs, setTotalBreakMs] = useState(0)
   const [loading, setLoading]         = useState(true)
 
+  // Guard all state updates — prevents React warning when component unmounts
+  // while an async load is still in flight.
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
+
   const applyState = useCallback((s, ci, bs, bm) => {
+    if (!mountedRef.current) return
     setStatus(s)
     setClockInAt(ci)
     setBreakStartAt(bs)
@@ -56,8 +65,8 @@ export function useClockStatus(staffId) {
 
   const load = useCallback(async (id) => {
     const sid = id ?? staffId
-    if (!sid) { setLoading(false); return }
-    setLoading(true)
+    if (!sid) { if (mountedRef.current) setLoading(false); return }
+    if (mountedRef.current) setLoading(true)
 
     try {
       // Get the most recent clock_in or clock_out to determine if there's an active session
@@ -124,7 +133,7 @@ export function useClockStatus(staffId) {
         applyState('clocked_out', null, null, 0)
       }
     } finally {
-      setLoading(false)
+      if (mountedRef.current) setLoading(false)
     }
   }, [venueId, staffId, applyState])
 

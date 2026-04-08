@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
 import { useSession } from '../../contexts/SessionContext'
 import { useVenue } from '../../contexts/VenueContext'
@@ -45,15 +45,13 @@ function VenueCard({ venue, isHome }) {
 
   const handleTimeOff = async (id, action) => {
     setApproving(a => ({ ...a, [id]: action }))
-    await supabase.from('time_off_requests').update({
+    const { error } = await supabase.from('time_off_requests').update({
       status:       action === 'approve' ? 'approved' : 'rejected',
       reviewed_by:  session.staffId,
       reviewed_at:  new Date().toISOString(),
     }).eq('id', id)
     setApproving(a => ({ ...a, [id]: null }))
-    // Re-fetch by updating the hook — done by key change isn't possible here,
-    // so we optimistically remove the row from the local render by re-querying.
-    // The hook will re-run on next mount/navigation.
+    return error ? 'error' : 'ok'
   }
 
   const colour = loading ? 'gray' : venueStatus(data)
@@ -147,8 +145,8 @@ function TimeOffRow({ req, busy, action, onAction }) {
   if (dismissed) return null
 
   const handleAction = async (type) => {
-    await onAction(req.id, type)
-    setDismissed(true)
+    const result = await onAction(req.id, type)
+    if (result !== 'error') setDismissed(true)
   }
 
   const fmtDate = (d) => format(parseISO(d), 'd MMM')
@@ -186,7 +184,6 @@ function TimeOffRow({ req, busy, action, onAction }) {
 export default function OverviewPage() {
   const { session, linkedVenues } = useSession()
   const { venueId, venueSlug, venueName } = useVenue()
-  const navigate = useNavigate()
 
   const homeVenue = { id: venueId, slug: venueSlug, name: venueName }
   const allVenues = [homeVenue, ...linkedVenues]
@@ -200,12 +197,12 @@ export default function OverviewPage() {
           <h1 className="font-serif text-3xl text-brand">My Venues</h1>
           <p className="text-sm text-charcoal/45 mt-1">{allVenues.length} venue{allVenues.length !== 1 ? 's' : ''} · today's compliance snapshot</p>
         </div>
-        <button
-          onClick={() => navigate(`/v/${venueSlug}/dashboard`)}
+        <Link
+          to={`/v/${venueSlug}/dashboard`}
           className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20"
         >
           ← Back to {venueName || 'venue'}
-        </button>
+        </Link>
       </div>
 
       {/* Legend */}

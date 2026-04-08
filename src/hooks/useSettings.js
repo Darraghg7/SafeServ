@@ -47,6 +47,15 @@ export function useAppSettings() {
 
   const load = useCallback(async () => {
     if (!venueId) { setLoading(false); return }
+
+    // Reset to defaults before loading so stale settings from a previous venue
+    // don't persist while the new venue's settings are in flight.
+    setCustomRoles(DEFAULT_ROLES)
+    setClosedDays([])
+    setBreakDurationMins(30)
+    setCleanupMinutes(0)
+    setLoading(true)
+
     const { data } = await supabase
       .from('app_settings')
       .select('key, value')
@@ -69,7 +78,7 @@ export function useAppSettings() {
           if (row.key === 'cleanup_minutes' && typeof parsed === 'number') {
             setCleanupMinutes(parsed)
           }
-        } catch { /* ignore bad JSON */ }
+        } catch { /* ignore corrupt JSON — leave defaults */ }
       }
     }
     setLoading(false)
@@ -109,10 +118,15 @@ export function useAppSettings() {
       .upsert({ venue_id: venueId, key: 'cleanup_minutes', value: JSON.stringify(mins) })
   }, [venueId])
 
-  /** Pick the next unused colour from the palette */
+  /** Pick the next unused colour from the palette. Falls back to the least-used colour. */
   const nextColor = useCallback(() => {
     const used = new Set(customRoles.map(r => r.color))
-    return COLOR_PALETTE.find(c => !used.has(c)) || COLOR_PALETTE[customRoles.length % COLOR_PALETTE.length]
+    const unused = COLOR_PALETTE.find(c => !used.has(c))
+    if (unused) return unused
+    // All colours in use — count usage and return the least-used one
+    const counts = Object.fromEntries(COLOR_PALETTE.map(c => [c, 0]))
+    customRoles.forEach(r => { if (counts[r.color] !== undefined) counts[r.color]++ })
+    return COLOR_PALETTE.reduce((a, b) => counts[a] <= counts[b] ? a : b)
   }, [customRoles])
 
   return {

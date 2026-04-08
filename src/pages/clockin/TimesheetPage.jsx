@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, memo } from 'react'
 import { format, endOfWeek, addWeeks, addDays, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns'
 import { supabase } from '../../lib/supabase'
+import { useVenue } from '../../contexts/VenueContext'
 import { useTimesheetData } from '../../hooks/useClockEvents'
 import { useShifts } from '../../hooks/useShifts'
 import { useAppSettings } from '../../hooks/useSettings'
 import { formatMinutes, getWeekStart, getWeekDays, downloadCsv } from '../../lib/utils'
 import { buildPdfReport } from '../../lib/pdfUtils'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+
+// End-of-day offset: 23:59:59.999 in milliseconds
+const END_OF_DAY_MS = 86_399_999
 
 function SectionLabel({ children }) {
   return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
@@ -112,7 +116,7 @@ function buildDailyGrid(events) {
 
 // ── DrillDownPanel ────────────────────────────────────────────────────────────
 
-function DrillDownPanel({ person, gridDays, shiftsForPerson, cleanupMinutes }) {
+const DrillDownPanel = memo(function DrillDownPanel({ person, gridDays, shiftsForPerson, cleanupMinutes }) {
   const shiftsByDate = useMemo(() => {
     const map = {}
     for (const sh of shiftsForPerson) {
@@ -233,7 +237,7 @@ function DrillDownPanel({ person, gridDays, shiftsForPerson, cleanupMinutes }) {
       })}
     </div>
   )
-}
+})
 
 // ── Period helpers ────────────────────────────────────────────────────────────
 
@@ -288,7 +292,7 @@ function periodToDates(period, customFrom, customTo) {
     const end   = parseISO(customTo)
     return {
       dateFrom: start.toISOString(),
-      dateTo:   new Date(end.getTime() + 86399999).toISOString(),
+      dateTo:   new Date(end.getTime() + END_OF_DAY_MS).toISOString(),
       label: `${format(start, 'd MMM yyyy')} – ${format(end, 'd MMM yyyy')}`,
     }
   }
@@ -305,6 +309,7 @@ export default function TimesheetPage() {
   const [weekOffset,    setWeekOffset]    = useState(0)
   const [expandedStaff, setExpandedStaff] = useState(null)
 
+  const { venueId } = useVenue()
   const { cleanupMinutes } = useAppSettings()
 
   const { dateFrom, dateTo, label: periodLabel } = periodToDates(period, customFrom, customTo)
@@ -315,7 +320,7 @@ export default function TimesheetPage() {
   const gridWeekEnd   = addDays(gridWeekStart, 6)
   const gridDays      = getWeekDays(gridWeekStart)
   const gridDateFrom  = gridWeekStart.toISOString()
-  const gridDateTo    = new Date(gridWeekEnd.getTime() + 86399999).toISOString()
+  const gridDateTo    = new Date(gridWeekEnd.getTime() + END_OF_DAY_MS).toISOString()
   const { rows: gridRows, loading: gridLoading, reload: gridReload } = useTimesheetData(gridDateFrom, gridDateTo)
 
   // Shifts for the grid week — to compare against actual clock events
@@ -335,13 +340,15 @@ export default function TimesheetPage() {
   }, [shifts])
 
   useEffect(() => {
+    if (!venueId) return
     supabase
       .from('staff')
       .select('id, hourly_rate')
+      .eq('venue_id', venueId)
       .then(({ data }) => {
         if (data) setStaffRates(Object.fromEntries(data.map((s) => [s.id, s.hourly_rate ?? 0])))
       })
-  }, [])
+  }, [venueId])
 
   useEffect(() => { reload() }, [reload])
   useEffect(() => { gridReload() }, [gridReload])
@@ -598,7 +605,7 @@ export default function TimesheetPage() {
                           const dayData  = person.days[dateStr]
                           const actual   = dayData?.minutes ?? 0
                           const expected = expectedMap[person.staffId]?.[dateStr]
-                          const status   = discrepancyStatus(actual, expected, cleanupMinutes)
+                          const status   = discrepancyStatus(actual, expected, cleanupMinutes)  // expected is undefined when no shift
 
                           return (
                             <td key={dateStr} className="py-3 px-2 text-center align-top">
