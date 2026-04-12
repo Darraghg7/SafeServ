@@ -12,7 +12,6 @@ export default {
         parchment:'#f0ede8',
         staffbg:  '#f5f4f1',
         charcoal: '#1a1a18',
-        muted:    '#7a7060',
         accent:   '#c94f2a',
 
         // Brand green scale — deep bottle green with lighter/darker variants
@@ -40,8 +39,6 @@ export default {
         serif: ['Plus Jakarta Sans', 'sans-serif'],
       },
       boxShadow: {
-        'card':     '0 1px 3px rgba(26,26,24,0.06), 0 4px 14px rgba(26,26,24,0.05)',
-        'card-hover': '0 4px 12px rgba(26,26,24,0.08), 0 1px 3px rgba(26,26,24,0.04)',
         'dropdown': '0 8px 28px rgba(26,26,24,0.10), 0 2px 6px rgba(26,26,24,0.04)',
         'modal':    '0 16px 48px rgba(26,26,24,0.12), 0 4px 12px rgba(26,26,24,0.06)',
       },
@@ -58,16 +55,11 @@ export default {
           '0%':   { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'fade-backdrop': {
-          '0%':   { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
       },
       animation: {
         shimmer:       'shimmer 2.5s ease-in-out infinite',
         'fade-in':     'fade-in 0.2s ease-out',
         'slide-up':    'slide-up 0.25s ease-out',
-        'fade-backdrop': 'fade-backdrop 0.2s ease-out',
       },
     },
   },

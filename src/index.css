@@ -32,9 +32,7 @@ table { border-spacing: 0; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; }
 
-/* ── Card elevation (utility class — use shadow-card on white cards) ────── */
-/* Legacy: keep the auto-shadow on rounded white divs for backward compat,
-   but prefer explicit shadow-card / shadow-card-hover classes.              */
+/* ── Card elevation — auto-shadow on rounded white cards ──────────────── */
 div.bg-white.rounded-xl,
 div.bg-white.rounded-2xl,
 div.bg-white.rounded-lg,
