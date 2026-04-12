@@ -10,6 +10,7 @@ import ClockPanel from '../../components/shifts/ClockPanel'
 import RecentShifts from '../../components/shifts/RecentShifts'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { useClockSessions } from '../../hooks/useClockSessions'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 
 function SectionLabel({ children }) {
@@ -45,6 +46,38 @@ function HoursThisWeekCard({ staffId, weekMins }) {
   )
 }
 
+function PushNotificationCard({ staffId, venueId }) {
+  const { supported, permission, subscribed, subscribing, subscribe, unsubscribe } =
+    usePushNotifications(staffId, venueId)
+
+  if (!supported) return null
+  // Don't nag if permission was explicitly denied
+  if (permission === 'denied') return null
+
+  return (
+    <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+      <SectionLabel>Notifications</SectionLabel>
+      <p className="text-xs text-charcoal/40 mb-3">
+        Get notified about rota changes, shift swaps, and time-off decisions.
+      </p>
+      {subscribed ? (
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-green-600 font-medium">● Notifications enabled</span>
+          <button onClick={unsubscribe}
+            className="text-xs text-charcoal/40 hover:text-danger transition-colors underline underline-offset-2">
+            Disable
+          </button>
+        </div>
+      ) : (
+        <button onClick={subscribe} disabled={subscribing}
+          className="bg-brand text-cream px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-brand/90 transition-colors disabled:opacity-40 w-full">
+          {subscribing ? 'Enabling…' : 'Enable Notifications'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function StaffDashboardPage() {
   const { venueId, venueSlug } = useVenue()
   const { session } = useSession()
@@ -66,10 +99,10 @@ export default function StaffDashboardPage() {
       )
       try {
         const [shiftRes, weekRes] = await Promise.all([
-          supabase.from('shifts').select('*')
+          supabase.from('shifts').select('id, start_time, end_time, role_label, shift_date')
             .eq('venue_id', venueId).eq('staff_id', session.staffId).eq('shift_date', today)
             .order('start_time').limit(1),
-          supabase.from('clock_events').select('*')
+          supabase.from('clock_events').select('id, event_type, occurred_at')
             .eq('venue_id', venueId).eq('staff_id', session.staffId).gte('occurred_at', weekStart),
         ])
         if (cancelled) return
@@ -143,6 +176,8 @@ export default function StaffDashboardPage() {
           </div>
 
           <HoursThisWeekCard staffId={session.staffId} weekMins={weekMins} />
+
+          <PushNotificationCard staffId={session.staffId} venueId={venueId} />
         </div>
 
         {/* Right: recent shifts with editing */}

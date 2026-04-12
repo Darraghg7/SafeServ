@@ -23,12 +23,13 @@ export function useCleaningTasks(jobRole = null) {
     if (!venueId) { setLoading(false); return }
     setLoading(true)
     const [{ data: tData }, { data: cData }] = await Promise.all([
-      supabase.from('cleaning_tasks').select('*').eq('venue_id', venueId).eq('is_active', true).order('title'),
+      supabase.from('cleaning_tasks').select('id, title, frequency, assigned_role, is_active, venue_id').eq('venue_id', venueId).eq('is_active', true).order('title'),
       supabase
         .from('cleaning_completions')
-        .select('*')
+        .select('id, cleaning_task_id, completed_at, staff_id, venue_id')
         .eq('venue_id', venueId)
-        .order('completed_at', { ascending: false }),
+        .order('completed_at', { ascending: false })
+        .limit(1000),
     ])
 
     let filtered = tData ?? []

@@ -32,20 +32,40 @@ table { border-spacing: 0; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; }
 
-/* ── Card elevation ─────────────────────────────────────────────────────── */
-/* Rounded white div cards get a soft shadow against the grey page background,
-   replacing the visual weight previously carried by charcoal/10 borders.    */
+/* ── Card elevation (utility class — use shadow-card on white cards) ────── */
+/* Legacy: keep the auto-shadow on rounded white divs for backward compat,
+   but prefer explicit shadow-card / shadow-card-hover classes.              */
 div.bg-white.rounded-xl,
 div.bg-white.rounded-2xl,
 div.bg-white.rounded-lg,
 div.bg-white.rounded-3xl {
-  box-shadow: 0 1px 3px rgba(26,26,24,0.05), 0 4px 14px rgba(26,26,24,0.05);
+  box-shadow: 0 1px 3px rgba(26,26,24,0.06), 0 4px 14px rgba(26,26,24,0.05);
 }
 html.dark div.bg-white.rounded-xl,
 html.dark div.bg-white.rounded-2xl,
 html.dark div.bg-white.rounded-lg,
 html.dark div.bg-white.rounded-3xl {
   box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 4px 14px rgba(0,0,0,0.18);
+}
+
+/* ── Smooth transitions on interactive elements ───────────────────────── */
+button, a, input, select, textarea, [role="button"] {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Collapsible sidebar sections ──────────────────────────────────────── */
+.sidebar-collapse-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-collapse-grid.open {
+  grid-template-rows: 1fr;
+}
+.sidebar-collapse-inner {
+  overflow: hidden;
 }
 
 /* ── Text readability: boost muted charcoal opacities ──────────────────── */
@@ -230,7 +250,7 @@ html.dark .bg-danger\/8 {
 
 /* ── Focus-visible styles (a11y) ───────────────────────────────────────── */
 *:focus-visible {
-  outline: 2px solid var(--color-accent, #c94f2a);
+  outline: 2px solid var(--color-brand, #1a3c2e);
   outline-offset: 2px;
   border-radius: 4px;
 }

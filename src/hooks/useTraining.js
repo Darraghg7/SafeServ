@@ -12,7 +12,7 @@ export function useStaffTraining(staffId) {
     setLoading(true)
     let q = supabase
       .from('staff_training')
-      .select('*')
+      .select('id, title, provider, expiry_date, certificate_url, staff_id, venue_id, created_at')
       .eq('staff_id', staffId)
       .order('created_at', { ascending: false })
     if (venueId) q = q.eq('venue_id', venueId)

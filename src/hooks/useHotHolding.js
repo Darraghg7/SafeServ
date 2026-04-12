@@ -28,7 +28,7 @@ export function useHotHoldingItems() {
     setLoading(true)
     const { data } = await supabase
       .from('hot_holding_items')
-      .select('*')
+      .select('id, name, is_active, venue_id')
       .eq('venue_id', venueId)
       .eq('is_active', true)
       .order('name')
@@ -56,7 +56,7 @@ export function useHotHoldingTodayStatus() {
     const today = new Date().toISOString().slice(0, 10)
     const { data } = await supabase
       .from('hot_holding_logs')
-      .select('*')
+      .select('id, item_id, temperature, check_period, pass, corrective_action, logged_at, logged_by_name, venue_id')
       .eq('venue_id', venueId)
       .gte('logged_at', `${today}T00:00:00`)
       .lte('logged_at', `${today}T23:59:59`)
@@ -89,7 +89,7 @@ export function useHotHoldingLogs(dateFrom = null, dateTo = null) {
     setLoading(true)
     let q = supabase
       .from('hot_holding_logs')
-      .select('*')
+      .select('id, item_id, temperature, check_period, pass, corrective_action, logged_at, logged_by_name, venue_id')
       .eq('venue_id', venueId)
       .order('logged_at', { ascending: false })
       .limit(300)

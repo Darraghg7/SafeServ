@@ -10,7 +10,7 @@ export default function useVenueClosures() {
     if (!venueId) { setLoading(false); return }
     const { data } = await supabase
       .from('venue_closures')
-      .select('*')
+      .select('id, start_date, end_date, reason, venue_id')
       .eq('venue_id', venueId)
       .order('start_date')
     setClosures(data ?? [])

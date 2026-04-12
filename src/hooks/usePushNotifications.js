@@ -9,7 +9,7 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
 }
 
-export function usePushNotifications(staffId) {
+export function usePushNotifications(staffId, venueId) {
   const [supported,   setSupported]   = useState(false)
   const [permission,  setPermission]  = useState('default')
   const [subscribed,  setSubscribed]  = useState(false)
@@ -23,15 +23,15 @@ export function usePushNotifications(staffId) {
   }, [])
 
   useEffect(() => {
-    if (!supported || !staffId) return
+    if (!supported || !staffId || !venueId) return
     navigator.serviceWorker.ready.then(async reg => {
       const sub = await reg.pushManager.getSubscription()
       setSubscribed(!!sub)
     })
-  }, [supported, staffId])
+  }, [supported, staffId, venueId])
 
   const subscribe = useCallback(async () => {
-    if (!supported || !staffId) return
+    if (!supported || !staffId || !venueId) return
     setSubscribing(true)
     try {
       const perm = await Notification.requestPermission()
@@ -47,6 +47,7 @@ export function usePushNotifications(staffId) {
       const { endpoint, keys } = sub.toJSON()
       await supabase.from('push_subscriptions').upsert({
         staff_id: staffId,
+        venue_id: venueId,
         endpoint,
         p256dh:   keys.p256dh,
         auth_key: keys.auth,
@@ -57,7 +58,7 @@ export function usePushNotifications(staffId) {
       console.warn('Push subscription failed:', err)
     }
     setSubscribing(false)
-  }, [supported, staffId])
+  }, [supported, staffId, venueId])
 
   const unsubscribe = useCallback(async () => {
     if (!supported) return

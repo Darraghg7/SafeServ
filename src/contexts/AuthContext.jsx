@@ -141,6 +141,10 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { error, slug: null, venues: [] }
 
+    if (data.user?.email === 'demo@safeserv.com') {
+      await supabase.functions.invoke('seed-demo')
+    }
+
     const list = await resolveVenuesSafe(email, data.user.id, 10000)
     if (!list.length) {
       await supabase.auth.signOut()

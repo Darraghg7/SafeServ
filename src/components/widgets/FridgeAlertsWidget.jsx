@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { supabase } from '../../lib/supabase'
@@ -85,4 +85,4 @@ function FridgeAlertsWidget() {
   )
 }
 
-export default FridgeAlertsWidget
+export default memo(FridgeAlertsWidget)

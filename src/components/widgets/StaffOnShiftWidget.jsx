@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
@@ -55,4 +55,4 @@ function StaffOnShiftWidget() {
   )
 }
 
-export default StaffOnShiftWidget
+export default memo(StaffOnShiftWidget)

@@ -27,7 +27,7 @@ export default function SettingsPage() {
   const { venueId } = useVenue()
   const { settings, loading: sLoading, reload: reloadSettings } = useVenueSettings()
   const { closures, reload: reloadClosures } = useVenueClosures()
-  const { closedDays, breakDurationMins, cleanupMinutes, saveClosedDays, saveBreakDuration, saveCleanupMinutes } = useAppSettings()
+  const { closedDays, breakDurationMins, cleanupMinutes, fridgeCheckTime, saveClosedDays, saveBreakDuration, saveCleanupMinutes, saveFridgeCheckTime } = useAppSettings()
   const { dark, toggle: toggleDark } = useTheme()
   const { config: featuresConfig, save: saveFeatures, venuePlan } = useVenueFeatures()
 
@@ -99,7 +99,7 @@ export default function SettingsPage() {
     reloadSettings()
   }
 
-  // Features toggles — defined here to avoid re-creating inside map callbacks
+  // Features toggles
   const handleToggleGroup = (groupFeatures, allOn) => {
     const next = allOn
       ? (featuresConfig.enabled ?? ALL_FEATURE_IDS).filter(id => !groupFeatures.find(f => f.id === id))
@@ -133,8 +133,8 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-4">
       <h1 className="font-serif text-3xl text-brand dark:text-white">Settings</h1>
 
-      {/* ── Venue Details ──────────────────────────────────────────────────── */}
-      <SettingsSection title="Venue Details" defaultOpen>
+      {/* ── Venue ──────────────────────────────────────────────────────────── */}
+      <SettingsSection title="Venue" defaultOpen>
         <div className="flex flex-col gap-4">
           <div>
             <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Venue Name</label>
@@ -194,113 +194,34 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </div>
-      </SettingsSection>
 
-      {/* ── Appearance ─────────────────────────────────────────────────────── */}
-      <SettingsSection title="Appearance" subtitle="Dark mode · Theme">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-charcoal dark:text-white">Dark Mode</p>
-            <p className="text-xs text-charcoal/40 dark:text-white/40 mt-0.5">
-              {dark ? 'Dark theme is active.' : 'Switch to a darker colour scheme.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-base">{dark ? '🌙' : '☀️'}</span>
-            <Toggle checked={dark} onChange={toggleDark} />
+          {/* Dark mode */}
+          <div className="border-t border-charcoal/10 pt-4 mt-2 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-charcoal dark:text-white">Dark Mode</p>
+              <p className="text-xs text-charcoal/40 dark:text-white/40 mt-0.5">
+                {dark ? 'Dark theme active.' : 'Switch to a darker colour scheme.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">{dark ? '🌙' : '☀️'}</span>
+              <Toggle checked={dark} onChange={toggleDark} />
+            </div>
           </div>
         </div>
       </SettingsSection>
 
-      {/* ── Features & Modules ─────────────────────────────────────────────── */}
+      {/* ── Opening Hours ───────────────────────────────────────────────────── */}
       <SettingsSection
-        title="Features & Modules"
-        subtitle={featuresConfig.mode === 'all' ? 'All features enabled' : `Custom — ${featuresConfig.enabled?.length ?? 0} enabled`}
-      >
-        <p className="text-xs text-charcoal/40 dark:text-white/40 mb-5">
-          Choose which features are available in this venue. Disabled features are hidden from the navigation.
-        </p>
-
-        {/* Mode toggle */}
-        <div className="flex gap-2 mb-6">
-          {['all', 'custom'].map(mode => (
-            <button
-              key={mode}
-              onClick={() => saveFeatures({
-                mode,
-                enabled: mode === 'all' ? ALL_FEATURE_IDS : (featuresConfig.enabled ?? ALL_FEATURE_IDS),
-              })}
-              className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                featuresConfig.mode === mode
-                  ? 'border-accent bg-accent/10 text-accent'
-                  : 'border-charcoal/15 dark:border-white/15 text-charcoal/50 dark:text-white/40 hover:border-charcoal/30 dark:hover:border-white/30'
-              }`}
-            >
-              {mode === 'all' ? 'All Features' : 'Custom'}
-            </button>
-          ))}
-        </div>
-
-        {/* Feature groups — only shown in custom mode */}
-        {featuresConfig.mode === 'custom' && (
-          <div className="space-y-4">
-            {FEATURE_GROUPS.map(group => {
-              const allOn = group.features.every(f => featuresConfig.enabled?.includes(f.id))
-              return (
-                <div key={group.id} className="rounded-xl border border-charcoal/10 dark:border-white/10 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 bg-charcoal/3 dark:bg-white/4 border-b border-charcoal/8 dark:border-white/8">
-                    <div>
-                      <p className="text-sm font-semibold text-charcoal dark:text-white">{group.label}</p>
-                      <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5">{group.description}</p>
-                    </div>
-                    <Toggle checked={allOn} onChange={() => handleToggleGroup(group.features, allOn)} />
-                  </div>
-                  <div className="divide-y divide-charcoal/6 dark:divide-white/6">
-                    {group.features.map(feature => {
-                      const isProOnly = PRO_ONLY_FEATURE_IDS.includes(feature.id)
-                      const locked = isProOnly && venuePlan !== PLANS.PRO
-                      const on = !locked && (featuresConfig.enabled?.includes(feature.id) ?? true)
-                      return (
-                        <div key={feature.id} className={`flex items-center justify-between px-4 py-3 ${locked ? 'opacity-60' : ''}`}>
-                          <div className="flex-1 min-w-0 pr-4">
-                            <div className="flex items-center gap-2">
-                              <p className={`text-sm font-medium ${on ? 'text-charcoal dark:text-white' : 'text-charcoal/35 dark:text-white/30'}`}>
-                                {feature.label}
-                              </p>
-                              {locked && (
-                                <span className="text-[9px] tracking-widest uppercase font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">Pro</span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5 truncate">{feature.description}</p>
-                          </div>
-                          <Toggle checked={on} onChange={locked ? undefined : () => handleToggleFeature(feature.id)} disabled={locked} />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {featuresConfig.mode === 'all' && (
-          <p className="text-xs text-charcoal/35 dark:text-white/30 italic">
-            All {ALL_FEATURE_IDS.length} features are enabled. Switch to Custom to hide modules that don't apply to your business.
-          </p>
-        )}
-      </SettingsSection>
-
-      {/* ── Opening Days ───────────────────────────────────────────────────── */}
-      <SettingsSection
-        title="Opening Days"
+        title="Opening Hours"
         subtitle={closedDays.length === 0 ? 'All 7 days open' : `Closed: ${closedDays.sort((a,b)=>a-b).map(d=>DAY_NAMES[d]).join(', ')}`}
+        locked={venuePlan !== PLANS.PRO}
       >
+        {/* Opening days */}
         <p className="text-xs text-charcoal/40 mb-4">
           Mark days the venue is closed. Closed days are skipped by the rota builder and greyed out in the schedule.
         </p>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap mb-8">
           {DAY_NAMES.map((day, i) => {
             const isClosed = closedDays.includes(i)
             return (
@@ -319,17 +240,102 @@ export default function SettingsPage() {
             )
           })}
         </div>
+
+        {/* Closed periods */}
+        <div className="border-t border-charcoal/10 pt-6">
+          <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-1">Closed Periods</p>
+          <p className="text-xs text-charcoal/40 mb-5">
+            Mark your venue as closed for a specific date range — e.g. Christmas week, annual holiday. This flags the period across the app so staff aren't expected to complete checks.
+          </p>
+
+          {closures.length > 0 && (
+            <div className="flex flex-col gap-2 mb-5">
+              {closures.map(c => {
+                const past = c.end_date < format(new Date(), 'yyyy-MM-dd')
+                return (
+                  <div key={c.id} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${past ? 'bg-charcoal/2 border-charcoal/8 opacity-50' : 'bg-cream/40 border-charcoal/10'}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-charcoal">
+                        {format(parseISO(c.start_date), 'd MMM yyyy')}
+                        {c.start_date !== c.end_date && ` – ${format(parseISO(c.end_date), 'd MMM yyyy')}`}
+                      </p>
+                      {c.reason && <p className="text-xs text-charcoal/40 mt-0.5">{c.reason}</p>}
+                      {past && <p className="text-[11px] text-charcoal/30 italic mt-0.5">Past</p>}
+                    </div>
+                    <button
+                      onClick={() => deleteClosure(c.id)}
+                      className="text-xs text-charcoal/25 hover:text-danger transition-colors shrink-0"
+                    >×</button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 p-4 rounded-xl bg-cream/40 border border-charcoal/10">
+            <p className="text-[11px] tracking-widest uppercase text-charcoal/40">Add Closed Period</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">From *</label>
+                <input
+                  type="date"
+                  value={closureForm.start_date}
+                  onChange={e => setClosureForm(f => ({ ...f, start_date: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">To *</label>
+                <input
+                  type="date"
+                  value={closureForm.end_date}
+                  min={closureForm.start_date}
+                  onChange={e => setClosureForm(f => ({ ...f, end_date: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Reason (optional)</label>
+              <input
+                value={closureForm.reason}
+                onChange={e => setClosureForm(f => ({ ...f, reason: e.target.value }))}
+                placeholder="e.g. Christmas holiday, annual deep clean"
+                className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+              />
+            </div>
+            <button
+              onClick={addClosure}
+              disabled={savingClosure || !closureForm.start_date || !closureForm.end_date}
+              className="self-start bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-charcoal/90 transition-colors"
+            >
+              {savingClosure ? 'Saving…' : 'Add Closed Period →'}
+            </button>
+          </div>
+        </div>
       </SettingsSection>
 
-      {/* ── Rota & Pay ─────────────────────────────────────────────────────── */}
-      <SettingsSection title="Rota & Pay" subtitle={`Adult break: ${breakDurationMins} min · Under-18: 30 min`} locked={venuePlan !== PLANS.PRO}>
+      {/* ── Staff Members ──────────────────────────────────────────────────── */}
+      <StaffMembersSection />
+
+      {/* ── Roles & Skills ─────────────────────────────────────────────────── */}
+      <SettingsSection
+        title="Roles & Skills"
+        subtitle="Define the roles in your business — assign them to staff and use them in the rota builder"
+        locked={venuePlan !== PLANS.PRO}
+      >
+        <RolesSection />
+      </SettingsSection>
+
+      {/* ── Shifts & Breaks ────────────────────────────────────────────────── */}
+      <SettingsSection title="Shifts & Breaks" subtitle={`Adult break: ${breakDurationMins} min · Under-18: 30 min`} locked={venuePlan !== PLANS.PRO}>
         <p className="text-sm text-charcoal/50 mb-5">
-          Set the unpaid break deducted from paid hours for adult staff (18+) working more than 6 hours. UK law requires a minimum of 20 minutes. Under-18 staff always get 30 minutes as required by law.
+          Set the unpaid break deducted from worked hours for adult staff (18+) on shifts over 6 hours. UK law requires a minimum of 20 minutes. Under-18 staff always get 30 minutes as required by law.
         </p>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p className="text-sm font-medium text-charcoal">Break duration (adults, shifts &gt;6h)</p>
-            <p className="text-xs text-charcoal/40 mt-0.5">Deducted from paid hours and wage cost</p>
+            <p className="text-xs text-charcoal/40 mt-0.5">Deducted from worked hours</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {[15, 20, 30, 45, 60].map(mins => (
@@ -376,100 +382,102 @@ export default function SettingsPage() {
         </div>
       </SettingsSection>
 
-      {/* ── Closed Periods ─────────────────────────────────────────────────── */}
+      {/* ── Notifications ──────────────────────────────────────────────────── */}
+      <SettingsSection title="Notifications" subtitle="Push alerts · Fridge reminder">
+        <NotificationsPanel session={session} toast={toast} settings={settings} />
+        <div className="border-t border-charcoal/8 pt-4 mt-4">
+          <p className="text-sm font-medium text-charcoal mb-0.5">Fridge check reminder</p>
+          <p className="text-xs text-charcoal/40 mb-3">
+            Send a push notification to managers if no fridge temperatures have been logged by this time.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="time"
+              value={fridgeCheckTime}
+              onChange={e => saveFridgeCheckTime(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-charcoal/15 bg-white text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-charcoal/20"
+            />
+            <span className="text-xs text-charcoal/40">Push sent to managers with notifications enabled</span>
+          </div>
+        </div>
+      </SettingsSection>
+
+      {/* ── Modules ────────────────────────────────────────────────────────── */}
       <SettingsSection
-        title="Closed Periods"
-        subtitle={closures.length > 0 ? `${closures.length} period${closures.length !== 1 ? 's' : ''} scheduled` : 'None scheduled'}
-        locked={venuePlan !== PLANS.PRO}
+        title="Modules"
+        subtitle={featuresConfig.mode === 'all' ? 'All modules enabled' : `Custom — ${featuresConfig.enabled?.length ?? 0} enabled`}
       >
-        <p className="text-xs text-charcoal/40 mb-5">
-          Mark your venue as closed for a specific date range — e.g. Christmas week, annual holiday. This flags the period across the app so staff aren't expected to complete checks.
+        <p className="text-xs text-charcoal/40 dark:text-white/40 mb-5">
+          Choose which modules are available in this venue. Disabled modules are hidden from the navigation.
         </p>
 
-        {/* Existing closures */}
-        {closures.length > 0 && (
-          <div className="flex flex-col gap-2 mb-5">
-            {closures.map(c => {
-              const past = c.end_date < format(new Date(), 'yyyy-MM-dd')
+        <div className="flex gap-2 mb-6">
+          {['all', 'custom'].map(mode => (
+            <button
+              key={mode}
+              onClick={() => saveFeatures({
+                mode,
+                enabled: mode === 'all' ? ALL_FEATURE_IDS : (featuresConfig.enabled ?? ALL_FEATURE_IDS),
+              })}
+              className={`px-5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                featuresConfig.mode === mode
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-charcoal/15 dark:border-white/15 text-charcoal/50 dark:text-white/40 hover:border-charcoal/30 dark:hover:border-white/30'
+              }`}
+            >
+              {mode === 'all' ? 'All Modules' : 'Custom'}
+            </button>
+          ))}
+        </div>
+
+        {featuresConfig.mode === 'custom' && (
+          <div className="space-y-4">
+            {FEATURE_GROUPS.map(group => {
+              const allOn = group.features.every(f => featuresConfig.enabled?.includes(f.id))
               return (
-                <div key={c.id} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${past ? 'bg-charcoal/2 border-charcoal/8 opacity-50' : 'bg-cream/40 border-charcoal/10'}`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-charcoal">
-                      {format(parseISO(c.start_date), 'd MMM yyyy')}
-                      {c.start_date !== c.end_date && ` – ${format(parseISO(c.end_date), 'd MMM yyyy')}`}
-                    </p>
-                    {c.reason && <p className="text-xs text-charcoal/40 mt-0.5">{c.reason}</p>}
-                    {past && <p className="text-[11px] text-charcoal/30 italic mt-0.5">Past</p>}
+                <div key={group.id} className="rounded-xl border border-charcoal/10 dark:border-white/10 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-charcoal/3 dark:bg-white/4 border-b border-charcoal/8 dark:border-white/8">
+                    <div>
+                      <p className="text-sm font-semibold text-charcoal dark:text-white">{group.label}</p>
+                      <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5">{group.description}</p>
+                    </div>
+                    <Toggle checked={allOn} onChange={() => handleToggleGroup(group.features, allOn)} />
                   </div>
-                  <button
-                    onClick={() => deleteClosure(c.id)}
-                    className="text-xs text-charcoal/25 hover:text-danger transition-colors shrink-0"
-                  >×</button>
+                  <div className="divide-y divide-charcoal/6 dark:divide-white/6">
+                    {group.features.map(feature => {
+                      const isProOnly = PRO_ONLY_FEATURE_IDS.includes(feature.id)
+                      const locked = isProOnly && venuePlan !== PLANS.PRO
+                      const on = !locked && (featuresConfig.enabled?.includes(feature.id) ?? true)
+                      return (
+                        <div key={feature.id} className={`flex items-center justify-between px-4 py-3 ${locked ? 'opacity-60' : ''}`}>
+                          <div className="flex-1 min-w-0 pr-4">
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm font-medium ${on ? 'text-charcoal dark:text-white' : 'text-charcoal/35 dark:text-white/30'}`}>
+                                {feature.label}
+                              </p>
+                              {locked && (
+                                <span className="text-[9px] tracking-widest uppercase font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">Pro</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-charcoal/40 dark:text-white/35 mt-0.5 truncate">{feature.description}</p>
+                          </div>
+                          <Toggle checked={on} onChange={locked ? undefined : () => handleToggleFeature(feature.id)} disabled={locked} />
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
 
-        {/* Add closure form */}
-        <div className="flex flex-col gap-3 p-4 rounded-xl bg-cream/40 border border-charcoal/10">
-          <p className="text-[11px] tracking-widest uppercase text-charcoal/40">Add Closed Period</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">From *</label>
-              <input
-                type="date"
-                value={closureForm.start_date}
-                onChange={e => setClosureForm(f => ({ ...f, start_date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">To *</label>
-              <input
-                type="date"
-                value={closureForm.end_date}
-                min={closureForm.start_date}
-                onChange={e => setClosureForm(f => ({ ...f, end_date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-1">Reason (optional)</label>
-            <input
-              value={closureForm.reason}
-              onChange={e => setClosureForm(f => ({ ...f, reason: e.target.value }))}
-              placeholder="e.g. Christmas holiday, annual deep clean"
-              className="w-full px-3 py-2 rounded-lg border border-charcoal/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20"
-            />
-          </div>
-          <button
-            onClick={addClosure}
-            disabled={savingClosure || !closureForm.start_date || !closureForm.end_date}
-            className="self-start bg-charcoal text-cream px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-charcoal/90 transition-colors"
-          >
-            {savingClosure ? 'Saving…' : 'Add Closed Period →'}
-          </button>
-        </div>
+        {featuresConfig.mode === 'all' && (
+          <p className="text-xs text-charcoal/35 dark:text-white/30 italic">
+            All {ALL_FEATURE_IDS.length} modules are enabled. Switch to Custom to hide any that don't apply to your business.
+          </p>
+        )}
       </SettingsSection>
-
-      {/* ── Notifications & Reports ────────────────────────────────────────── */}
-      <SettingsSection title="Notifications & Reports" subtitle="Push alerts · Weekly email">
-        <NotificationsPanel session={session} toast={toast} settings={settings} />
-      </SettingsSection>
-
-      {/* ── Roles & Skills ─────────────────────────────────────────────────── */}
-      <SettingsSection
-        title="Roles & Skills"
-        subtitle="Define the roles in your business — assign them to staff and use them in the rota builder"
-        locked={venuePlan !== PLANS.PRO}
-      >
-        <RolesSection />
-      </SettingsSection>
-
-      {/* ── Staff Members ──────────────────────────────────────────────────── */}
-      <StaffMembersSection />
 
       {/* ── Venues (multi-venue, Pro only) ─────────────────────────────────── */}
       <VenuesSection />

@@ -269,8 +269,13 @@ function useTodaySummary(venueId) {
         if (cancelled) return
         const freqDays = { daily: 1, weekly: 7, fortnightly: 14, monthly: 30, quarterly: 90 }
         const now = new Date()
+        // Build Map for O(1) lookups (completions sorted desc, so first match = latest)
+        const latestByTask = new Map()
+        for (const c of (completions ?? [])) {
+          if (!latestByTask.has(c.cleaning_task_id)) latestByTask.set(c.cleaning_task_id, c)
+        }
         for (const t of cleaning.data) {
-          const last = completions?.find((c) => c.cleaning_task_id === t.id)
+          const last = latestByTask.get(t.id)
           if (!last) { overdueCount++; continue }
           if ((now - new Date(last.completed_at)) / 86400000 > (freqDays[t.frequency] ?? 1)) overdueCount++
         }

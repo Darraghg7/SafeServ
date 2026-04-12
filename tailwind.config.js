@@ -14,7 +14,22 @@ export default {
         charcoal: '#1a1a18',
         muted:    '#7a7060',
         accent:   '#c94f2a',
-        brand:    '#1a3c2e',   // deep bottle green — rich, premium, clearly green
+
+        // Brand green scale — deep bottle green with lighter/darker variants
+        brand: {
+          DEFAULT: '#1a3c2e',
+          50:  '#f0f7f4',
+          100: '#d1e8db',
+          200: '#a3d1b7',
+          300: '#6bb893',
+          400: '#3d9a6f',
+          500: '#2a7c56',
+          600: '#1f5e40',
+          700: '#1a4a33',
+          800: '#1a3c2e',
+          900: '#0f2419',
+        },
+
         danger:   { DEFAULT: '#dc2626', light: '#fee2e2' },
         warning:  { DEFAULT: '#d97706', light: '#fef3c7' },
         success:  { DEFAULT: '#16a34a', light: '#dcfce7' },
@@ -24,14 +39,35 @@ export default {
         mono: ['DM Mono', 'monospace'],
         serif: ['Plus Jakarta Sans', 'sans-serif'],
       },
+      boxShadow: {
+        'card':     '0 1px 3px rgba(26,26,24,0.06), 0 4px 14px rgba(26,26,24,0.05)',
+        'card-hover': '0 4px 12px rgba(26,26,24,0.08), 0 1px 3px rgba(26,26,24,0.04)',
+        'dropdown': '0 8px 28px rgba(26,26,24,0.10), 0 2px 6px rgba(26,26,24,0.04)',
+        'modal':    '0 16px 48px rgba(26,26,24,0.12), 0 4px 12px rgba(26,26,24,0.06)',
+      },
       keyframes: {
         shimmer: {
           '0%':   { backgroundPosition: '200% center' },
           '100%': { backgroundPosition: '-200% center' },
         },
+        'fade-in': {
+          '0%':   { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slide-up': {
+          '0%':   { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-backdrop': {
+          '0%':   { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
-        shimmer: 'shimmer 2.5s ease-in-out infinite',
+        shimmer:       'shimmer 2.5s ease-in-out infinite',
+        'fade-in':     'fade-in 0.2s ease-out',
+        'slide-up':    'slide-up 0.25s ease-out',
+        'fade-backdrop': 'fade-backdrop 0.2s ease-out',
       },
     },
   },

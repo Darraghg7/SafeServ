@@ -13,7 +13,7 @@ export function useVenueRoles() {
     if (!venueId) { setLoading(false); return }
     const { data } = await supabase
       .from('venue_roles')
-      .select('*')
+      .select('id, name, sort_order, venue_id')
       .eq('venue_id', venueId)
       .order('sort_order')
       .order('name')

@@ -35,7 +35,7 @@ export function usePestControlLogs(dateFrom, dateTo) {
     setLoading(true)
     let q = supabase
       .from('pest_control_logs')
-      .select('*')
+      .select('id, log_type, pest_type, severity, location, notes, status, logged_at, logged_by_name, venue_id')
       .eq('venue_id', venueId)
       .order('logged_at', { ascending: false })
       .limit(200)
@@ -63,7 +63,7 @@ export function useOpenPestIssues() {
     if (!venueId) return
     supabase
       .from('pest_control_logs')
-      .select('*')
+      .select('id, log_type, pest_type, severity, location, notes, status, logged_at, logged_by_name, venue_id')
       .eq('venue_id', venueId)
       .eq('status', 'open')
       .in('log_type', ['sighting', 'treatment'])

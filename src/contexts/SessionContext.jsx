@@ -262,7 +262,7 @@ export function SessionProvider({ children }) {
     if (token) {
       supabase.rpc('invalidate_staff_session', { p_token: token }).catch(() => {})
     }
-  }, [session?.token])
+  }, [session])
 
   const isManager = session?.staffRole === 'manager' || session?.staffRole === 'owner'
   const hasMultiVenueAccess = linkedVenues.length > 0

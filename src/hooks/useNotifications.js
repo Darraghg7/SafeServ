@@ -26,19 +26,28 @@ export function useNotifications(isManager) {
 
 async function load(vid) {
   const items = []
-  const today = format(new Date(), 'yyyy-MM-dd')
-  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
+  const now = new Date()
+  const today = format(now, 'yyyy-MM-dd')
+  const yesterday = format(subDays(now, 1), 'yyyy-MM-dd')
+
+  const { data: settingsRows } = await supabase
+    .from('app_settings')
+    .select('key, value')
+    .eq('venue_id', vid)
+    .eq('key', 'break_duration_mins')
+  const breakDurationMins = settingsRows?.[0] ? JSON.parse(settingsRows[0].value) : 30
 
   await Promise.all([
     checkSwapRequests(items, vid),
     checkLateClockIns(items, today, vid),
+    checkLateBreakReturns(items, today, vid, breakDurationMins, now),
     checkIncompleteTasks(items, yesterday, vid),
-    checkRepeatOffenders(items, vid),
-    checkFridgeAlerts(items, today, vid),
-    checkExpiringTraining(items, vid),
-    checkOverdueCleaning(items, vid),
+    checkRepeatOffenders(items, vid, now),
+    checkFridgeAlerts(items, today, vid, now),
+    checkExpiringTraining(items, vid, now),
+    checkOverdueCleaning(items, vid, now),
     checkCriticalActions(items, vid),
-    checkProbeCalibration(items, vid),
+    checkProbeCalibration(items, vid, now),
     checkTimeOffRequests(items, vid),
     checkHourEdits(items, vid),
   ])
@@ -70,6 +79,39 @@ async function checkLateClockIns(items, today, vid) {
   if (lateOnes.length > 0) items.push({ id: 'late-today', type: 'late_clock_in', message: `Late clock-in today: ${lateOnes.join(', ')}`, link: '/timesheet', severity: 'warning' })
 }
 
+async function checkLateBreakReturns(items, today, vid, breakDurationMins, now) {
+  const { data: events } = await supabase
+    .from('clock_events')
+    .select('staff_id, event_type, occurred_at, staff:staff_id(name)')
+    .eq('venue_id', vid)
+    .in('event_type', ['break_start', 'break_end'])
+    .gte('occurred_at', today + 'T00:00:00')
+    .lte('occurred_at', today + 'T23:59:59')
+    .order('occurred_at', { ascending: true })
+
+  if (!events?.length) return
+
+  const state = {}
+  for (const ev of events) {
+    if (!state[ev.staff_id]) state[ev.staff_id] = { name: ev.staff?.name ?? 'Unknown', onBreakSince: null }
+    if (ev.event_type === 'break_start') state[ev.staff_id].onBreakSince = parseISO(ev.occurred_at)
+    else state[ev.staff_id].onBreakSince = null
+  }
+
+  const overdue = Object.values(state).filter(
+    s => s.onBreakSince && (now - s.onBreakSince) / 60000 > breakDurationMins
+  )
+  if (overdue.length > 0) {
+    items.push({
+      id: 'overdue-break',
+      type: 'overdue_break',
+      message: `On extended break (${breakDurationMins}+ min): ${overdue.map(s => s.name).join(', ')}`,
+      link: '/timesheet',
+      severity: 'warning',
+    })
+  }
+}
+
 async function checkIncompleteTasks(items, yesterday, vid) {
   const [{ data: templates }, { data: completions }] = await Promise.all([
     supabase.from('task_templates').select('id, title').eq('venue_id', vid).eq('is_active', true),
@@ -81,9 +123,9 @@ async function checkIncompleteTasks(items, yesterday, vid) {
   if (missed.length > 0) items.push({ id: 'incomplete-yesterday', type: 'incomplete_tasks', message: `${missed.length} task${missed.length > 1 ? 's' : ''} not completed yesterday`, link: '/opening-closing', severity: 'warning' })
 }
 
-async function checkRepeatOffenders(items, vid) {
-  const since = format(subDays(new Date(), 30), 'yyyy-MM-dd')
-  const today = format(new Date(), 'yyyy-MM-dd')
+async function checkRepeatOffenders(items, vid, now = new Date()) {
+  const since = format(subDays(now, 30), 'yyyy-MM-dd')
+  const today = format(now, 'yyyy-MM-dd')
   const [{ data: shifts }, { data: clockIns }] = await Promise.all([
     supabase.from('shifts').select('staff_id, shift_date, start_time, staff:staff_id(name)').eq('venue_id', vid).gte('shift_date', since).lte('shift_date', today),
     supabase.from('clock_events').select('staff_id, occurred_at').eq('venue_id', vid).eq('event_type', 'clock_in').gte('occurred_at', since + 'T00:00:00'),
@@ -105,7 +147,7 @@ async function checkRepeatOffenders(items, vid) {
 
 const EXPLAINED_REASONS = ['delivery', 'defrost', 'service_access']
 
-async function checkFridgeAlerts(items, today, vid) {
+async function checkFridgeAlerts(items, today, vid, now = new Date()) {
   const { data: logs } = await supabase.from('fridge_temperature_logs').select('id, fridge_id, temperature, exceedance_reason, is_resolved, fridge:fridge_id(name, min_temp, max_temp)').eq('venue_id', vid).gte('logged_at', today + 'T00:00:00')
   const readings = logs ?? []
   const outOfRange = readings.filter(l =>
@@ -122,14 +164,13 @@ async function checkFridgeAlerts(items, today, vid) {
   if (fridges?.length > 0) {
     const checkedIds = new Set((logs ?? []).map(l => l.fridge_id).filter(Boolean))
     const unchecked = fridges.filter(f => !checkedIds.has(f.id))
-    if (unchecked.length > 0 && new Date().getHours() >= 10) {
+    if (unchecked.length > 0 && now.getHours() >= 10) {
       items.push({ id: 'fridge-unchecked', type: 'fridge_unchecked', message: `${unchecked.length} fridge${unchecked.length > 1 ? 's' : ''} not checked today: ${unchecked.map(f => f.name).join(', ')}`, link: '/fridge', severity: 'warning' })
     }
   }
 }
 
-async function checkExpiringTraining(items, vid) {
-  const now = new Date()
+async function checkExpiringTraining(items, vid, now = new Date()) {
   const thirtyDays = new Date(now.getTime() + 30 * 86400000)
   const { data: certs } = await supabase.from('staff_training').select('id, title, expiry_date, staff:staff_id(name)').eq('venue_id', vid).not('expiry_date', 'is', null).lte('expiry_date', format(thirtyDays, 'yyyy-MM-dd')).order('expiry_date')
   const records = certs ?? []
@@ -139,12 +180,11 @@ async function checkExpiringTraining(items, vid) {
   if (expiring.length > 0) items.push({ id: 'training-expiring', type: 'training_expiring', message: `${expiring.length} cert${expiring.length > 1 ? 's' : ''} expiring within 30 days`, link: '/training', severity: 'warning' })
 }
 
-async function checkOverdueCleaning(items, vid) {
+async function checkOverdueCleaning(items, vid, now = new Date()) {
   const { data: tasks } = await supabase.from('cleaning_tasks').select('id, title, frequency').eq('venue_id', vid).eq('is_active', true)
   if (!tasks?.length) return
   const { data: completions } = await supabase.from('cleaning_completions').select('cleaning_task_id, completed_at').eq('venue_id', vid).order('completed_at', { ascending: false })
   const freqDays = { daily: 1, weekly: 7, fortnightly: 14, monthly: 30, quarterly: 90 }
-  const now = new Date()
   const overdue = []
   for (const t of tasks) {
     const last = completions?.find(c => c.cleaning_task_id === t.id)
@@ -163,11 +203,11 @@ async function checkCriticalActions(items, vid) {
   if (major.length > 0) items.push({ id: 'major-actions', type: 'major_action', message: `${major.length} major action${major.length > 1 ? 's' : ''} open`, link: '/corrective', severity: 'warning' })
 }
 
-async function checkProbeCalibration(items, vid) {
+async function checkProbeCalibration(items, vid, now = new Date()) {
   const { data: records } = await supabase.from('probe_calibrations').select('id, calibrated_at').eq('venue_id', vid).order('calibrated_at', { ascending: false }).limit(1)
   const last = records?.[0]
   if (!last) { items.push({ id: 'probe-never', type: 'probe_overdue', message: 'No probe calibrations on record -- calibrate your probes', link: '/probe', severity: 'warning' }); return }
-  const daysSince = Math.floor((new Date() - new Date(last.calibrated_at)) / 86400000)
+  const daysSince = Math.floor((now - new Date(last.calibrated_at)) / 86400000)
   if (daysSince > 30) items.push({ id: 'probe-overdue', type: 'probe_overdue', message: `Probe calibration overdue -- last done ${daysSince} days ago`, link: '/probe', severity: 'warning' })
 }
 

@@ -157,6 +157,7 @@ export function useTimesheetData(dateFrom, dateTo) {
       .lte('occurred_at', dateTo)
       .order('staff_id')
       .order('occurred_at')
+      .limit(5000)
     if (venueId) q = q.eq('venue_id', venueId)
 
     const { data } = await q

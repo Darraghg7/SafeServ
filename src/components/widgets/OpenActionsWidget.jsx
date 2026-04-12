@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
@@ -54,4 +54,4 @@ function OpenActionsWidget() {
   )
 }
 
-export default OpenActionsWidget
+export default memo(OpenActionsWidget)

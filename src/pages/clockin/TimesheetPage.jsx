@@ -5,7 +5,7 @@ import { useVenue } from '../../contexts/VenueContext'
 import { useSession } from '../../contexts/SessionContext'
 import { useToast } from '../../components/ui/Toast'
 import { useTimesheetData } from '../../hooks/useClockEvents'
-import { useShifts, useStaffList } from '../../hooks/useShifts'
+import { useShifts, useStaffList, unpaidBreakMins } from '../../hooks/useShifts'
 import { useAppSettings } from '../../hooks/useSettings'
 import { formatMinutes, getWeekStart, getWeekDays, downloadCsv } from '../../lib/utils'
 import { buildPdfReport } from '../../lib/pdfUtils'
@@ -39,6 +39,16 @@ function discrepancyStatus(actualMins, expectedMins, cleanupMins) {
   return 'significant'
 }
 
+/**
+ * Returns required break minutes for a session, or 0 if no entitlement.
+ * UK law: under-18 → 30min for >4.5h, adults → configurable for >6h.
+ */
+function breakEntitlement(workedMinutes, isUnder18, breakDurationMins) {
+  if (isUnder18 && workedMinutes > 270) return 30
+  if (!isUnder18 && workedMinutes > 360) return breakDurationMins
+  return 0
+}
+
 // ── buildTimesheets ───────────────────────────────────────────────────────────
 
 function buildTimesheets(events, staffRates) {
@@ -46,6 +56,7 @@ function buildTimesheets(events, staffRates) {
   for (const e of events) {
     const sid = e.staff_id
     if (!results[sid]) results[sid] = {
+      staffId: sid,
       name: e.staff?.name ?? 'Unknown',
       hourlyRate: staffRates[sid] ?? 0,
       sessions: [],
@@ -53,11 +64,11 @@ function buildTimesheets(events, staffRates) {
     }
     const r = results[sid]
     if (e.event_type === 'clock_in')    r.sessions.push({ in: e.occurred_at, out: null, breaks: [] })
-    if (e.event_type === 'clock_out'   && r.sessions.length) r.sessions.at(-1).out = e.occurred_at
-    if (e.event_type === 'break_start' && r.sessions.length) r.sessions.at(-1).breaks.push({ start: e.occurred_at, end: null })
+    if (e.event_type === 'clock_out'   && r.sessions.length) r.sessions[r.sessions.length - 1].out = e.occurred_at
+    if (e.event_type === 'break_start' && r.sessions.length) r.sessions[r.sessions.length - 1].breaks.push({ start: e.occurred_at, end: null })
     if (e.event_type === 'break_end'   && r.sessions.length) {
-      const br = r.sessions.at(-1).breaks
-      if (br.length && !br.at(-1).end) br.at(-1).end = e.occurred_at
+      const br = r.sessions[r.sessions.length - 1].breaks
+      if (br.length) { const lb = br[br.length - 1]; if (!lb.end) lb.end = e.occurred_at }
     }
   }
   for (const r of Object.values(results)) {
@@ -90,14 +101,18 @@ function buildDailyGrid(events) {
     if (e.event_type === 'clock_in')
       r.sessions.push({ in: e.occurred_at, inId: e.id, out: null, outId: null, breaks: [], date: e.occurred_at.slice(0, 10) })
     if (e.event_type === 'clock_out' && r.sessions.length) {
-      r.sessions.at(-1).out = e.occurred_at
-      r.sessions.at(-1).outId = e.id
+      const last = r.sessions[r.sessions.length - 1]
+      last.out = e.occurred_at
+      last.outId = e.id
     }
     if (e.event_type === 'break_start' && r.sessions.length)
-      r.sessions.at(-1).breaks.push({ start: e.occurred_at, startId: e.id, end: null, endId: null })
+      r.sessions[r.sessions.length - 1].breaks.push({ start: e.occurred_at, startId: e.id, end: null, endId: null })
     if (e.event_type === 'break_end' && r.sessions.length) {
-      const br = r.sessions.at(-1).breaks
-      if (br.length && !br.at(-1).end) { br.at(-1).end = e.occurred_at; br.at(-1).endId = e.id }
+      const br = r.sessions[r.sessions.length - 1].breaks
+      if (br.length) {
+        const lastBreak = br[br.length - 1]
+        if (!lastBreak.end) { lastBreak.end = e.occurred_at; lastBreak.endId = e.id }
+      }
     }
   }
 
@@ -270,6 +285,7 @@ function AddSessionModal({ open, onClose, staffList, initialStaffId, initialDate
 
 const DrillDownPanel = memo(function DrillDownPanel({
   person, gridDays, shiftsForPerson, cleanupMinutes,
+  breakDurationMins, isUnder18,
   adminMode, onDeleteSession, onAddForPerson,
 }) {
   const shiftsByDate = useMemo(() => {
@@ -371,6 +387,21 @@ const DrillDownPanel = memo(function DrillDownPanel({
                       <span className="font-mono text-charcoal/60">{formatMinutes(Math.round(sessionWorked))}</span>
                     </>
                   )}
+
+                  {/* Break entitlement flag */}
+                  {sessionWorked !== null && (() => {
+                    const rawWorked = s.out ? (new Date(s.out) - new Date(s.in)) / 60000 : 0
+                    const entitled = breakEntitlement(rawWorked, isUnder18, breakDurationMins)
+                    if (entitled <= 0) return null
+                    const breakTaken = s.breaks.reduce((acc, b) =>
+                      (!b.start || !b.end) ? acc : acc + (new Date(b.end) - new Date(b.start)) / 60000, 0)
+                    if (breakTaken >= entitled) return null
+                    return (
+                      <span className="text-amber-600 text-[11px] font-medium bg-amber-50 px-1.5 py-0.5 rounded">
+                        ⚠ {breakTaken === 0 ? 'No break' : `${Math.round(breakTaken)}min break`} — {entitled}min entitled
+                      </span>
+                    )
+                  })()}
 
                   {adminMode && (
                     <button
@@ -483,21 +514,25 @@ export default function TimesheetPage() {
   const { venueId }      = useVenue()
   const { isManager }    = useSession()
   const toast            = useToast()
-  const { cleanupMinutes } = useAppSettings()
+  const { cleanupMinutes, breakDurationMins } = useAppSettings()
   const { staff: staffList } = useStaffList()
 
-  const { dateFrom, dateTo, label: periodLabel } = periodToDates(period, customFrom, customTo)
+  // Memoize period dates — periodToDates calls new Date() internally, so must be stable
+  const { dateFrom, dateTo, label: periodLabel } = useMemo(
+    () => periodToDates(period, customFrom, customTo),
+    [period, customFrom, customTo]
+  )
   const { rows, loading, reload } = useTimesheetData(dateFrom, dateTo)
 
-  // Weekly grid — independent week navigation
-  const gridWeekStart = addWeeks(getWeekStart(new Date()), weekOffset)
-  const gridWeekEnd   = addDays(gridWeekStart, 6)
-  const gridDays      = getWeekDays(gridWeekStart)
-  const gridDateFrom  = gridWeekStart.toISOString()
-  const gridDateTo    = new Date(gridWeekEnd.getTime() + END_OF_DAY_MS).toISOString()
+  // Weekly grid — memoized so useShifts/useTimesheetData don't see a new Date reference each render
+  const gridWeekStart = useMemo(() => addWeeks(getWeekStart(new Date()), weekOffset), [weekOffset])
+  const gridWeekEnd   = useMemo(() => addDays(gridWeekStart, 6), [gridWeekStart])
+  const gridDays      = useMemo(() => getWeekDays(gridWeekStart), [gridWeekStart])
+  const gridDateFrom  = useMemo(() => gridWeekStart.toISOString(), [gridWeekStart])
+  const gridDateTo    = useMemo(() => new Date(gridWeekEnd.getTime() + END_OF_DAY_MS).toISOString(), [gridWeekEnd])
   const { rows: gridRows, loading: gridLoading, reload: gridReload } = useTimesheetData(gridDateFrom, gridDateTo)
 
-  // Shifts for the grid week
+  // Shifts for the grid week — gridWeekStart is now stable, so no re-fetch loop
   const { shifts } = useShifts(gridWeekStart)
 
   // Expected-minutes map: { staffId: { 'yyyy-MM-dd': minutes } }
@@ -512,6 +547,62 @@ export default function TimesheetPage() {
     }
     return map
   }, [shifts])
+
+  // Under-18 lookup from shifts data
+  const staffIsUnder18 = useMemo(() => {
+    const map = {}
+    for (const sh of shifts) {
+      if (sh.staff?.is_under_18 != null) map[sh.staff_id] = sh.staff.is_under_18
+    }
+    return map
+  }, [shifts])
+
+  // Grid-week totals for scheduled hours and cost
+  const gridScheduled = useMemo(() => {
+    let totalMins = 0, totalCost = 0
+    const byStaff = {}
+    for (const sh of shifts) {
+      const [sh_h, sh_m] = sh.start_time.split(':').map(Number)
+      const [eh, em]     = sh.end_time.split(':').map(Number)
+      const mins = (eh * 60 + em) - (sh_h * 60 + sh_m)
+      totalMins += mins
+      const rate = staffRates[sh.staff_id] ?? 0
+      totalCost += (mins / 60) * rate
+      byStaff[sh.staff_id] = (byStaff[sh.staff_id] ?? 0) + mins
+    }
+    return { totalMins, totalCost, byStaff }
+  }, [shifts, staffRates])
+
+  // Period shifts for pay-period scheduled comparison
+  const [periodShifts, setPeriodShifts] = useState([])
+  useEffect(() => {
+    if (!venueId || !dateFrom || !dateTo) return
+    const from = dateFrom.slice(0, 10)
+    const to   = dateTo.slice(0, 10)
+    supabase
+      .from('shifts')
+      .select('staff_id, start_time, end_time, shift_date')
+      .eq('venue_id', venueId)
+      .gte('shift_date', from)
+      .lte('shift_date', to)
+      .then(({ data }) => setPeriodShifts(data ?? []))
+  }, [venueId, dateFrom, dateTo])
+
+  // Period scheduled totals
+  const periodScheduled = useMemo(() => {
+    let totalMins = 0, totalCost = 0
+    const byStaff = {}
+    for (const sh of periodShifts) {
+      const [sh_h, sh_m] = sh.start_time.split(':').map(Number)
+      const [eh, em]     = sh.end_time.split(':').map(Number)
+      const mins = (eh * 60 + em) - (sh_h * 60 + sh_m)
+      totalMins += mins
+      const rate = staffRates[sh.staff_id] ?? 0
+      totalCost += (mins / 60) * rate
+      byStaff[sh.staff_id] = (byStaff[sh.staff_id] ?? 0) + mins
+    }
+    return { totalMins, totalCost, byStaff }
+  }, [periodShifts, staffRates])
 
   // Staff on the rota this week who have no clock events — shown in admin mode
   const scheduledOnlyStaff = useMemo(() => {
@@ -544,10 +635,10 @@ export default function TimesheetPage() {
   // Collapse drill-down when week changes; exit admin mode when navigating away
   useEffect(() => { setExpandedStaff(null) }, [weekOffset])
 
-  const timesheets = buildTimesheets(rows, staffRates)
-  const dailyGrid  = buildDailyGrid(gridRows)
-  const totalMins  = timesheets.reduce((a, t) => a + t.totalMinutes, 0)
-  const totalWage  = timesheets.reduce((a, t) => a + (t.totalMinutes / 60) * t.hourlyRate, 0)
+  const timesheets = useMemo(() => buildTimesheets(rows, staffRates), [rows, staffRates])
+  const dailyGrid  = useMemo(() => buildDailyGrid(gridRows), [gridRows])
+  const totalMins  = useMemo(() => timesheets.reduce((a, t) => a + t.totalMinutes, 0), [timesheets])
+  const totalWage  = useMemo(() => timesheets.reduce((a, t) => a + (t.totalMinutes / 60) * t.hourlyRate, 0), [timesheets])
 
   // ── Admin handlers ──────────────────────────────────────────────────────────
 
@@ -685,33 +776,59 @@ export default function TimesheetPage() {
           <p className="text-sm text-charcoal/35 italic py-4">No clock events recorded for this period.</p>
         ) : (
           <>
-            <div className="mb-4 pb-4 border-b border-charcoal/8 grid grid-cols-2 gap-4">
+            <div className="mb-4 pb-4 border-b border-charcoal/8 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-charcoal/40 mb-0.5">Total hours · {timesheets.length} staff</p>
+                <p className="text-xs text-charcoal/40 mb-0.5">Actual hours · {timesheets.length} staff</p>
                 <p className="font-serif text-3xl text-charcoal">{formatMinutes(Math.round(totalMins))}</p>
               </div>
+              {periodScheduled.totalMins > 0 && (
+                <div>
+                  <p className="text-xs text-charcoal/40 mb-0.5">Scheduled hours</p>
+                  <p className="font-serif text-3xl text-charcoal/60">{formatMinutes(Math.round(periodScheduled.totalMins))}</p>
+                </div>
+              )}
               {totalWage > 0 && (
                 <div>
-                  <p className="text-xs text-charcoal/40 mb-0.5">Estimated wage bill</p>
+                  <p className="text-xs text-charcoal/40 mb-0.5">Actual wage bill</p>
                   <p className="font-serif text-3xl text-charcoal font-mono">{fmtGBP(totalWage)}</p>
+                </div>
+              )}
+              {periodScheduled.totalCost > 0 && (
+                <div>
+                  <p className="text-xs text-charcoal/40 mb-0.5">Scheduled cost</p>
+                  <p className="font-serif text-3xl text-charcoal/60 font-mono">{fmtGBP(periodScheduled.totalCost)}</p>
+                  {totalWage > 0 && (() => {
+                    const diff = totalWage - periodScheduled.totalCost
+                    if (Math.abs(diff) < 1) return null
+                    return (
+                      <span className={`text-xs font-medium ${diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                        {diff > 0 ? '+' : ''}{fmtGBP(diff)} {diff > 0 ? 'over' : 'under'}
+                      </span>
+                    )
+                  })()}
                 </div>
               )}
             </div>
 
             <div className="flex flex-col gap-0">
-              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 pb-2 text-[11px] tracking-widest uppercase text-charcoal/40">
+              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 pb-2 text-[11px] tracking-widest uppercase text-charcoal/40">
                 <span>Staff</span>
                 <span className="text-right">Hours</span>
+                <span className="text-right">Sched.</span>
                 <span className="text-right">Rate</span>
                 <span className="text-right">Est. Pay</span>
               </div>
               {timesheets.map((t) => {
                 const pay = (t.totalMinutes / 60) * t.hourlyRate
+                const schedMins = periodScheduled.byStaff[t.staffId] ?? 0
                 return (
-                  <div key={t.name} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 py-3 border-t border-charcoal/5 items-center">
+                  <div key={t.name} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 py-3 border-t border-charcoal/5 items-center">
                     <span className="text-sm font-medium text-charcoal truncate">{t.name}</span>
                     <span className="text-right font-mono text-sm font-semibold text-charcoal whitespace-nowrap">
                       {formatMinutes(Math.round(t.totalMinutes))}
+                    </span>
+                    <span className="text-right font-mono text-xs text-charcoal/40 whitespace-nowrap">
+                      {schedMins > 0 ? formatMinutes(Math.round(schedMins)) : '—'}
                     </span>
                     <span className="text-right font-mono text-xs text-charcoal/40 whitespace-nowrap">
                       {t.hourlyRate > 0 ? `£${Number(t.hourlyRate).toFixed(2)}/hr` : '—'}
@@ -791,6 +908,7 @@ export default function TimesheetPage() {
         <div className="flex items-center gap-4 mb-4 text-[11px] text-charcoal/35 flex-wrap">
           <span className="flex items-center gap-1"><span className="text-amber-500">~</span> Minor shortfall</span>
           <span className="flex items-center gap-1"><span className="text-red-500 font-bold">✗</span> Absent / significant shortfall</span>
+          <span className="flex items-center gap-1"><span className="text-amber-600">⚠</span> Missing break</span>
           {!adminMode && <span className="italic">Click a name to drill down</span>}
           {adminMode  && <span className="text-amber-600 font-medium">Click a name to expand · use Remove to delete sessions · + Add Session to insert new ones</span>}
         </div>
@@ -815,6 +933,12 @@ export default function TimesheetPage() {
                   ))}
                   <th className="pb-3 pl-4 text-right text-[11px] tracking-widest uppercase text-charcoal/40 font-semibold whitespace-nowrap">
                     Total
+                  </th>
+                  <th className="pb-3 pl-3 text-right text-[11px] tracking-widest uppercase text-charcoal/40 font-semibold whitespace-nowrap">
+                    Sched.
+                  </th>
+                  <th className="pb-3 pl-3 text-right text-[11px] tracking-widest uppercase text-charcoal/40 font-semibold whitespace-nowrap">
+                    Cost
                   </th>
                 </tr>
               </thead>
@@ -851,6 +975,17 @@ export default function TimesheetPage() {
                           const actual   = dayData?.minutes ?? 0
                           const expected = expectedMap[person.staffId]?.[dateStr]
                           const status   = discrepancyStatus(actual, expected, cleanupMinutes)
+                          // Break flag: check if any session that day was long enough to require a break but didn't get one
+                          const isU18 = staffIsUnder18[person.staffId] ?? false
+                          const dayNeedsBreakFlag = actual > 0 && dayData?.sessions?.some(s => {
+                            if (!s.in || !s.out) return false
+                            const worked = (new Date(s.out) - new Date(s.in)) / 60000
+                            const entitled = breakEntitlement(worked, isU18, breakDurationMins)
+                            if (entitled <= 0) return false
+                            const breakTaken = s.breaks.reduce((acc, b) =>
+                              (!b.start || !b.end) ? acc : acc + (new Date(b.end) - new Date(b.start)) / 60000, 0)
+                            return breakTaken < entitled
+                          })
 
                           return (
                             <td key={dateStr} className="py-3 px-2 text-center align-top">
@@ -869,6 +1004,9 @@ export default function TimesheetPage() {
                                       -{formatMinutes(Math.round(expected - actual))}
                                     </span>
                                   )}
+                                  {dayNeedsBreakFlag && (
+                                    <span className="block text-[10px] text-amber-600 leading-tight" title="No break taken">⚠ break</span>
+                                  )}
                                 </>
                               ) : status === 'absent' ? (
                                 <span className="text-red-500 font-bold text-sm">✗</span>
@@ -882,17 +1020,29 @@ export default function TimesheetPage() {
                         <td className="py-3 pl-4 text-right font-mono text-sm font-semibold text-charcoal whitespace-nowrap align-top">
                           {total > 0 ? formatMinutes(Math.round(total)) : <span className="text-charcoal/25">—</span>}
                         </td>
+                        <td className="py-3 pl-3 text-right font-mono text-xs text-charcoal/40 whitespace-nowrap align-top">
+                          {(gridScheduled.byStaff[person.staffId] ?? 0) > 0
+                            ? formatMinutes(Math.round(gridScheduled.byStaff[person.staffId]))
+                            : <span className="text-charcoal/15">—</span>}
+                        </td>
+                        <td className="py-3 pl-3 text-right font-mono text-xs text-charcoal/50 whitespace-nowrap align-top">
+                          {total > 0 && (staffRates[person.staffId] ?? 0) > 0
+                            ? fmtGBP((total / 60) * staffRates[person.staffId])
+                            : <span className="text-charcoal/15">—</span>}
+                        </td>
                       </tr>
 
                       {/* Drill-down row */}
                       {isOpen && (
                         <tr>
-                          <td colSpan={gridDays.length + 2} className="pt-0 pb-2">
+                          <td colSpan={gridDays.length + 4} className="pt-0 pb-2">
                             <DrillDownPanel
                               person={person}
                               gridDays={gridDays}
                               shiftsForPerson={shifts.filter(s => s.staff_id === person.staffId)}
                               cleanupMinutes={cleanupMinutes}
+                              breakDurationMins={breakDurationMins}
+                              isUnder18={staffIsUnder18[person.staffId] ?? false}
                               adminMode={adminMode}
                               onDeleteSession={deleteSession}
                               onAddForPerson={openAddModal}
@@ -904,6 +1054,41 @@ export default function TimesheetPage() {
                   )
                 })}
               </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-charcoal/15">
+                  <td className="py-3 pr-4 text-sm font-semibold text-charcoal">Totals</td>
+                  {gridDays.map(d => <td key={d.toISOString()} />)}
+                  <td className="py-3 pl-4 text-right font-mono text-sm font-bold text-charcoal whitespace-nowrap">
+                    {(() => {
+                      const t = visibleGridRows.reduce((a, p) => a + Object.values(p.days).reduce((b, d) => b + d.minutes, 0), 0)
+                      return t > 0 ? formatMinutes(Math.round(t)) : '—'
+                    })()}
+                  </td>
+                  <td className="py-3 pl-3 text-right font-mono text-xs font-semibold text-charcoal/50 whitespace-nowrap">
+                    {gridScheduled.totalMins > 0 ? formatMinutes(Math.round(gridScheduled.totalMins)) : '—'}
+                  </td>
+                  <td className="py-3 pl-3 text-right whitespace-nowrap">
+                    {(() => {
+                      const actualCost = visibleGridRows.reduce((a, p) => {
+                        const mins = Object.values(p.days).reduce((b, d) => b + d.minutes, 0)
+                        return a + (mins / 60) * (staffRates[p.staffId] ?? 0)
+                      }, 0)
+                      if (actualCost <= 0 && gridScheduled.totalCost <= 0) return <span className="text-charcoal/15 text-xs">—</span>
+                      const diff = actualCost - gridScheduled.totalCost
+                      return (
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="font-mono text-xs font-semibold text-charcoal">{fmtGBP(actualCost)}</span>
+                          {gridScheduled.totalCost > 0 && Math.abs(diff) >= 1 && (
+                            <span className={`text-[10px] font-medium ${diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                              {diff > 0 ? '+' : ''}{fmtGBP(diff)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}

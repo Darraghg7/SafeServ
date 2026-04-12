@@ -8,7 +8,7 @@ export default function useVenueSettings() {
   const [loading, setLoading]   = useState(true)
   const load = async () => {
     if (!venueId) { setLoading(false); return }
-    const { data } = await supabase.from('app_settings').select('*').eq('venue_id', venueId)
+    const { data } = await supabase.from('app_settings').select('key, value, venue_id').eq('venue_id', venueId)
     if (data) {
       const map = Object.fromEntries(data.map(r => [r.key, r.value]))
       setSettings({

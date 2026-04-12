@@ -43,6 +43,7 @@ export function useAppSettings() {
   const [closedDays, setClosedDays]             = useState([])   // indices 0=Mon..6=Sun
   const [breakDurationMins, setBreakDurationMins] = useState(30) // unpaid break for adults >6h
   const [cleanupMinutes, setCleanupMinutes]     = useState(0)   // grace period after shift end
+  const [fridgeCheckTime, setFridgeCheckTime]   = useState('10:00') // time to send fridge reminder
   const [loading, setLoading]                   = useState(true)
 
   const load = useCallback(async () => {
@@ -54,13 +55,14 @@ export function useAppSettings() {
     setClosedDays([])
     setBreakDurationMins(30)
     setCleanupMinutes(0)
+    setFridgeCheckTime('10:00')
     setLoading(true)
 
     const { data } = await supabase
       .from('app_settings')
       .select('key, value')
       .eq('venue_id', venueId)
-      .in('key', ['custom_roles', 'closed_days', 'break_duration_mins', 'cleanup_minutes'])
+      .in('key', ['custom_roles', 'closed_days', 'break_duration_mins', 'cleanup_minutes', 'fridge_check_time'])
 
     if (data) {
       for (const row of data) {
@@ -77,6 +79,9 @@ export function useAppSettings() {
           }
           if (row.key === 'cleanup_minutes' && typeof parsed === 'number') {
             setCleanupMinutes(parsed)
+          }
+          if (row.key === 'fridge_check_time' && typeof parsed === 'string') {
+            setFridgeCheckTime(parsed)
           }
         } catch { /* ignore corrupt JSON — leave defaults */ }
       }
@@ -118,6 +123,14 @@ export function useAppSettings() {
       .upsert({ venue_id: venueId, key: 'cleanup_minutes', value: JSON.stringify(mins) })
   }, [venueId])
 
+  const saveFridgeCheckTime = useCallback(async (time) => {
+    if (!venueId) return
+    setFridgeCheckTime(time)
+    await supabase
+      .from('app_settings')
+      .upsert({ venue_id: venueId, key: 'fridge_check_time', value: JSON.stringify(time) })
+  }, [venueId])
+
   /** Pick the next unused colour from the palette. Falls back to the least-used colour. */
   const nextColor = useCallback(() => {
     const used = new Set(customRoles.map(r => r.color))
@@ -130,7 +143,7 @@ export function useAppSettings() {
   }, [customRoles])
 
   return {
-    customRoles, closedDays, breakDurationMins, cleanupMinutes,
-    loading, saveCustomRoles, saveClosedDays, saveBreakDuration, saveCleanupMinutes, nextColor, reload: load,
+    customRoles, closedDays, breakDurationMins, cleanupMinutes, fridgeCheckTime,
+    loading, saveCustomRoles, saveClosedDays, saveBreakDuration, saveCleanupMinutes, saveFridgeCheckTime, nextColor, reload: load,
   }
 }

@@ -229,12 +229,27 @@ export default function RotaPage() {
 
   const emailRota = async () => {
     setEmailing(true)
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd')
     const { error } = await supabase.functions.invoke('send-rota-email', {
-      body: { weekStart: format(weekStart, 'yyyy-MM-dd') },
+      body: { weekStart: weekStartStr },
     })
     setEmailing(false)
     if (error) { toast('Failed to send: ' + error.message, 'error'); return }
-    toast('Rota emailed to all staff ✓')
+    toast('Rota published ✓')
+
+    // Push notification to all staff on this week's rota
+    const staffIds = [...new Set(shifts.map(s => s.staff_id).filter(Boolean))]
+    if (staffIds.length) {
+      supabase.functions.invoke('send-push', {
+        body: {
+          venueId,
+          title: 'Rota Published',
+          body:  `Your rota for the week of ${weekStartStr} is now available.`,
+          url:   '/rota',
+          staffIds,
+        },
+      }).catch(() => {})
+    }
   }
 
   // ── Staff: submit swap request ──
@@ -253,6 +268,17 @@ export default function RotaPage() {
     toast(`Swap request sent to ${targetStaff?.name ?? 'colleague'} ✓`)
     setSwapModal(null)
     reloadSwaps()
+
+    // Push notification to managers
+    supabase.functions.invoke('send-push', {
+      body: {
+        venueId,
+        title: 'Shift Swap Request',
+        body:  `${session?.staffName ?? 'A staff member'} has requested a shift swap`,
+        url:   '/rota',
+        roles: ['manager', 'owner'],
+      },
+    }).catch(() => {})
   }
 
   // ── Manager: approve swap ──
@@ -377,7 +403,7 @@ export default function RotaPage() {
                   disabled={emailing || shifts.length === 0}
                   className="text-[11px] tracking-widest uppercase text-charcoal/40 hover:text-charcoal transition-colors border-b border-charcoal/20 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  {emailing ? 'Sending…' : '✉ Email'}
+                  {emailing ? 'Publishing…' : '✉ Publish'}
                 </button>
                 <button
                   onClick={shareViaWhatsApp}

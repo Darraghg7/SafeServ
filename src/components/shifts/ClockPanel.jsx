@@ -3,11 +3,13 @@
  * Persists across logouts: timer is derived from DB timestamps, not local state.
  */
 import React, { useEffect, useState } from 'react'
+import { format } from 'date-fns'
 import { offlineRpc } from '../../lib/offlineSupabase'
 import { useClockStatus, saveClockStatusCache } from '../../hooks/useClockEvents'
 import { useVenue } from '../../contexts/VenueContext'
 import { useToast } from '../ui/Toast'
 import LoadingSpinner from '../ui/LoadingSpinner'
+import { supabase } from '../../lib/supabase'
 
 const STATUS_CONFIG = {
   clocked_out: { label: 'Not Clocked In', color: 'text-charcoal/50', dot: 'bg-charcoal/25' },
@@ -80,6 +82,35 @@ export default function ClockPanel({ staffId, hasShift = true }) {
 
     const labels = { clock_in: 'Clocked in', clock_out: 'Clocked out', break_start: 'Break started', break_end: 'Break ended' }
     toast(queued ? `${labels[eventType]} (saved offline)` : labels[eventType])
+
+    // If clocking in, check if late vs scheduled shift and push managers
+    if (eventType === 'clock_in' && !queued) {
+      const now = new Date()
+      const today = format(now, 'yyyy-MM-dd')
+      supabase
+        .from('shifts')
+        .select('start_time, staff:staff_id(name)')
+        .eq('venue_id', venueId)
+        .eq('staff_id', staffId)
+        .eq('shift_date', today)
+        .maybeSingle()
+        .then(({ data: shift }) => {
+          if (!shift) return
+          const shiftStart = new Date(today + 'T' + shift.start_time)
+          const minsLate = Math.round((now - shiftStart) / 60000)
+          if (minsLate > 2) {
+            supabase.functions.invoke('send-push', {
+              body: {
+                venueId,
+                title: 'Late Clock-In',
+                body:  `${shift.staff?.name ?? 'A staff member'} clocked in ${minsLate} min late`,
+                url:   '/timesheet',
+                roles: ['manager', 'owner'],
+              },
+            }).catch(() => {})
+          }
+        })
+    }
 
     if (queued) {
       // Offline — update the localStorage cache so reload() returns the correct state

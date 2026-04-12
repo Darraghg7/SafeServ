@@ -12,9 +12,10 @@ export function useWasteLogs(dateFrom, dateTo) {
     setLoading(true)
     let q = supabase
       .from('waste_logs')
-      .select('*')
+      .select('id, item_name, category, weight_kg, reason, recorded_at, staff_name, venue_id')
       .eq('venue_id', venueId)
       .order('recorded_at', { ascending: false })
+      .limit(500)
 
     if (dateFrom) q = q.gte('recorded_at', dateFrom)
     if (dateTo)   q = q.lte('recorded_at', dateTo + 'T23:59:59')

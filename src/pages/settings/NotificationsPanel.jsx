@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { useVenue } from '../../contexts/VenueContext'
 
 /* ── Notifications panel ────────────────────────────────────────────────────── */
 export default function NotificationsPanel({ session, toast, settings }) {
+  const { venueId } = useVenue()
   const { supported, permission, subscribed, subscribing, subscribe, unsubscribe } =
-    usePushNotifications(session?.staffId)
+    usePushNotifications(session?.staffId, venueId)
   const [sendingReport, setSendingReport] = useState(false)
 
   const sendWeeklyReport = async () => {

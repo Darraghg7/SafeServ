@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import LoadingSpinner from '../ui/LoadingSpinner'
@@ -40,4 +40,4 @@ function PendingSwapsWidget() {
   )
 }
 
-export default PendingSwapsWidget
+export default memo(PendingSwapsWidget)

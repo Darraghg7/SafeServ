@@ -29,7 +29,7 @@ export function useCoolingLogs(dateFrom, dateTo) {
     setLoading(true)
     let q = supabase
       .from('cooling_logs')
-      .select('*')
+      .select('id, food_item, start_temp, end_temp, cooling_method, start_time, end_time, pass, corrective_action, logged_at, logged_by_name, venue_id')
       .eq('venue_id', venueId)
       .order('logged_at', { ascending: false })
       .limit(200)
@@ -58,7 +58,7 @@ export function useTodayCoolingLogs() {
     const today = format(new Date(), 'yyyy-MM-dd')
     supabase
       .from('cooling_logs')
-      .select('*')
+      .select('id, food_item, start_temp, end_temp, cooling_method, start_time, end_time, pass, corrective_action, logged_at, logged_by_name, venue_id')
       .eq('venue_id', venueId)
       .gte('logged_at', today)
       .order('logged_at', { ascending: false })

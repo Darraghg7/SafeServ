@@ -1,6 +1,23 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 
 export default function Modal({ open, onClose, title, children }) {
+  const [visible, setVisible] = useState(false)
+  const [animating, setAnimating] = useState(false)
+  const panelRef = useRef(null)
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true)
+      // Trigger enter animation on next frame
+      requestAnimationFrame(() => setAnimating(true))
+    } else if (visible) {
+      // Exit animation
+      setAnimating(false)
+      const timer = setTimeout(() => setVisible(false), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!open) return
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -8,17 +25,25 @@ export default function Modal({ open, onClose, title, children }) {
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  if (!open) return null
+  if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm"
+        className={`absolute inset-0 bg-charcoal/40 backdrop-blur-sm transition-opacity duration-200 ${animating ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="relative bg-cream dark:bg-[#1e1e1e] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-xl p-6 pb-8 sm:pb-6 z-10 max-h-[90dvh] overflow-y-auto" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
+      <div
+        ref={panelRef}
+        className={`relative bg-cream dark:bg-[#1e1e1e] w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-modal p-6 pb-8 sm:pb-6 z-10 max-h-[90dvh] overflow-y-auto transition-all duration-[250ms] ease-out ${
+          animating
+            ? 'opacity-100 translate-y-0 scale-100'
+            : 'opacity-0 translate-y-4 sm:translate-y-2 sm:scale-[0.97]'
+        }`}
+        style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+      >
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-serif text-xl text-charcoal">{title}</h2>
           <button

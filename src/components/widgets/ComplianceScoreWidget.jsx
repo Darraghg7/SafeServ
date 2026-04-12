@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { subDays } from 'date-fns'
 import { supabase } from '../../lib/supabase'
@@ -180,4 +180,4 @@ function ComplianceScoreWidget() {
   )
 }
 
-export default ComplianceScoreWidget
+export default memo(ComplianceScoreWidget)

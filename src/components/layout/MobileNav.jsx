@@ -91,7 +91,7 @@ function TasksIcon({ active }) {
 /* ── Sub-navigation pills ──────────────────────────────────────────────── */
 function SubNav({ items, currentPath }) {
   return (
-    <nav className="lg:hidden flex gap-2 px-4 py-2.5 overflow-x-auto scrollbar-hide bg-white dark:bg-[#1a1a1a] border-b border-charcoal/8" aria-label="Section navigation">
+    <nav className="lg:hidden relative flex gap-2 px-4 py-2.5 overflow-x-auto scrollbar-hide bg-white dark:bg-[#1a1a1a] border-b border-charcoal/8" aria-label="Section navigation" style={{ maskImage: 'linear-gradient(90deg, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(90deg, black 90%, transparent)' }}>
       {items.map(item => {
         const isActive = currentPath === item.to || currentPath.startsWith(item.to + '/')
         return (
@@ -100,9 +100,9 @@ function SubNav({ items, currentPath }) {
             to={item.to}
             aria-current={isActive ? 'page' : undefined}
             className={[
-              'px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide whitespace-nowrap transition-all shrink-0',
+              'px-3.5 py-1.5 rounded-full text-[12px] font-semibold tracking-wide whitespace-nowrap transition-all shrink-0',
               isActive
-                ? 'bg-brand text-cream dark:bg-cream dark:text-charcoal'
+                ? 'bg-brand text-cream shadow-sm shadow-brand/20 dark:bg-cream dark:text-charcoal'
                 : 'bg-charcoal/6 text-charcoal/50 hover:bg-charcoal/10 hover:text-charcoal/70',
             ].join(' ')}
           >
@@ -240,7 +240,7 @@ export default function MobileNav() {
       {showSubNav && <SubNav items={activeTab.children} currentPath={pathname} />}
 
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-t border-charcoal/8"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#1a1a1a] border-t border-charcoal/8 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         aria-label="Main navigation"
         role="tablist"

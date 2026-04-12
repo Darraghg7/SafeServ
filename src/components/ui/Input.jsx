@@ -8,8 +8,8 @@ export default function Input({ label, error, className = '', ...props }) {
       )}
       <input
         className={[
-          'w-full px-4 py-3 rounded-xl border bg-white/80',
-          'focus:outline-none focus:ring-2 focus:ring-charcoal/30',
+          'w-full px-4 py-3 rounded-xl border bg-white/80 transition-all duration-150',
+          'focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/40',
           error ? 'border-danger' : 'border-charcoal/20',
           className,
         ].join(' ')}
@@ -28,8 +28,8 @@ export function Select({ label, error, children, className = '', ...props }) {
       )}
       <select
         className={[
-          'w-full px-4 py-3 rounded-xl border bg-white/80 appearance-none',
-          'focus:outline-none focus:ring-2 focus:ring-charcoal/30',
+          'w-full px-4 py-3 rounded-xl border bg-white/80 appearance-none transition-all duration-150',
+          'focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/40',
           error ? 'border-danger' : 'border-charcoal/20',
           className,
         ].join(' ')}
@@ -51,8 +51,8 @@ export function Textarea({ label, error, className = '', ...props }) {
       <textarea
         rows={3}
         className={[
-          'w-full px-4 py-3 rounded-xl border bg-white/80 resize-none',
-          'focus:outline-none focus:ring-2 focus:ring-charcoal/30',
+          'w-full px-4 py-3 rounded-xl border bg-white/80 resize-none transition-all duration-150',
+          'focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/40',
           error ? 'border-danger' : 'border-charcoal/20',
           className,
         ].join(' ')}

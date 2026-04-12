@@ -163,27 +163,18 @@ export default function TimeOffPage() {
     if (error) { toast(error.message, 'error'); return }
     toast('Time-off request submitted')
 
-    // Fire-and-forget: notify manager via email
-    supabase
-      .from('app_settings')
-      .select('key, value')
-      .eq('venue_id', venueId)
-      .in('key', ['manager_email', 'venue_name'])
-      .then(({ data: settings }) => {
-        const map = Object.fromEntries((settings ?? []).map(r => [r.key, r.value]))
-        if (map.manager_email) {
-          supabase.functions.invoke('notify-time-off', {
-            body: {
-              managerEmail: map.manager_email,
-              venueName:    map.venue_name ?? 'Your Venue',
-              staffName:    session?.staffName ?? 'A staff member',
-              startDate:    form.startDate,
-              endDate:      form.endDate,
-              reason:       form.reason.trim() || null,
-            },
-          }).catch(() => {}) // silent fail — don't block the user
-        }
-      })
+    // Fire-and-forget: push notification to manager
+    const staffName = session?.staffName ?? 'A staff member'
+    const dateRange = `${form.startDate} – ${form.endDate}`
+    supabase.functions.invoke('send-push', {
+      body: {
+        venueId,
+        title: 'New Leave Request',
+        body:  `${staffName} requested time off: ${dateRange}`,
+        url:   '/timeoff',
+        roles: ['manager', 'owner'],
+      },
+    }).catch(() => {})
 
     setForm({ startDate: '', endDate: '', reason: '' })
     setShowRequest(false)

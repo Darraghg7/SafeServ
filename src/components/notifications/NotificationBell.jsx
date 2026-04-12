@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useNotifications } from '../../hooks/useNotifications'
+import { useStaffNotifications } from '../../hooks/useStaffNotifications'
 import { useSession } from '../../contexts/SessionContext'
 import { useVenue } from '../../contexts/VenueContext'
 
 const TYPE_ICON = {
   swap_request:       '🔄',
   late_clock_in:      '⏰',
+  overdue_break:      '⏸',
   incomplete_tasks:   '✗',
   repeat_offender:    '⚠',
   fridge_alert:       '🌡',
@@ -18,6 +20,12 @@ const TYPE_ICON = {
   major_action:       '⚠',
   probe_overdue:      '🔬',
   time_off_pending:   '🏖',
+  swap_approved:      '✓',
+  swap_rejected:      '✗',
+  time_off_approved:  '🏖',
+  time_off_rejected:  '✗',
+  upcoming_shift:     '⏰',
+  hour_edit:          '✏',
 }
 
 /**
@@ -25,9 +33,12 @@ const TYPE_ICON = {
  *          'dark'  = charcoal icon (for light backgrounds like the sidebar)
  */
 export default function NotificationBell({ variant = 'light' }) {
-  const { isManager } = useSession()
+  const { isManager, session } = useSession()
   const { venueSlug } = useVenue()
-  const { notifications, count } = useNotifications(isManager)
+  const { notifications: managerNotifs } = useNotifications(isManager)
+  const { notifications: staffNotifs }   = useStaffNotifications(session?.staffId)
+  const notifications = [...managerNotifs, ...staffNotifs]
+  const count = notifications.length
   const [open, setOpen] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const ref = useRef(null)
@@ -38,8 +49,6 @@ export default function NotificationBell({ variant = 'light' }) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
-
-  if (!isManager) return null
 
   const visible = count > 0 && !dismissed
   const iconColor  = variant === 'dark' ? 'text-charcoal/60 dark:text-white/60' : 'text-cream/70'

@@ -11,7 +11,7 @@ export function useFridges() {
     if (!venueId) { setLoading(false); return }
     const { data } = await supabase
       .from('fridges')
-      .select('*')
+      .select('id, name, is_active, min_temp, max_temp, venue_id')
       .eq('venue_id', venueId)
       .eq('is_active', true)
       .order('name')
@@ -33,10 +33,11 @@ export function useFridgeDashboard() {
 
     // Fetch fridges and all recent logs in just 2 queries (not N+1)
     const [{ data: fridges }, { data: logs }] = await Promise.all([
-      supabase.from('fridges').select('*').eq('venue_id', venueId).eq('is_active', true).order('name'),
+      supabase.from('fridges').select('id, name, is_active, min_temp, max_temp, venue_id').eq('venue_id', venueId).eq('is_active', true).order('name'),
       supabase.from('fridge_temperature_logs').select('fridge_id, temperature, logged_at, logged_by_name')
         .eq('venue_id', venueId)
-        .order('logged_at', { ascending: false }),
+        .order('logged_at', { ascending: false })
+        .limit(1000),
     ])
 
     if (!fridges) { setLoading(false); return }
@@ -70,8 +71,8 @@ export function useTodayCheckStatus() {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
     const [{ data: fridges }, { data: logs }] = await Promise.all([
-      supabase.from('fridges').select('*').eq('venue_id', venueId).eq('is_active', true).order('name'),
-      supabase.from('fridge_temperature_logs').select('*')
+      supabase.from('fridges').select('id, name, is_active, min_temp, max_temp, venue_id').eq('venue_id', venueId).eq('is_active', true).order('name'),
+      supabase.from('fridge_temperature_logs').select('id, fridge_id, temperature, logged_at, check_period, exceedance_reason, is_resolved, staff_id, venue_id')
         .eq('venue_id', venueId)
         .gte('logged_at', `${today}T00:00:00`)
         .lte('logged_at', `${today}T23:59:59`)

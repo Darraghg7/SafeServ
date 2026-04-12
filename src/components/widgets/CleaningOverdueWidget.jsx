@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useCleaningTasks } from '../../hooks/useCleaningTasks'
 import { useSession } from '../../contexts/SessionContext'
@@ -95,4 +95,4 @@ function CleaningOverdueWidget() {
   )
 }
 
-export default CleaningOverdueWidget
+export default memo(CleaningOverdueWidget)

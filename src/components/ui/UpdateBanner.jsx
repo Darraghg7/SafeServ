@@ -47,11 +47,12 @@ export default function UpdateBanner() {
   if (!updateReady || dismissed) return null
 
   return (
-    <div className="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-sm">
-      <div className="bg-charcoal text-cream rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3">
+    <div className="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-sm animate-slide-up">
+      <div className="bg-charcoal text-cream rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3">
+        <div className="text-xl shrink-0">🔄</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold">Update available</p>
-          <p className="text-xs text-cream/50 mt-0.5">Tap to get the latest version</p>
+          <p className="text-sm font-semibold">New version available</p>
+          <p className="text-xs text-cream/50 mt-0.5">Tap Update to get the latest features</p>
         </div>
         <button
           onClick={applyUpdate}
