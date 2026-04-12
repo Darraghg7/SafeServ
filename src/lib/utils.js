@@ -1,15 +1,11 @@
-import { format, formatDistanceToNow, startOfWeek, addDays } from 'date-fns'
+import { format, startOfWeek, addDays } from 'date-fns'
 import { STAFF_COLOUR_PALETTE } from './constants'
 
 export const formatTemp = (t) => `${Number(t).toFixed(1)}°C`
 
-export const formatTime = (d) => format(new Date(d), 'HH:mm')
-
 export const formatDate = (d) => format(new Date(d), 'd MMM yyyy')
 
 export const formatDateTime = (d) => format(new Date(d), 'd MMM yyyy HH:mm')
-
-export const timeAgo = (d) => formatDistanceToNow(new Date(d), { addSuffix: true })
 
 export const isTempOutOfRange = (temp, min, max) =>
   Number(temp) < Number(min) || Number(temp) > Number(max)
