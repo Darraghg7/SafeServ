@@ -32,20 +32,6 @@ table { border-spacing: 0; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; }
 
-/* ── Card elevation — auto-shadow on rounded white cards ──────────────── */
-div.bg-white.rounded-xl,
-div.bg-white.rounded-2xl,
-div.bg-white.rounded-lg,
-div.bg-white.rounded-3xl {
-  box-shadow: 0 1px 3px rgba(26,26,24,0.06), 0 4px 14px rgba(26,26,24,0.05);
-}
-html.dark div.bg-white.rounded-xl,
-html.dark div.bg-white.rounded-2xl,
-html.dark div.bg-white.rounded-lg,
-html.dark div.bg-white.rounded-3xl {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 4px 14px rgba(0,0,0,0.18);
-}
-
 /* ── Smooth transitions on interactive elements ───────────────────────── */
 button, a, input, select, textarea, [role="button"] {
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
