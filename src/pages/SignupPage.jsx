@@ -1,10 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-
-function slugify(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40)
-}
+import { slugify } from '../lib/utils'
 
 export default function SignupPage() {
   const navigate = useNavigate()
