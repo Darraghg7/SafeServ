@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import { useVenueBranding } from '../../hooks/useVenueBranding'
 import { useSession } from '../../contexts/SessionContext'
+import { useVenueFeatures } from '../../hooks/useVenueFeatures'
 import { formatMinutes } from '../../lib/utils'
 import ClockPanel from '../../components/shifts/ClockPanel'
 import RecentShifts from '../../components/shifts/RecentShifts'
@@ -78,9 +79,138 @@ function PushNotificationCard({ staffId, venueId }) {
   )
 }
 
+function QuickActions({ venueSlug, hasPermission, isEnabled, hasShift }) {
+  const actions = [
+    hasShift && { icon: '\u23F1', label: 'Clock In', link: `/v/${venueSlug}/clock-in` },
+    isEnabled('fridge') && hasPermission('log_temps') && { icon: '\uD83C\uDF21\uFE0F', label: 'Log Fridge Temp', link: `/v/${venueSlug}/fridge/log` },
+    isEnabled('cleaning') && hasPermission('manage_cleaning') && { icon: '\uD83E\uDDF9', label: 'Cleaning', link: `/v/${venueSlug}/cleaning` },
+    isEnabled('opening_closing') && hasPermission('manage_opening') && { icon: '\u2611\uFE0F', label: 'Checks', link: `/v/${venueSlug}/opening-closing` },
+    isEnabled('rota') && { icon: '\uD83D\uDCC5', label: 'View Rota', link: `/v/${venueSlug}/rota` },
+    isEnabled('time_off') && { icon: '\uD83C\uDFD6\uFE0F', label: 'Time Off', link: `/v/${venueSlug}/time-off` },
+  ].filter(Boolean)
+
+  if (actions.length === 0) return null
+
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+      {actions.map(a => (
+        <Link
+          key={a.label}
+          to={a.link}
+          className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-white border border-charcoal/10 hover:border-charcoal/20 transition-colors text-center"
+        >
+          <span className="text-xl">{a.icon}</span>
+          <span className="text-[11px] text-charcoal/60 font-medium leading-tight">{a.label}</span>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
+function TodaySummary({ staffId, venueId, venueSlug, hasPermission, isEnabled }) {
+  const [tasks, setTasks] = useState({ pending: 0, cleaning: 0, fridges: 0 })
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!staffId || !venueId) return
+    let cancelled = false
+    const today = format(new Date(), 'yyyy-MM-dd')
+
+    const promises = []
+
+    // Pending tasks assigned to this staff
+    promises.push(
+      supabase.from('task_completions')
+        .select('id', { count: 'exact', head: true })
+        .eq('venue_id', venueId)
+        .eq('staff_id', staffId)
+        .eq('completion_date', today)
+        .then(({ count }) => ({ type: 'done_tasks', count: count ?? 0 }))
+    )
+
+    // Overdue cleaning (unfinished tasks for today)
+    if (isEnabled('cleaning') && hasPermission('manage_cleaning')) {
+      promises.push(
+        supabase.from('cleaning_tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('venue_id', venueId)
+          .eq('is_active', true)
+          .then(({ count }) => ({ type: 'total_cleaning', count: count ?? 0 }))
+      )
+      promises.push(
+        supabase.from('cleaning_completions')
+          .select('id', { count: 'exact', head: true })
+          .eq('venue_id', venueId)
+          .gte('completed_at', today + 'T00:00:00')
+          .then(({ count }) => ({ type: 'done_cleaning', count: count ?? 0 }))
+      )
+    }
+
+    // Fridge checks not yet done
+    if (isEnabled('fridge') && hasPermission('log_temps')) {
+      promises.push(
+        supabase.from('fridges')
+          .select('id', { count: 'exact', head: true })
+          .eq('venue_id', venueId)
+          .eq('is_active', true)
+          .then(({ count }) => ({ type: 'total_fridges', count: count ?? 0 }))
+      )
+      promises.push(
+        supabase.from('fridge_temperature_logs')
+          .select('fridge_id')
+          .eq('venue_id', venueId)
+          .gte('logged_at', today + 'T00:00:00')
+          .then(({ data }) => ({ type: 'checked_fridges', count: new Set((data ?? []).map(r => r.fridge_id)).size }))
+      )
+    }
+
+    Promise.all(promises).then(results => {
+      if (cancelled) return
+      const r = {}
+      for (const res of results) r[res.type] = res.count
+      setTasks({
+        pending: 0,
+        cleaning: Math.max(0, (r.total_cleaning ?? 0) - (r.done_cleaning ?? 0)),
+        fridges: Math.max(0, (r.total_fridges ?? 0) - (r.checked_fridges ?? 0)),
+      })
+      setLoaded(true)
+    })
+    return () => { cancelled = true }
+  }, [staffId, venueId, isEnabled, hasPermission])
+
+  if (!loaded) return null
+
+  const items = [
+    tasks.cleaning > 0 && { label: `${tasks.cleaning} cleaning task${tasks.cleaning !== 1 ? 's' : ''} due`, link: `/v/${venueSlug}/cleaning`, color: 'text-amber-600' },
+    tasks.fridges > 0 && { label: `${tasks.fridges} fridge${tasks.fridges !== 1 ? 's' : ''} unchecked`, link: `/v/${venueSlug}/fridge/log`, color: 'text-amber-600' },
+  ].filter(Boolean)
+
+  if (items.length === 0) {
+    return (
+      <div className="bg-success/5 border border-success/15 rounded-xl px-4 py-3">
+        <p className="text-sm text-success font-medium">All caught up today</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4">
+      <p className="text-[11px] tracking-widest uppercase text-amber-700/60 mb-2">Today</p>
+      <div className="flex flex-col gap-1.5">
+        {items.map(item => (
+          <Link key={item.label} to={item.link} className={`text-sm font-medium ${item.color} hover:underline`}>
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function StaffDashboardPage() {
   const { venueId, venueSlug } = useVenue()
-  const { session } = useSession()
+  const { session, hasPermission } = useSession()
+  const { isEnabled } = useVenueFeatures()
   const { venueName, logoUrl } = useVenueBranding(venueId)
   const [todayShift, setTodayShift] = useState(null)
   const [weekMins, setWeekMins]     = useState(0)
@@ -153,6 +283,12 @@ export default function StaffDashboardPage() {
           <h1 className="font-serif text-xl text-brand/70 mt-0.5">Good {greeting}, {firstName}</h1>
         </div>
       </div>
+
+      {/* Quick actions */}
+      <QuickActions venueSlug={venueSlug} hasPermission={hasPermission} isEnabled={isEnabled} hasShift={!!todayShift} />
+
+      {/* Today summary */}
+      <TodaySummary staffId={session.staffId} venueId={venueId} venueSlug={venueSlug} hasPermission={hasPermission} isEnabled={isEnabled} />
 
       {/* Desktop: two columns — shift/clock left, recent shifts right */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">

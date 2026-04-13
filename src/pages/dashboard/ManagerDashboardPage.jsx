@@ -10,6 +10,7 @@ import { WIDGET_REGISTRY, DEFAULT_WIDGETS, ALL_WIDGET_IDS } from '../../componen
 import ClockPanel from '../../components/shifts/ClockPanel'
 import Modal from '../../components/ui/Modal'
 import { useVenueBranding } from '../../hooks/useVenueBranding'
+import { useVenueFeatures } from '../../hooks/useVenueFeatures'
 
 // Multi-venue is just Pro × number of venues — no separate tier in the app
 const PLAN_CONFIG = {
@@ -412,12 +413,69 @@ function PushBanner({ staffId }) {
   )
 }
 
+function GettingStartedCard({ venueId, venueSlug }) {
+  const [checklist, setChecklist] = useState(null)
+  const [dismissed, setDismissed] = useState(false)
+  const { isEnabled } = useVenueFeatures()
+
+  useEffect(() => {
+    if (!venueId) return
+    supabase.from('app_settings').select('value').eq('venue_id', venueId).eq('key', 'setup_checklist').maybeSingle()
+      .then(({ data }) => {
+        try { setChecklist(data?.value ? JSON.parse(data.value) : {}) }
+        catch { setChecklist({}) }
+      })
+  }, [venueId])
+
+  if (checklist === null || dismissed) return null
+
+  const items = [
+    { id: 'venue_type', label: 'Choose your venue type', link: `/v/${venueSlug}/setup`, done: !!checklist.venue_type },
+    { id: 'staff',      label: 'Add your first staff member', link: `/v/${venueSlug}/settings`, done: !!checklist.staff },
+    { id: 'fridge',     label: 'Record a fridge check', link: `/v/${venueSlug}/fridge/log`, done: !!checklist.fridge, show: isEnabled('fridge') },
+    { id: 'rota',       label: 'Create this week\'s rota', link: `/v/${venueSlug}/rota`, done: !!checklist.rota, show: isEnabled('rota') },
+    { id: 'cleaning',   label: 'Complete a cleaning check', link: `/v/${venueSlug}/cleaning`, done: !!checklist.cleaning, show: isEnabled('cleaning') },
+  ].filter(item => item.show !== false)
+
+  const allDone = items.every(i => i.done)
+  if (allDone) return null
+
+  const completed = items.filter(i => i.done).length
+
+  return (
+    <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-sm font-semibold text-charcoal">Getting Started</p>
+          <p className="text-[11px] text-charcoal/40 mt-0.5">{completed} of {items.length} complete</p>
+        </div>
+        <button onClick={() => setDismissed(true)} className="text-charcoal/25 hover:text-charcoal/50 transition-colors text-lg">&times;</button>
+      </div>
+      <div className="h-1 bg-charcoal/8 rounded-full mb-4 overflow-hidden">
+        <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${(completed / items.length) * 100}%` }} />
+      </div>
+      <div className="flex flex-col gap-2">
+        {items.map(item => (
+          <Link
+            key={item.id}
+            to={item.link}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${item.done ? 'bg-success/5' : 'hover:bg-charcoal/3'}`}
+          >
+            <span className={`text-sm ${item.done ? 'text-success' : 'text-charcoal/25'}`}>{item.done ? '\u2713' : '\u25CB'}</span>
+            <span className={`text-sm ${item.done ? 'text-charcoal/40 line-through' : 'text-charcoal'}`}>{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MANAGER DASHBOARD
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function ManagerDashboardPage() {
-  const { venueId, venuePlan } = useVenue()
+  const { venueId, venuePlan, venueSlug } = useVenue()
   const { session } = useSession()
   const toast = useToast()
   const { venueName, logoUrl } = useVenueBranding(venueId)
@@ -470,6 +528,7 @@ export default function ManagerDashboardPage() {
 
       {/* Push notification opt-in banner */}
       <PushBanner staffId={session?.staffId} />
+      <GettingStartedCard venueId={venueId} venueSlug={venueSlug} />
 
       {/* Desktop: today summary + clock side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">

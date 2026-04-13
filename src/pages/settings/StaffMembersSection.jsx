@@ -13,7 +13,8 @@ import SettingsSection from './SettingsSection'
 import { StaffRolesAssignment } from './RolesSection'
 import TrainingSection from './TrainingSection'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
-import { PLANS, STAFF_COLOUR_PALETTE } from '../../lib/constants'
+import { PLANS, STAFF_COLOUR_PALETTE, STAFF_PERMISSIONS, PERMISSION_PRESETS, DEFAULT_STAFF_PERMISSIONS } from '../../lib/constants'
+import { saveStaffPermissions } from '../../hooks/useStaffPermissions'
 
 const PERMISSION_ROLES  = ['staff', 'manager', 'owner']
 const PERMISSION_LABELS = { staff: 'Staff', manager: 'Manager', owner: 'Owner' }
@@ -47,6 +48,7 @@ export default function StaffMembersSection() {
   const [photoFile, setPhotoFile]           = useState(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [staffRoleMap, setStaffRoleMap]     = useState({})
+  const [permForm, setPermForm]             = useState(new Set(DEFAULT_STAFF_PERMISSIONS))
 
   // Build { staffId -> [venueId, ...] } map from raw rows
   const buildLinkMap = (rows) => {
@@ -91,6 +93,26 @@ export default function StaffMembersSection() {
       })
   }, [staff, venueRoles])
 
+  // Load permission counts for the staff list badges
+  const [permCounts, setPermCounts] = useState({})
+  useEffect(() => {
+    if (!staff.length || !venueId) return
+    const staffIds = staff.filter(s => s.role === 'staff').map(s => s.id)
+    if (!staffIds.length) { setPermCounts({}); return }
+    supabase
+      .from('staff_permissions')
+      .select('staff_id, permission')
+      .eq('venue_id', venueId)
+      .in('staff_id', staffIds)
+      .then(({ data }) => {
+        const counts = {}
+        for (const r of (data ?? [])) {
+          counts[r.staff_id] = (counts[r.staff_id] ?? 0) + 1
+        }
+        setPermCounts(counts)
+      })
+  }, [staff, venueId])
+
   const uploadStaffPhoto = async (staffId, file) => {
     if (!file || !staffId) return
     setUploadingPhoto(true)
@@ -111,8 +133,8 @@ export default function StaffMembersSection() {
     reloadStaff()
   }
 
-  const openAdd = () => { setStaffForm(EMPTY_FORM); setEditingId(null); setShowForm(true) }
-  const openEdit = (s) => {
+  const openAdd = () => { setStaffForm(EMPTY_FORM); setEditingId(null); setPermForm(new Set(DEFAULT_STAFF_PERMISSIONS)); setShowForm(true) }
+  const openEdit = async (s) => {
     setStaffForm({
       name:           s.name,
       role:           s.role ?? 'staff',
@@ -129,6 +151,17 @@ export default function StaffMembersSection() {
     })
     setEditingId(s.id)
     setShowForm(true)
+    // Load existing permissions for this staff member
+    if (s.role === 'staff') {
+      const { data } = await supabase
+        .from('staff_permissions')
+        .select('permission')
+        .eq('staff_id', s.id)
+        .eq('venue_id', venueId)
+      setPermForm(new Set((data ?? []).map(r => r.permission)))
+    } else {
+      setPermForm(new Set(STAFF_PERMISSIONS.map(p => p.id)))
+    }
   }
   const cancelEdit = () => { setShowForm(false); setEditingId(null) }
 
@@ -209,6 +242,23 @@ export default function StaffMembersSection() {
           working_days: staffForm.working_days,
         }).eq('id', newRow[0].id)
         if (extraErr) { toast('Saved, but failed to update some fields: ' + extraErr.message, 'error') }
+      }
+    }
+
+    // Save granular permissions for staff role
+    if (staffForm.role === 'staff') {
+      const targetId = editingId || await (async () => {
+        const { data: newRow } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('venue_id', venueId)
+          .eq('name', staffForm.name.trim())
+          .order('created_at', { ascending: false })
+          .limit(1)
+        return newRow?.[0]?.id
+      })()
+      if (targetId) {
+        await saveStaffPermissions(targetId, venueId, [...permForm])
       }
     }
 
@@ -466,28 +516,67 @@ export default function StaffMembersSection() {
             />
           </div>
 
-          {/* Tab access toggles */}
-          <div>
-            <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">App Tab Access</label>
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-charcoal">Temp Logs</span>
-                <Toggle
-                  checked={staffForm.show_temp_logs}
-                  onChange={v => setStaffForm(f => ({ ...f, show_temp_logs: v }))}
-                  size="sm"
-                />
+          {/* Granular permissions (staff role only — managers get everything) */}
+          {staffForm.role === 'staff' && (
+            <div>
+              <label className="text-[11px] tracking-widest uppercase text-charcoal/40 block mb-2">Permissions</label>
+              <p className="text-[11px] text-charcoal/35 mb-3">
+                Controls what this staff member can see and do in the app.
+              </p>
+
+              {/* Quick presets */}
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {PERMISSION_PRESETS.map(preset => {
+                  const active = preset.permissions.length === permForm.size &&
+                    preset.permissions.every(p => permForm.has(p))
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setPermForm(new Set(preset.permissions))}
+                      className={[
+                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                        active ? 'bg-brand text-cream border-brand' : 'bg-white text-charcoal/50 border-charcoal/15 hover:border-charcoal/30',
+                      ].join(' ')}
+                    >
+                      {preset.label}
+                    </button>
+                  )
+                })}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-charcoal">Allergens</span>
-                <Toggle
-                  checked={staffForm.show_allergens}
-                  onChange={v => setStaffForm(f => ({ ...f, show_allergens: v }))}
-                  size="sm"
-                />
-              </div>
+
+              {/* Permission toggles by category */}
+              {['Compliance', 'Operations', 'Team'].map(category => {
+                const perms = STAFF_PERMISSIONS.filter(p => p.category === category)
+                return (
+                  <div key={category} className="mb-3">
+                    <p className="text-[11px] tracking-widest uppercase text-charcoal/30 mb-1.5">{category}</p>
+                    <div className="flex flex-col gap-1.5">
+                      {perms.map(perm => (
+                        <div key={perm.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-charcoal/3 transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-charcoal">{perm.label}</p>
+                            <p className="text-[11px] text-charcoal/35">{perm.description}</p>
+                          </div>
+                          <Toggle
+                            checked={permForm.has(perm.id)}
+                            onChange={v => {
+                              setPermForm(prev => {
+                                const next = new Set(prev)
+                                v ? next.add(perm.id) : next.delete(perm.id)
+                                return next
+                              })
+                            }}
+                            size="sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </div>
+          )}
 
           {/* Rota colour picker */}
           <div>
@@ -608,8 +697,11 @@ export default function StaffMembersSection() {
                 <span className="text-[11px] tracking-widest uppercase text-charcoal/40 border border-charcoal/15 px-1.5 py-0.5 rounded">
                   {JOB_LABELS[s.job_role] ?? s.job_role}
                 </span>
-                {s.show_temp_logs  && <span className="text-[11px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Temp Logs</span>}
-                {s.show_allergens  && <span className="text-[11px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Allergens</span>}
+                {s.role === 'staff' && (permCounts[s.id] ?? 0) > 0 && (
+                  <span className="text-[11px] bg-brand/8 text-brand px-1.5 py-0.5 rounded">
+                    {permCounts[s.id]} permission{permCounts[s.id] !== 1 ? 's' : ''}
+                  </span>
+                )}
                 {s.is_under_18     && <span className="text-[11px] bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded">Under 18</span>}
                 {(s.working_days ?? []).length > 0 && (s.working_days ?? []).length < 7 && (
                   <span className="text-[11px] bg-brand/8 text-brand px-1.5 py-0.5 rounded">

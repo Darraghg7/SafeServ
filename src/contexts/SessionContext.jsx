@@ -29,6 +29,7 @@ import {
   SESSION_VENUE_ID_KEY,
   SESSION_VENUE_SLUG_KEY,
   SESSION_LINKED_VENUES,
+  SESSION_PERMISSIONS_KEY,
 } from '../lib/constants'
 
 const SessionContext = createContext(null)
@@ -55,6 +56,7 @@ const LS_KEYS = [
   SESSION_VENUE_ID_KEY,
   SESSION_VENUE_SLUG_KEY,
   SESSION_LINKED_VENUES,
+  SESSION_PERMISSIONS_KEY,
 ]
 
 const clearStorage = () => LS_KEYS.forEach(k => localStorage.removeItem(k))
@@ -63,6 +65,11 @@ const clearStorage = () => LS_KEYS.forEach(k => localStorage.removeItem(k))
 function sessionFromStorage(token) {
   const id = localStorage.getItem(SESSION_ID_KEY)
   if (!token || !id) return null
+  let permissions = []
+  try {
+    const raw = localStorage.getItem(SESSION_PERMISSIONS_KEY)
+    if (raw) permissions = JSON.parse(raw)
+  } catch { /* corrupt cache */ }
   return {
     token,
     staffId:       id,
@@ -71,6 +78,7 @@ function sessionFromStorage(token) {
     jobRole:       localStorage.getItem(SESSION_JOB_ROLE_KEY) ?? 'kitchen',
     showTempLogs:  localStorage.getItem(SESSION_SHOW_TEMP_LOGS) === 'true',
     showAllergens: localStorage.getItem(SESSION_SHOW_ALLERGENS) === 'true',
+    permissions,
     venueId:       localStorage.getItem(SESSION_VENUE_ID_KEY) ?? '',
     venueSlug:     localStorage.getItem(SESSION_VENUE_SLUG_KEY) ?? '',
   }
@@ -211,6 +219,17 @@ export function SessionProvider({ children }) {
 
     if (rowErr) return { error: rowErr }
 
+    // Fetch granular permissions for non-managers
+    let permissions = []
+    if (row.role === 'staff') {
+      const { data: permRows } = await supabase
+        .from('staff_permissions')
+        .select('permission')
+        .eq('staff_id', staffId)
+        .eq('venue_id', venueId)
+      permissions = (permRows ?? []).map(r => r.permission)
+    }
+
     const newSession = {
       token,
       staffId,
@@ -219,6 +238,7 @@ export function SessionProvider({ children }) {
       jobRole:       row.job_role         ?? 'kitchen',
       showTempLogs:  row.show_temp_logs   ?? false,
       showAllergens: row.show_allergens   ?? false,
+      permissions,
       venueId,
       venueSlug:     venueSlug ?? '',
     }
@@ -231,6 +251,7 @@ export function SessionProvider({ children }) {
     localStorage.setItem(SESSION_JOB_ROLE_KEY,   newSession.jobRole)
     localStorage.setItem(SESSION_SHOW_TEMP_LOGS, String(newSession.showTempLogs))
     localStorage.setItem(SESSION_SHOW_ALLERGENS, String(newSession.showAllergens))
+    localStorage.setItem(SESSION_PERMISSIONS_KEY, JSON.stringify(permissions))
     localStorage.setItem(SESSION_VENUE_ID_KEY,   venueId)
     localStorage.setItem(SESSION_VENUE_SLUG_KEY, venueSlug ?? '')
 
@@ -267,9 +288,14 @@ export function SessionProvider({ children }) {
   const isManager = session?.staffRole === 'manager' || session?.staffRole === 'owner'
   const hasMultiVenueAccess = linkedVenues.length > 0
 
+  const hasPermission = useCallback((permissionId) => {
+    if (isManager) return true
+    return (session?.permissions ?? []).includes(permissionId)
+  }, [isManager, session?.permissions])
+
   const value = useMemo(() => ({
-    session, loading, isManager, signIn, signOut, linkedVenues, hasMultiVenueAccess,
-  }), [session, loading, isManager, signIn, signOut, linkedVenues, hasMultiVenueAccess])
+    session, loading, isManager, signIn, signOut, linkedVenues, hasMultiVenueAccess, hasPermission,
+  }), [session, loading, isManager, signIn, signOut, linkedVenues, hasMultiVenueAccess, hasPermission])
 
   return (
     <SessionContext.Provider value={value}>

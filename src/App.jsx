@@ -24,6 +24,9 @@ const MarketingPage = lazy(() => import('./pages/marketing/MarketingPage'))
 // Signup flow
 const SignupFlowPage = lazy(() => import('./pages/signup/SignupFlowPage'))
 
+// Onboarding
+const OnboardingPage = lazy(() => import('./pages/onboarding/OnboardingPage'))
+
 // Dashboard (role-aware)
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 
@@ -128,6 +131,16 @@ function RequireManager({ children }) {
   return children
 }
 
+/** Pages accessible to managers OR staff with a specific permission. */
+function RequirePermission({ permission, children }) {
+  const { session, loading, isManager, hasPermission } = useSession()
+  const { venueSlug } = useParams()
+  if (loading) return <FullPageLoader />
+  if (!session) return <Navigate to={`/v/${venueSlug}`} replace />
+  if (!isManager && !hasPermission(permission)) return <Navigate to={`/v/${venueSlug}/dashboard`} replace />
+  return children
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function wrap(Component, Guard = RequireAuth) {
@@ -138,6 +151,13 @@ function wrap(Component, Guard = RequireAuth) {
       </AppShell>
     </Guard>
   )
+}
+
+/** Like wrap(), but gates with a specific permission (managers always pass). */
+function wrapPerm(Component, permission, feature) {
+  const Guard = ({ children }) => <RequirePermission permission={permission}>{children}</RequirePermission>
+  if (feature) return wrapPro(Component, Guard, feature)
+  return wrap(Component, Guard)
 }
 
 /** Like wrap(), but gates the page behind PlanGate for Pro-only features. */
@@ -183,6 +203,9 @@ function VenueRoutes() {
             {/* Login page for this venue */}
             <Route index element={<LoginPage />} />
 
+            {/* Onboarding wizard — shown once after signup */}
+            <Route path="setup" element={wrap(OnboardingPage, RequireManager)} />
+
             {/* Multi-venue overview — manager only, requires cross-venue access */}
             <Route path="overview"          element={wrap(OverviewPage, RequireManager)} />
 
@@ -206,20 +229,20 @@ function VenueRoutes() {
             <Route path="suppliers"          element={wrap(SuppliersPage,          RequireManager)} />
             <Route path="eho-mock"           element={wrapPro(EHOMockPage,         RequireManager, 'eho-mock')} />
             <Route path="fitness"            element={wrap(FitnessPage,            RequireManager)} />
-            <Route path="cooking-temps"      element={wrap(CookingTempsPage,       RequireManager)} />
-            <Route path="hot-holding"        element={wrap(HotHoldingPage,         RequireManager)} />
-            <Route path="cooling-logs"       element={wrap(CoolingLogsPage,        RequireManager)} />
+            <Route path="cooking-temps"      element={wrapPerm(CookingTempsPage,   'log_temps')} />
+            <Route path="hot-holding"        element={wrapPerm(HotHoldingPage,     'log_temps')} />
+            <Route path="cooling-logs"       element={wrapPerm(CoolingLogsPage,    'log_temps')} />
             <Route path="pest-control"       element={wrap(PestControlPage,        RequireManager)} />
-            <Route path="allergens/new"      element={wrap(FoodItemFormPage,       RequireManager)} />
-            <Route path="allergens/:id/edit" element={wrap(FoodItemFormPage,       RequireManager)} />
-            <Route path="timesheet"          element={wrapPro(TimesheetPage,       RequireManager, 'timesheet')} />
-            <Route path="deliveries"         element={wrap(DeliveryChecksPage,     RequireManager)} />
+            <Route path="allergens/new"      element={wrapPerm(FoodItemFormPage,   'manage_allergens')} />
+            <Route path="allergens/:id/edit" element={wrapPerm(FoodItemFormPage,   'manage_allergens')} />
+            <Route path="timesheet"          element={wrapPerm(TimesheetPage,      'view_timesheet', 'timesheet')} />
+            <Route path="deliveries"         element={wrapPerm(DeliveryChecksPage, 'log_deliveries')} />
             <Route path="probe"              element={wrap(ProbeCalibrationPage,   RequireManager)} />
             <Route path="corrective"         element={wrap(CorrectiveActionsPage,  RequireManager)} />
             <Route path="audit"              element={wrap(EHOAuditPage,           RequireManager)} />
-            <Route path="training"           element={wrapPro(TrainingPage,        RequireManager, 'training')} />
-            <Route path="waste"              element={wrapPro(WasteLogPage,        RequireManager, 'waste')} />
-            <Route path="orders"             element={wrapPro(SupplierOrdersPage,  RequireManager, 'orders')} />
+            <Route path="training"           element={wrapPerm(TrainingPage,       'manage_training', 'training')} />
+            <Route path="waste"              element={wrapPerm(WasteLogPage,       'log_waste', 'waste')} />
+            <Route path="orders"             element={wrapPerm(SupplierOrdersPage, 'log_deliveries', 'orders')} />
             <Route path="settings"           element={wrap(SettingsPage,           RequireManager)} />
 
             <Route path="*" element={<NotFoundPage />} />

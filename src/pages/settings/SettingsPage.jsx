@@ -11,12 +11,34 @@ import { useVenueFeatures, FEATURE_GROUPS, ALL_FEATURE_IDS, PRO_ONLY_FEATURE_IDS
 import Toggle from '../../components/ui/Toggle'
 import useVenueSettings from '../../hooks/useVenueSettings'
 import useVenueClosures from '../../hooks/useVenueClosures'
-import { PLANS } from '../../lib/constants'
+import { PLANS, VENUE_PRESETS } from '../../lib/constants'
 import SettingsSection from './SettingsSection'
 import RolesSection from './RolesSection'
 import NotificationsPanel from './NotificationsPanel'
 import StaffMembersSection from './StaffMembersSection'
 import VenuesSection from './VenuesSection'
+
+const VENUE_TYPE_ICONS = { cafe: '\u2615', pub: '\uD83C\uDF7A', restaurant: '\uD83C\uDF7D\uFE0F', hotel: '\uD83C\uDFE8' }
+
+function VenueTypeIndicator({ venueId }) {
+  const [venueType, setVenueType] = useState(null)
+  useEffect(() => {
+    if (!venueId) return
+    supabase.from('app_settings').select('value').eq('venue_id', venueId).eq('key', 'venue_type').maybeSingle()
+      .then(({ data }) => { if (data?.value) setVenueType(data.value) })
+  }, [venueId])
+
+  const preset = VENUE_PRESETS.find(p => p.id === venueType)
+  if (!preset) return null
+
+  return (
+    <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-brand/5 border border-brand/15">
+      <span className="text-lg">{VENUE_TYPE_ICONS[preset.icon] ?? ''}</span>
+      <span className="text-sm font-medium text-brand">{preset.label}</span>
+      <span className="text-[11px] text-charcoal/35 ml-auto">Set during onboarding</span>
+    </div>
+  )
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SETTINGS PAGE
@@ -407,9 +429,12 @@ export default function SettingsPage() {
         title="Modules"
         subtitle={featuresConfig.mode === 'all' ? 'All modules enabled' : `Custom — ${featuresConfig.enabled?.length ?? 0} enabled`}
       >
-        <p className="text-xs text-charcoal/40 dark:text-white/40 mb-5">
+        <p className="text-xs text-charcoal/40 dark:text-white/40 mb-4">
           Choose which modules are available in this venue. Disabled modules are hidden from the navigation.
         </p>
+
+        {/* Venue type indicator */}
+        <VenueTypeIndicator venueId={venueId} />
 
         <div className="flex gap-2 mb-6">
           {['all', 'custom'].map(mode => (

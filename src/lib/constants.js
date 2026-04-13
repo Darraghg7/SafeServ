@@ -86,6 +86,80 @@ export const STAFF_COLOUR_PALETTE = [
   '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#14b8a6',
 ]
 
+// ── Granular staff permissions ──────────────────────────────────────────────
+
+export const STAFF_PERMISSIONS = [
+  // Compliance
+  { id: 'log_temps',        label: 'Log temperatures',       category: 'Compliance', description: 'Record fridge, cooking, hot holding and cooling temps' },
+  { id: 'view_temp_logs',   label: 'View temperature logs',  category: 'Compliance', description: 'See historical temperature records' },
+  { id: 'manage_cleaning',  label: 'Manage cleaning',        category: 'Compliance', description: 'Mark tasks complete and view cleaning schedule' },
+  { id: 'manage_allergens', label: 'Manage allergens',       category: 'Compliance', description: 'Add/edit food items and allergen info' },
+  { id: 'log_deliveries',   label: 'Log deliveries',         category: 'Compliance', description: 'Record delivery checks and temperatures' },
+
+  // Operations
+  { id: 'manage_tasks',     label: 'Manage tasks',           category: 'Operations', description: 'Create, assign and complete daily tasks' },
+  { id: 'manage_opening',   label: 'Opening/closing checks', category: 'Operations', description: 'Complete opening and closing checklists' },
+  { id: 'log_waste',        label: 'Log waste',              category: 'Operations', description: 'Record food waste entries' },
+
+  // Team (elevated)
+  { id: 'approve_swaps',    label: 'Approve shift swaps',    category: 'Team',       description: 'Approve or reject shift swap requests' },
+  { id: 'edit_rota',        label: 'Edit rota',              category: 'Team',       description: 'Create and modify the weekly rota' },
+  { id: 'view_timesheet',   label: 'View timesheets',        category: 'Team',       description: 'See hours worked and cost reports' },
+  { id: 'manage_training',  label: 'Manage training',        category: 'Team',       description: 'Add/update staff training records' },
+  { id: 'approve_timeoff',  label: 'Approve time off',       category: 'Team',       description: 'Approve or reject time-off requests' },
+]
+
+export const STAFF_PERMISSION_IDS = STAFF_PERMISSIONS.map(p => p.id)
+
+/** Default permissions granted to new staff members (basic daily duties). */
+export const DEFAULT_STAFF_PERMISSIONS = ['log_temps', 'manage_cleaning', 'manage_tasks', 'manage_opening']
+
+/** Preset bundles for quick assignment in the staff edit form. */
+export const PERMISSION_PRESETS = [
+  { id: 'daily',  label: 'Daily Staff',  permissions: ['log_temps', 'manage_cleaning', 'manage_tasks', 'manage_opening'] },
+  { id: 'senior', label: 'Senior Staff', permissions: ['log_temps', 'view_temp_logs', 'manage_cleaning', 'manage_allergens', 'log_deliveries', 'manage_tasks', 'manage_opening', 'log_waste', 'approve_swaps', 'view_timesheet'] },
+  { id: 'full',   label: 'Full Access',  permissions: STAFF_PERMISSIONS.map(p => p.id) },
+]
+
+// ── Venue type presets (onboarding) ─────────────────────────────────────────
+
+export const VENUE_PRESETS = [
+  {
+    id: 'cafe',
+    label: 'Cafe / Coffee Shop',
+    icon: 'cafe',
+    description: 'Fridge checks, cleaning, allergens, simple staffing',
+    features: ['fridge', 'cleaning', 'allergens', 'opening_closing', 'deliveries', 'corrective'],
+    suggestedRoles: ['Barista', 'Kitchen', 'FOH'],
+  },
+  {
+    id: 'pub',
+    label: 'Pub / Bar',
+    icon: 'pub',
+    description: 'Cellar temps, rota management, cleaning, deliveries',
+    features: ['fridge', 'cleaning', 'deliveries', 'opening_closing', 'rota', 'timesheet', 'corrective'],
+    suggestedRoles: ['Bar Staff', 'Kitchen', 'Floor'],
+  },
+  {
+    id: 'restaurant',
+    label: 'Restaurant',
+    icon: 'restaurant',
+    description: 'Full kitchen compliance, HACCP, allergens, team management',
+    features: ['fridge', 'cooking_temps', 'hot_holding', 'cooling_logs', 'cleaning', 'allergens', 'deliveries', 'opening_closing', 'probe', 'corrective', 'rota', 'timesheet', 'training'],
+    suggestedRoles: ['Head Chef', 'Sous Chef', 'CDP', 'KP', 'FOH', 'Host'],
+  },
+  {
+    id: 'hotel',
+    label: 'Hotel / Catering',
+    icon: 'hotel',
+    description: 'Everything — full compliance, large teams, multi-department',
+    features: null, // null = all features
+    suggestedRoles: ['Head Chef', 'Sous Chef', 'CDP', 'KP', 'FOH', 'Concierge', 'Housekeeping'],
+  },
+]
+
+export const SESSION_PERMISSIONS_KEY = 'safeserv_staff_permissions'
+
 // Legacy aliases — kept so old code doesn't break during migration
 export const STAFF_SESSION_KEY  = SESSION_TOKEN_KEY
 export const STAFF_ID_KEY       = SESSION_ID_KEY

@@ -438,7 +438,7 @@ function useSidebarSections(venueId, localPath) {
 
 /* ── Main AppShell ───────────────────────────────────────────────────────────── */
 export default function AppShell({ children }) {
-  const { session, isManager, signOut, hasMultiVenueAccess } = useSession()
+  const { session, isManager, signOut, hasMultiVenueAccess, hasPermission } = useSession()
   const { venueId, venueSlug, venueName } = useVenue()
   const { venues, selectVenue } = useAuth()
   const location     = useLocation()
@@ -589,12 +589,20 @@ export default function AppShell({ children }) {
               <SideItem to={vp('/tasks')}           icon={IcoTasks}      label="Tasks"         isActive={isUnder('/tasks')} />
               {!isPlanLocked('clock-in')    && <SideItem to={vp('/clock-in')}    icon={IcoClock} label="Clock In / Out" isActive={isUnder('/clock-in')} />}
               {!isPlanLocked('noticeboard') && <SideItem to={vp('/noticeboard')} icon={IcoBoard} label="Noticeboard"   isActive={isUnder('/noticeboard')} />}
-              {isEnabled('opening_closing') && <SideItem to={vp('/opening-closing')} icon={IcoChecks}     label="Checks"    isActive={isUnder('/opening-closing')} />}
-              {isEnabled('cleaning')        && <SideItem to={vp('/cleaning')}        icon={IcoCompliance} label="Cleaning"  isActive={isUnder('/cleaning')} />}
-              {isEnabled('fridge') && session?.showTempLogs && (
+              {isEnabled('opening_closing') && hasPermission('manage_opening') && <SideItem to={vp('/opening-closing')} icon={IcoChecks}     label="Checks"    isActive={isUnder('/opening-closing')} />}
+              {isEnabled('cleaning') && hasPermission('manage_cleaning') && <SideItem to={vp('/cleaning')}        icon={IcoCompliance} label="Cleaning"  isActive={isUnder('/cleaning')} />}
+              {isEnabled('fridge') && hasPermission('view_temp_logs') && (
                 <SideItem to={vp('/fridge')} icon={IcoCompliance} label="Temp Logs" isActive={isUnder('/fridge')} />
               )}
-              {isEnabled('allergens') && <SideItem to={vp('/allergens')} icon={IcoCompliance} label="Allergens" isActive={isUnder('/allergens')} />}
+              {isEnabled('allergens') && hasPermission('manage_allergens') && (
+                <SideItem to={vp('/allergens')} icon={IcoCompliance} label="Allergens" isActive={isUnder('/allergens')} />
+              )}
+              {isEnabled('deliveries') && hasPermission('log_deliveries') && (
+                <SideItem to={vp('/deliveries')} icon={IcoCompliance} label="Deliveries" isActive={isUnder('/deliveries')} />
+              )}
+              {isEnabled('waste') && hasPermission('log_waste') && (
+                <SideItem to={vp('/waste')} icon={IcoCompliance} label="Waste" isActive={isUnder('/waste')} />
+              )}
               {isEnabled('rota')     && <SideItem to={vp('/rota')}      icon={IcoRota}       label="Rota"      isActive={isUnder('/rota')} />}
               {isEnabled('time_off') && <SideItem to={vp('/time-off')}  icon={IcoTimeOff}    label="Time Off"  isActive={isUnder('/time-off')} />}
             </div>
