@@ -213,6 +213,7 @@ export default function StaffMembersSection() {
         p_email:         staffForm.email.trim() || null,
         p_hourly_rate:   parseFloat(staffForm.hourly_rate) || 0,
         p_skills:        staffForm.skills || [],
+        p_colour:        staffForm.colour || null,
       })
       error = e
     }
@@ -240,6 +241,7 @@ export default function StaffMembersSection() {
         const { error: extraErr } = await supabase.from('staff').update({
           is_under_18:  staffForm.is_under_18,
           working_days: staffForm.working_days,
+          colour:       staffForm.colour || null,
         }).eq('id', newRow[0].id)
         if (extraErr) { toast('Saved, but failed to update some fields: ' + extraErr.message, 'error') }
       }

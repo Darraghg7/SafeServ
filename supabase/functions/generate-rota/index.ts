@@ -130,6 +130,15 @@ serve(async (req) => {
       if (u.available === false) unavailSet.add(`${u.staff_id}:${u.date}`)
     }
 
+    // ── Build the week's dates ────────────────────────────────────────────
+    const weekDates: { date: string; dow: number; dayName: string }[] = []
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(weekStart, i)
+      if (!closedDates.has(date)) {
+        weekDates.push({ date, dow: i + 1, dayName: DAY_NAMES[i] })
+      }
+    }
+
     // Respect per-staff working_days (1=Mon…7=Sun; empty array = all days available)
     for (const s of (staffList ?? [])) {
       const wdays = (s as any).working_days as number[] | null
@@ -145,15 +154,6 @@ serve(async (req) => {
     const alreadyScheduled = new Set<string>()
     for (const s of (existingShifts ?? [])) {
       alreadyScheduled.add(`${s.staff_id}:${s.shift_date}`)
-    }
-
-    // ── Build the week's dates ────────────────────────────────────────────
-    const weekDates: { date: string; dow: number; dayName: string }[] = []
-    for (let i = 0; i < 7; i++) {
-      const date = addDays(weekStart, i)
-      if (!closedDates.has(date)) {
-        weekDates.push({ date, dow: i + 1, dayName: DAY_NAMES[i] })
-      }
     }
 
     // ── Expand requirements into individual slots ─────────────────────────

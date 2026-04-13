@@ -25,9 +25,23 @@ export default function DashboardPage() {
       .eq('venue_id', venueId)
       .eq('key', 'onboarding_complete')
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!data?.value) {
-          navigate(`/v/${venueSlug}/setup`, { replace: true })
+          // Check if this is an existing venue (has staff) — don't force
+          // existing venues through onboarding, just mark them complete
+          const { count } = await supabase
+            .from('staff')
+            .select('id', { count: 'exact', head: true })
+            .eq('venue_id', venueId)
+          if (count && count > 1) {
+            // Existing venue — auto-complete onboarding silently
+            await supabase.from('app_settings').upsert({
+              venue_id: venueId, key: 'onboarding_complete', value: 'true',
+            })
+            setChecked(true)
+          } else {
+            navigate(`/v/${venueSlug}/setup`, { replace: true })
+          }
         } else {
           setChecked(true)
         }
