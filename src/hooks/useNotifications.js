@@ -74,7 +74,7 @@ async function checkLateClockIns(items, today, vid) {
     if (!shift) continue
     const shiftStart = new Date(today + 'T' + shift.start_time)
     const clockInTime = parseISO(ci.occurred_at)
-    if ((clockInTime - shiftStart) / 60000 > 2) lateOnes.push(ci.staff?.name ?? 'Unknown')
+    if ((clockInTime - shiftStart) / 60000 > 5) lateOnes.push(ci.staff?.name ?? 'Unknown')
   }
   if (lateOnes.length > 0) items.push({ id: 'late-today', type: 'late_clock_in', message: `Late clock-in today: ${lateOnes.join(', ')}`, link: '/timesheet', severity: 'warning' })
 }
@@ -136,7 +136,7 @@ async function checkRepeatOffenders(items, vid, now = new Date()) {
     const ci = clockIns.find(c => c.staff_id === shift.staff_id && c.occurred_at.startsWith(shift.shift_date))
     if (!ci) continue
     const shiftStart = new Date(shift.shift_date + 'T' + shift.start_time)
-    if ((parseISO(ci.occurred_at) - shiftStart) / 60000 > 2) {
+    if ((parseISO(ci.occurred_at) - shiftStart) / 60000 > 5) {
       lateCounts[shift.staff_id] = (lateCounts[shift.staff_id] ?? 0) + 1
       staffNames[shift.staff_id] = shift.staff?.name ?? 'Unknown'
     }

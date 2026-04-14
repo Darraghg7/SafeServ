@@ -232,6 +232,7 @@ function WidgetPicker({ open, onClose, activeIds, onSave }) {
 function useTodaySummary(venueId) {
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [closedToday, setClosedToday] = useState(false)
 
   useEffect(() => {
     if (!venueId) return
@@ -243,6 +244,24 @@ function useTodaySummary(venueId) {
     let cancelled = false
     const fetchAll = async () => {
       setLoading(true)
+
+      // Check if venue is closed today
+      const { data: closureRows } = await supabase
+        .from('venue_closures')
+        .select('id, reason')
+        .eq('venue_id', venueId)
+        .lte('start_date', todayStr)
+        .gte('end_date', todayStr)
+        .limit(1)
+      if (cancelled) return
+      if (closureRows?.length) {
+        setClosedToday(closureRows[0].reason || true)
+        setSummary({ overdueClean: 0, onShiftToday: 0, checksToday: 0, uncheckedFridges: 0, pendingLeave: 0, criticalActions: 0 })
+        setLoading(false)
+        return
+      }
+      setClosedToday(false)
+
       const [cleaning, rota, opening, fridges, fridgeLogs, leaveReqs, critActions] = await Promise.all([
         supabase.from('cleaning_tasks').select('id, frequency').eq('venue_id', venueId).eq('is_active', true),
         supabase.from('shifts').select('id', { count: 'exact', head: true }).eq('venue_id', venueId).eq('shift_date', todayStr),
@@ -300,12 +319,12 @@ function useTodaySummary(venueId) {
     return () => { cancelled = true }
   }, [venueId])
 
-  return { summary, loading }
+  return { summary, loading, closedToday }
 }
 
 function TodaySummaryCard({ venueId }) {
   const { venueSlug } = useVenue()
-  const { summary, loading } = useTodaySummary(venueId)
+  const { summary, loading, closedToday } = useTodaySummary(venueId)
   const vp = (p) => `/v/${venueSlug}${p}`
 
   const actions = summary ? [
@@ -318,6 +337,39 @@ function TodaySummaryCard({ venueId }) {
 
   const urgencyDot = { warn: 'bg-warning', danger: 'bg-danger', info: 'bg-accent' }
   const urgencyText = { warn: 'text-warning', danger: 'text-danger', info: 'text-accent' }
+
+  if (!loading && closedToday) {
+    return (
+      <div className="bg-white rounded-xl overflow-hidden">
+        <div className="px-5 py-6 text-center">
+          <span className="text-4xl mb-3 block">&#9749;</span>
+          <p className="font-serif text-xl text-charcoal">Venue closed today</p>
+          <p className="text-sm text-charcoal/45 mt-1">
+            {typeof closedToday === 'string' ? closedToday : 'Enjoy the break!'}
+          </p>
+        </div>
+        {/* Still show leave requests and critical actions */}
+        {summary && (summary.pendingLeave > 0 || summary.criticalActions > 0) && (
+          <div className="border-t border-charcoal/6 divide-y divide-charcoal/6">
+            {summary.pendingLeave > 0 && (
+              <Link to={vp('/time-off')} className="flex items-center gap-3 px-5 py-3 hover:bg-charcoal/3 transition-colors group">
+                <span className="w-2 h-2 rounded-full shrink-0 bg-accent" />
+                <p className="text-sm flex-1 font-medium text-accent">{summary.pendingLeave} leave request{summary.pendingLeave > 1 ? 's' : ''} pending</p>
+                <span className="text-charcoal/20 group-hover:text-charcoal/40 transition-colors text-sm">&rarr;</span>
+              </Link>
+            )}
+            {summary.criticalActions > 0 && (
+              <Link to={vp('/corrective')} className="flex items-center gap-3 px-5 py-3 hover:bg-charcoal/3 transition-colors group">
+                <span className="w-2 h-2 rounded-full shrink-0 bg-danger" />
+                <p className="text-sm flex-1 font-medium text-danger">{summary.criticalActions} critical action{summary.criticalActions > 1 ? 's' : ''} open</p>
+                <span className="text-charcoal/20 group-hover:text-charcoal/40 transition-colors text-sm">&rarr;</span>
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-xl overflow-hidden">
@@ -413,9 +465,13 @@ function PushBanner({ staffId, venueId }) {
   )
 }
 
+const SETUP_DISMISS_KEY = 'safeserv_setup_dismissed'
+
 function GettingStartedCard({ venueId, venueSlug }) {
   const [checklist, setChecklist] = useState(null)
-  const [dismissed, setDismissed] = useState(false)
+  const [dismissed, setDismissed] = useState(() =>
+    localStorage.getItem(SETUP_DISMISS_KEY) === '1'
+  )
   const { isEnabled } = useVenueFeatures()
 
   useEffect(() => {
@@ -426,6 +482,16 @@ function GettingStartedCard({ venueId, venueSlug }) {
         catch { setChecklist({}) }
       })
   }, [venueId])
+
+  // Listen for reopen event from settings page
+  useEffect(() => {
+    const handler = () => {
+      localStorage.removeItem(SETUP_DISMISS_KEY)
+      setDismissed(false)
+    }
+    window.addEventListener('safeserv:reopen-setup', handler)
+    return () => window.removeEventListener('safeserv:reopen-setup', handler)
+  }, [])
 
   if (checklist === null || dismissed) return null
 
@@ -449,7 +515,7 @@ function GettingStartedCard({ venueId, venueSlug }) {
           <p className="text-sm font-semibold text-charcoal">Getting Started</p>
           <p className="text-[11px] text-charcoal/40 mt-0.5">{completed} of {items.length} complete</p>
         </div>
-        <button onClick={() => setDismissed(true)} className="text-charcoal/25 hover:text-charcoal/50 transition-colors text-lg">&times;</button>
+        <button onClick={() => { localStorage.setItem(SETUP_DISMISS_KEY, '1'); setDismissed(true) }} className="text-charcoal/25 hover:text-charcoal/50 transition-colors text-lg">&times;</button>
       </div>
       <div className="h-1 bg-charcoal/8 rounded-full mb-4 overflow-hidden">
         <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${(completed / items.length) * 100}%` }} />

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { format, parseISO } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useSession } from '../../contexts/SessionContext'
 import { useVenue } from '../../contexts/VenueContext'
@@ -20,22 +21,39 @@ import VenuesSection from './VenuesSection'
 
 const VENUE_TYPE_ICONS = { cafe: '\u2615', pub: '\uD83C\uDF7A', restaurant: '\uD83C\uDF7D\uFE0F', hotel: '\uD83C\uDFE8' }
 
-function VenueTypeIndicator({ venueId }) {
+function VenueTypeIndicator({ venueId, venueSlug }) {
   const [venueType, setVenueType] = useState(null)
+  const navigate = useNavigate()
   useEffect(() => {
     if (!venueId) return
     supabase.from('app_settings').select('value').eq('venue_id', venueId).eq('key', 'venue_type').maybeSingle()
       .then(({ data }) => { if (data?.value) setVenueType(data.value) })
   }, [venueId])
 
+  const reopenSetup = useCallback(() => {
+    localStorage.removeItem('safeserv_setup_dismissed')
+    window.dispatchEvent(new Event('safeserv:reopen-setup'))
+    navigate(`/v/${venueSlug}/setup`)
+  }, [venueSlug, navigate])
+
   const preset = VENUE_PRESETS.find(p => p.id === venueType)
-  if (!preset) return null
 
   return (
     <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-brand/5 border border-brand/15">
-      <span className="text-lg">{VENUE_TYPE_ICONS[preset.icon] ?? ''}</span>
-      <span className="text-sm font-medium text-brand">{preset.label}</span>
-      <span className="text-[11px] text-charcoal/35 ml-auto">Set during onboarding</span>
+      {preset ? (
+        <>
+          <span className="text-lg">{VENUE_TYPE_ICONS[preset.icon] ?? ''}</span>
+          <span className="text-sm font-medium text-brand">{preset.label}</span>
+        </>
+      ) : (
+        <span className="text-sm text-charcoal/50">No venue type set</span>
+      )}
+      <button
+        onClick={reopenSetup}
+        className="text-[11px] text-brand/60 hover:text-brand transition-colors ml-auto underline underline-offset-2"
+      >
+        Re-run setup wizard
+      </button>
     </div>
   )
 }
@@ -46,7 +64,7 @@ function VenueTypeIndicator({ venueId }) {
 export default function SettingsPage() {
   const toast = useToast()
   const { session } = useSession()
-  const { venueId } = useVenue()
+  const { venueId, venueSlug } = useVenue()
   const { settings, loading: sLoading, reload: reloadSettings } = useVenueSettings()
   const { closures, reload: reloadClosures } = useVenueClosures()
   const { closedDays, breakDurationMins, cleanupMinutes, fridgeCheckTime, saveClosedDays, saveBreakDuration, saveCleanupMinutes, saveFridgeCheckTime } = useAppSettings()
@@ -434,7 +452,7 @@ export default function SettingsPage() {
         </p>
 
         {/* Venue type indicator */}
-        <VenueTypeIndicator venueId={venueId} />
+        <VenueTypeIndicator venueId={venueId} venueSlug={venueSlug} />
 
         <div className="flex gap-2 mb-6">
           {['all', 'custom'].map(mode => (

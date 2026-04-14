@@ -98,7 +98,7 @@ export default function ClockPanel({ staffId, hasShift = true }) {
           if (!shift) return
           const shiftStart = new Date(today + 'T' + shift.start_time)
           const minsLate = Math.round((now - shiftStart) / 60000)
-          if (minsLate > 2) {
+          if (minsLate > 5) {
             supabase.functions.invoke('send-push', {
               body: {
                 venueId,

@@ -115,12 +115,33 @@ function QuickActions({ venueSlug, hasPermission, isEnabled, hasShift }) {
 function TodaySummary({ staffId, venueId, venueSlug, hasPermission, isEnabled }) {
   const [tasks, setTasks] = useState({ pending: 0, cleaning: 0, fridges: 0 })
   const [loaded, setLoaded] = useState(false)
+  const [closedToday, setClosedToday] = useState(false)
 
   useEffect(() => {
     if (!staffId || !venueId) return
     let cancelled = false
     const today = format(new Date(), 'yyyy-MM-dd')
 
+    // Check if venue is closed today
+    supabase
+      .from('venue_closures')
+      .select('id, reason')
+      .eq('venue_id', venueId)
+      .lte('start_date', today)
+      .gte('end_date', today)
+      .limit(1)
+      .then(({ data }) => {
+        if (cancelled) return
+        if (data?.length) {
+          setClosedToday(data[0].reason || true)
+          setLoaded(true)
+          return
+        }
+        setClosedToday(false)
+        loadTasks()
+      })
+
+    function loadTasks() {
     const promises = []
 
     // Pending tasks assigned to this staff
@@ -180,10 +201,23 @@ function TodaySummary({ staffId, venueId, venueSlug, hasPermission, isEnabled })
       })
       setLoaded(true)
     })
+    } // end loadTasks
     return () => { cancelled = true }
   }, [staffId, venueId, isEnabled, hasPermission])
 
   if (!loaded) return null
+
+  if (closedToday) {
+    return (
+      <div className="bg-brand/5 border border-brand/15 rounded-xl px-5 py-5 text-center">
+        <span className="text-3xl block mb-2">&#9749;</span>
+        <p className="font-serif text-lg text-charcoal">Venue closed today</p>
+        <p className="text-sm text-charcoal/45 mt-1">
+          {typeof closedToday === 'string' ? closedToday : 'Enjoy the break!'}
+        </p>
+      </div>
+    )
+  }
 
   const items = [
     tasks.cleaning > 0 && { label: `${tasks.cleaning} cleaning task${tasks.cleaning !== 1 ? 's' : ''} due`, link: `/v/${venueSlug}/cleaning`, color: 'text-amber-600' },
