@@ -19,6 +19,7 @@ export default function RotaBuilderModal({
   onSave,
   customRoles = [],
   closedDays = [],
+  breakDurationMins = 30,
 }) {
   const [mode, setMode] = useState('fill_gaps')
   const [minStaff, setMinStaff] = useState(2)
@@ -52,6 +53,7 @@ export default function RotaBuilderModal({
       unavailability,
       existingShifts: shifts,
       weekStart: format(weekStart, 'yyyy-MM-dd'),
+      breakDurationMins,
       preferences: {
         mode,
         minStaffPerDay: minStaff,
@@ -235,7 +237,7 @@ export default function RotaBuilderModal({
                 </div>
                 <div>
                   <p className="font-serif text-2xl text-charcoal">{result.stats.totalHours.toFixed(0)}h</p>
-                  <p className="text-[11px] text-charcoal/40">Total Hours</p>
+                  <p className="text-[11px] text-charcoal/40">Paid Hours</p>
                 </div>
                 <div>
                   <p className="font-serif text-2xl text-charcoal">£{result.stats.estimatedCost.toFixed(0)}</p>

@@ -241,6 +241,12 @@ function DesktopWeekTable({ days, shifts, shiftIndex, staff, onCellClick, onTogg
             const isUnder18   = s.is_under_18 ?? false
             const totalHrs    = staffShifts.reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isUnder18, breakDurationMins), 0)
             const rawHrs      = staffShifts.reduce((acc, sh) => acc + shiftDurationHours(sh.start_time, sh.end_time), 0)
+            // Count how many shifts qualify for a break
+            const breakCount  = staffShifts.filter(sh => {
+              const raw = shiftDurationHours(sh.start_time, sh.end_time)
+              return isUnder18 ? raw > 4.5 : raw > 6
+            }).length
+            const totalBreakMins = breakCount * (isUnder18 ? 30 : breakDurationMins)
             const wageCost    = totalHrs * (s.hourly_rate ?? 0)
             const isOwnStaff  = !isManager && currentStaffId === s.id
 
@@ -394,8 +400,12 @@ function DesktopWeekTable({ days, shifts, shiftIndex, staff, onCellClick, onTogg
                       <div>
                         <p className="font-mono text-sm font-semibold text-charcoal">{fmtGBP(wageCost)}</p>
                         <p className="text-[11px] text-charcoal/35">{totalHrs.toFixed(1)}h paid</p>
-                        {rawHrs !== totalHrs && (
-                          <p className="text-[9px] text-charcoal/25">{isUnder18 ? '30m' : `${breakDurationMins}m`} break</p>
+                        {breakCount > 0 && (
+                          <p className="text-[9px] text-charcoal/25">
+                            {breakCount > 1
+                              ? `${breakCount} × ${isUnder18 ? '30' : breakDurationMins}m breaks (${totalBreakMins}m)`
+                              : `${totalBreakMins}m break`}
+                          </p>
                         )}
                       </div>
                     ) : (

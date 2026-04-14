@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { shiftDurationHours } from '../hooks/useShifts'
+import { shiftDurationHours, paidShiftHours } from '../hooks/useShifts'
 
 /**
  * Constraint-based rota builder — pure function, no React, no API calls.
@@ -22,7 +22,7 @@ import { shiftDurationHours } from '../hooks/useShifts'
  * @returns {{ generatedShifts, warnings, stats }}
  */
 export function buildRota(config) {
-  const { staff, days, unavailability, existingShifts, weekStart, preferences } = config
+  const { staff, days, unavailability, existingShifts, weekStart, preferences, breakDurationMins = 30 } = config
   const {
     mode = 'fill_gaps',
     minStaffPerDay = 2,
@@ -233,26 +233,33 @@ export function buildRota(config) {
     }
   }
 
-  // ── Stats ─────────────────────────────────────────────────────────────
-  const totalHours = generated.reduce((sum, sh) => sum + shiftDurationHours(sh.start_time, sh.end_time), 0)
+  // ── Stats (use paid hours — deduct breaks per eligible shift) ──────────
+  const totalHours = generated.reduce((sum, sh) => {
+    const member = staff.find(s => s.id === sh.staff_id)
+    return sum + paidShiftHours(sh.start_time, sh.end_time, member?.is_under_18 ?? false, breakDurationMins)
+  }, 0)
   const estimatedCost = generated.reduce((sum, sh) => {
     const member = staff.find(s => s.id === sh.staff_id)
-    return sum + shiftDurationHours(sh.start_time, sh.end_time) * (member?.hourly_rate ?? 0)
+    const paid = paidShiftHours(sh.start_time, sh.end_time, member?.is_under_18 ?? false, breakDurationMins)
+    return sum + paid * (member?.hourly_rate ?? 0)
   }, 0)
 
   const staffHoursBreakdown = staff
-    .map(s => ({
-      staffId: s.id,
-      name: s.name,
-      existingHours: mode === 'fill_gaps'
-        ? existingShifts
-            .filter(sh => sh.staff_id === s.id)
-            .reduce((acc, sh) => acc + shiftDurationHours(sh.start_time, sh.end_time), 0)
-        : 0,
-      newHours: generated
-        .filter(sh => sh.staff_id === s.id)
-        .reduce((acc, sh) => acc + shiftDurationHours(sh.start_time, sh.end_time), 0),
-    }))
+    .map(s => {
+      const isU18 = s.is_under_18 ?? false
+      return {
+        staffId: s.id,
+        name: s.name,
+        existingHours: mode === 'fill_gaps'
+          ? existingShifts
+              .filter(sh => sh.staff_id === s.id)
+              .reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isU18, breakDurationMins), 0)
+          : 0,
+        newHours: generated
+          .filter(sh => sh.staff_id === s.id)
+          .reduce((acc, sh) => acc + paidShiftHours(sh.start_time, sh.end_time, isU18, breakDurationMins), 0),
+      }
+    })
     .filter(s => s.existingHours > 0 || s.newHours > 0)
 
   return {

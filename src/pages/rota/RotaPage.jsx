@@ -938,6 +938,7 @@ export default function RotaPage() {
           onSave={batchSaveShifts}
           customRoles={customRoles}
           closedDays={closedDays}
+          breakDurationMins={breakDurationMins}
         />
       )}
 
