@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { format } from 'date-fns'
+import { format, addDays, startOfWeek, isToday, isBefore, startOfDay } from 'date-fns'
 import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import { useVenueBranding } from '../../hooks/useVenueBranding'
@@ -16,6 +16,101 @@ import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 function SectionLabel({ children }) {
   return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-3">{children}</p>
+}
+
+/* ── My Upcoming Shifts ─────────────────────────────────────────────────── */
+function MyUpcomingShifts({ shifts, hourlyRate, venueSlug }) {
+  if (!shifts?.length) {
+    return (
+      <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+        <SectionLabel>My Upcoming Shifts</SectionLabel>
+        <p className="text-sm text-charcoal/40 italic">No shifts scheduled this week</p>
+        <Link to={`/v/${venueSlug}/rota`} className="text-xs text-brand/60 hover:text-brand transition-colors mt-2 inline-block">
+          View full rota &rarr;
+        </Link>
+      </div>
+    )
+  }
+
+  // Calculate totals
+  let totalMins = 0
+  for (const s of shifts) {
+    const [sh, sm] = s.start_time.split(':').map(Number)
+    const [eh, em] = s.end_time.split(':').map(Number)
+    let mins = (eh * 60 + em) - (sh * 60 + sm)
+    if (mins < 0) mins += 24 * 60 // overnight shift
+    totalMins += mins
+  }
+  const totalHours = totalMins / 60
+  const estimatedPay = hourlyRate > 0 ? totalHours * hourlyRate : null
+
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  return (
+    <div className="bg-white rounded-xl border border-charcoal/10 p-5">
+      <SectionLabel>My Upcoming Shifts</SectionLabel>
+
+      <div className="flex flex-col gap-2 mb-4">
+        {shifts.map(s => {
+          const date = new Date(s.shift_date + 'T00:00:00')
+          const dayName = DAY_NAMES[date.getDay()]
+          const dateStr = format(date, 'd MMM')
+          const today = isToday(date)
+          const past = isBefore(date, startOfDay(new Date())) && !today
+
+          return (
+            <div
+              key={s.id}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
+                today
+                  ? 'border-brand/25 bg-brand/5'
+                  : past
+                    ? 'border-charcoal/6 bg-charcoal/3 opacity-50'
+                    : 'border-charcoal/8 hover:bg-charcoal/3'
+              }`}
+            >
+              <div className="w-12 text-center shrink-0">
+                <p className={`text-[11px] uppercase tracking-wider font-semibold ${today ? 'text-brand' : 'text-charcoal/40'}`}>{dayName}</p>
+                <p className={`text-sm font-medium ${today ? 'text-brand' : 'text-charcoal/70'}`}>{dateStr}</p>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-charcoal">
+                  {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
+                </p>
+                {s.role_label && (
+                  <p className="text-[11px] text-charcoal/40 mt-0.5">{s.role_label}</p>
+                )}
+              </div>
+              {today && (
+                <span className="text-[10px] tracking-widest uppercase font-semibold text-brand bg-brand/10 px-2 py-0.5 rounded-full shrink-0">Today</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Summary row */}
+      <div className="border-t border-charcoal/8 pt-3 flex items-center gap-4 flex-wrap">
+        <div>
+          <p className="text-[11px] text-charcoal/40 uppercase tracking-wider">Shifts</p>
+          <p className="text-sm font-semibold text-charcoal">{shifts.length}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-charcoal/40 uppercase tracking-wider">Hours</p>
+          <p className="text-sm font-semibold text-charcoal">{totalHours.toFixed(1)}h</p>
+        </div>
+        {estimatedPay !== null && (
+          <div>
+            <p className="text-[11px] text-charcoal/40 uppercase tracking-wider">Est. Earnings</p>
+            <p className="text-sm font-semibold text-success">&pound;{estimatedPay.toFixed(2)}</p>
+          </div>
+        )}
+        <Link to={`/v/${venueSlug}/rota`} className="text-xs text-brand/60 hover:text-brand transition-colors ml-auto">
+          Full rota &rarr;
+        </Link>
+      </div>
+    </div>
+  )
 }
 
 function HoursThisWeekCard({ staffId, weekMins }) {
@@ -252,6 +347,8 @@ export default function StaffDashboardPage() {
   const { isEnabled } = useVenueFeatures()
   const { venueName, logoUrl } = useVenueBranding(venueId)
   const [todayShift, setTodayShift] = useState(null)
+  const [weekShifts, setWeekShifts] = useState([])
+  const [hourlyRate, setHourlyRate] = useState(0)
   const [weekMins, setWeekMins]     = useState(0)
   const [loading, setLoading]       = useState(true)
 
@@ -262,20 +359,27 @@ export default function StaffDashboardPage() {
     let cancelled = false
     const load = async () => {
       setLoading(true)
-      const weekStart = format(
-        new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + 1)),
-        'yyyy-MM-dd'
-      )
+      const monday = startOfWeek(new Date(), { weekStartsOn: 1 })
+      const weekStart = format(monday, 'yyyy-MM-dd')
+      const weekEnd = format(addDays(monday, 6), 'yyyy-MM-dd')
       try {
-        const [shiftRes, weekRes] = await Promise.all([
+        const [shiftRes, allShiftsRes, weekRes, staffRes] = await Promise.all([
           supabase.from('shifts').select('id, start_time, end_time, role_label, shift_date')
             .eq('venue_id', venueId).eq('staff_id', session.staffId).eq('shift_date', today)
             .order('start_time').limit(1),
+          supabase.from('shifts').select('id, start_time, end_time, role_label, shift_date')
+            .eq('venue_id', venueId).eq('staff_id', session.staffId)
+            .gte('shift_date', weekStart).lte('shift_date', weekEnd)
+            .order('shift_date').order('start_time'),
           supabase.from('clock_events').select('id, event_type, occurred_at')
             .eq('venue_id', venueId).eq('staff_id', session.staffId).gte('occurred_at', weekStart),
+          supabase.from('staff').select('hourly_rate')
+            .eq('id', session.staffId).single(),
         ])
         if (cancelled) return
         setTodayShift(shiftRes.data?.[0] ?? null)
+        setWeekShifts(allShiftsRes.data ?? [])
+        setHourlyRate(staffRes.data?.hourly_rate ?? 0)
         const events = [...(weekRes.data ?? [])].sort(
           (a, b) => new Date(a.occurred_at) - new Date(b.occurred_at)
         )
@@ -332,10 +436,10 @@ export default function StaffDashboardPage() {
       {/* Today summary */}
       <TodaySummary staffId={session.staffId} venueId={venueId} venueSlug={venueSlug} hasPermission={hasPermission} isEnabled={isEnabled} />
 
-      {/* Desktop: two columns — shift/clock left, recent shifts right */}
+      {/* Desktop: two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-        {/* Left: today's shift + clock + hours */}
+        {/* Left: today's shift + clock + upcoming shifts */}
         <div className="flex flex-col gap-6">
           <div className="bg-white rounded-xl border border-charcoal/10 p-5 flex flex-col gap-4">
             <SectionLabel>Today's Shift</SectionLabel>
@@ -350,14 +454,16 @@ export default function StaffDashboardPage() {
             <div className="border-t border-charcoal/8 pt-4">
               <ClockPanel staffId={session.staffId} hasShift={!!todayShift} />
             </div>
-            <Link to={`/v/${venueSlug}/rota`} className="text-center text-xs text-charcoal/40 hover:text-charcoal transition-colors">View Rota →</Link>
           </div>
 
-          <HoursThisWeekCard staffId={session.staffId} weekMins={weekMins} />
+          <MyUpcomingShifts shifts={weekShifts} hourlyRate={hourlyRate} venueSlug={venueSlug} />
         </div>
 
-        {/* Right: recent shifts with editing */}
-        <RecentShifts staffId={session.staffId} isManagerEdit={false} />
+        {/* Right: hours + recent shifts */}
+        <div className="flex flex-col gap-6">
+          <HoursThisWeekCard staffId={session.staffId} weekMins={weekMins} />
+          <RecentShifts staffId={session.staffId} isManagerEdit={false} />
+        </div>
 
       </div>
     </div>
