@@ -90,7 +90,7 @@ export async function exportCleaningRecords(venueId, days = 90) {
   const since = subDays(new Date(), days).toISOString()
   const { data } = await supabase
     .from('cleaning_completions')
-    .select('completed_at, notes, task:cleaning_task_id(title, frequency), completer:completed_by(name)')
+    .select('completed_at, notes, completed_by_name, task:cleaning_task_id(title, frequency)')
     .eq('venue_id', venueId)
     .gte('completed_at', since)
     .order('completed_at', { ascending: false })
@@ -100,7 +100,7 @@ export async function exportCleaningRecords(venueId, days = 90) {
     format(new Date(r.completed_at), 'HH:mm'),
     r.task?.title ?? '—',
     r.task?.frequency ?? '—',
-    r.completer?.name ?? '—',
+    r.completed_by_name ?? '—',
     r.notes ?? '',
   ])
 
@@ -333,7 +333,7 @@ export async function exportEHOReport(venueId, venueName = '', days = 90) {
         .select('log_type, pest_type, severity, status, logged_at, logged_by_name')
         .eq('venue_id', venueId).gte('logged_at', since).order('logged_at', { ascending: false }),
       supabase.from('cleaning_completions')
-        .select('completed_at, task:cleaning_task_id(title), completer:completed_by(name)')
+        .select('completed_at, completed_by_name, task:cleaning_task_id(title)')
         .eq('venue_id', venueId).gte('completed_at', since).order('completed_at', { ascending: false }),
     ])
 
@@ -647,7 +647,7 @@ export async function exportEHOReport(venueId, venueName = '', days = 90) {
       body: clean.slice(0, 60).map(r => [
         format(new Date(r.completed_at), 'dd/MM/yy HH:mm'),
         r.task?.title ?? '—',
-        r.completer?.name ?? '—',
+        r.completed_by_name ?? '—',
       ]),
       headStyles: { fillColor: [40, 40, 40], textColor: 255, fontSize: 8 },
       bodyStyles: { fontSize: 7 },
