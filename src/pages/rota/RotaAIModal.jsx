@@ -15,7 +15,7 @@ const STAGES = { CONFIRM: 'confirm', LOADING: 'loading', PREVIEW: 'preview' }
 
 export default function RotaAIModal({ open, onClose, weekStart, onSave }) {
   const toast                                     = useToast()
-  const session                                   = useSession()
+  const { session }                               = useSession()
   const { venueId }                               = useVenue()
   const { requirements, byDay, totalSlots, loading: reqLoading } = useRotaRequirements()
 
