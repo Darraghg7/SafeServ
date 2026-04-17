@@ -33,7 +33,17 @@ export default function RotaAIModal({ open, onClose, weekStart, onSave }) {
       const { data, error } = await supabase.functions.invoke('generate-rota', {
         body: { session_token: session?.token, venueId, weekStart: format(weekStart, 'yyyy-MM-dd') },
       })
-      if (error) throw new Error(error.message)
+      if (error) {
+        // Supabase swallows the response body by default — extract it ourselves
+        let detail = error.message
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json()
+            if (body?.error) detail = body.error
+          }
+        } catch { /* keep generic message */ }
+        throw new Error(detail)
+      }
       if (data?.error) throw new Error(data.error)
       setResult(data)
       setStage(STAGES.PREVIEW)
