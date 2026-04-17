@@ -35,14 +35,24 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
 
     // ── Auth: validate PIN-based session token ─────────────────────────────
-    const { data: staffRow } = await admin
+    const { data: sessionRow, error: sessionErr } = await admin
       .from('staff_sessions')
-      .select('staff:staff_id(role, is_active)')
+      .select('staff_id, expires_at')
       .eq('token', session_token)
-      .gt('expires_at', new Date().toISOString())
-      .single()
-    const role = (staffRow?.staff as any)?.role
-    if (!role || !['manager', 'owner'].includes(role)) return err('Unauthorised', 401)
+      .maybeSingle()
+    if (sessionErr) return err(`Session lookup failed: ${sessionErr.message}`, 401)
+    if (!sessionRow) return err('Session not found — please sign out and back in', 401)
+    if (new Date(sessionRow.expires_at) < new Date()) return err('Session expired — please sign out and back in', 401)
+
+    const { data: staffInfo } = await admin
+      .from('staff')
+      .select('role, is_active')
+      .eq('id', sessionRow.staff_id)
+      .maybeSingle()
+    if (!staffInfo?.is_active) return err('Staff account inactive', 401)
+    if (!['manager', 'owner'].includes(staffInfo.role)) {
+      return err(`AI rota builder requires manager access (you are: ${staffInfo.role})`, 403)
+    }
 
     // ── Fetch all data in parallel ─────────────────────────────────────────
     const fourWeeksAgo = addDays(weekStart, -28)
