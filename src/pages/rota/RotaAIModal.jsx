@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useVenue } from '../../contexts/VenueContext'
 import { useRotaRequirements, DAY_NAMES } from '../../hooks/useRotaRequirements'
 import { useToast } from '../../components/ui/Toast'
+import { useSession } from '../../contexts/SessionContext'
 
 function SectionLabel({ children }) {
   return <p className="text-[11px] tracking-widest uppercase text-charcoal/40 mb-2">{children}</p>
@@ -14,6 +15,7 @@ const STAGES = { CONFIRM: 'confirm', LOADING: 'loading', PREVIEW: 'preview' }
 
 export default function RotaAIModal({ open, onClose, weekStart, onSave }) {
   const toast                                     = useToast()
+  const session                                   = useSession()
   const { venueId }                               = useVenue()
   const { requirements, byDay, totalSlots, loading: reqLoading } = useRotaRequirements()
 
@@ -29,7 +31,7 @@ export default function RotaAIModal({ open, onClose, weekStart, onSave }) {
     setStage(STAGES.LOADING)
     try {
       const { data, error } = await supabase.functions.invoke('generate-rota', {
-        body: { venueId, weekStart: format(weekStart, 'yyyy-MM-dd') },
+        body: { session_token: session?.token, venueId, weekStart: format(weekStart, 'yyyy-MM-dd') },
       })
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)

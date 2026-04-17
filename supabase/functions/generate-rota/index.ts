@@ -25,21 +25,24 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // ── Auth check ─────────────────────────────────────────────────────────
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return err('Unauthorised', 401)
-
-    const anonClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } },
-    })
-    const { data: { user }, error: authErr } = await anonClient.auth.getUser()
-    if (authErr || !user) return err('Unauthorised', 401)
-
     // ── Parse request ──────────────────────────────────────────────────────
-    const { venueId, weekStart } = await req.json() as { venueId: string; weekStart: string }
+    const { session_token, venueId, weekStart } = await req.json() as {
+      session_token: string; venueId: string; weekStart: string
+    }
+    if (!session_token) return err('Unauthorised', 401)
     if (!venueId || !weekStart) return err('Missing venueId or weekStart', 400)
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
+
+    // ── Auth: validate PIN-based session token ─────────────────────────────
+    const { data: staffRow } = await admin
+      .from('staff_sessions')
+      .select('staff:staff_id(role, is_active)')
+      .eq('token', session_token)
+      .gt('expires_at', new Date().toISOString())
+      .single()
+    const role = (staffRow?.staff as any)?.role
+    if (!role || !['manager', 'owner'].includes(role)) return err('Unauthorised', 401)
 
     // ── Fetch all data in parallel ─────────────────────────────────────────
     const fourWeeksAgo = addDays(weekStart, -28)
