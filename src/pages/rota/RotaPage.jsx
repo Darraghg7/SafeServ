@@ -253,11 +253,6 @@ export default function RotaPage() {
       }).catch(() => {})
     }
 
-    // 3. Email best-effort — doesn't block or fail the publish
-    supabase.functions.invoke('send-rota-email', {
-      body: { weekStart: weekStartStr },
-    }).catch(() => {})
-
     setEmailing(false)
     toast('Rota published ✓')
   }
