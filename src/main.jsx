@@ -34,11 +34,6 @@ async function initNative() {
       if (canGoBack) window.history.back()
       else CapApp.exitApp()
     })
-  } else {
-    // Browser / PWA — register service worker as normal
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {})
-    }
   }
 }
 

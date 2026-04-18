@@ -1,5 +1,5 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
-import { registerRoute } from 'workbox-routing'
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
+import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 
@@ -20,6 +20,12 @@ self.addEventListener('message', event => {
 
 // Workbox precaching — manifest injected by vite-plugin-pwa
 precacheAndRoute(self.__WB_MANIFEST)
+
+// SPA navigation fallback: serve cached index.html for all page navigations.
+// Without this, navigating to /login, /dashboard, /v/... etc. isn't in the
+// precache so the SW falls through to network — if that fails the PWA shows
+// a blank screen. This makes the app work correctly offline too.
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')))
 
 // Remove outdated caches from previous builds to free storage
 cleanupOutdatedCaches()
