@@ -7,6 +7,8 @@ function useUpdateReady() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
+    let interval = null
+
     navigator.serviceWorker.getRegistration().then(reg => {
       if (!reg) return
 
@@ -25,8 +27,7 @@ function useUpdateReady() {
 
       // Proactively check for updates on page load and every 30 minutes
       reg.update().catch(() => {})
-      const interval = setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000)
-      return () => clearInterval(interval)
+      interval = setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000)
     })
 
     // Also check for updates when the app comes back to the foreground
@@ -39,11 +40,14 @@ function useUpdateReady() {
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
 
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload()
-    })
+    const onControllerChange = () => window.location.reload()
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
 
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+    }
   }, [])
 
   const applyUpdate = () => {

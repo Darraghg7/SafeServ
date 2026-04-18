@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react'
 
 const ThemeContext = createContext({ dark: false, toggle: () => {} })
 
@@ -15,7 +15,7 @@ export function ThemeProvider({ children }) {
   })
 
   // Apply / remove the 'dark' class on <html> and persist user's choice
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement
     if (dark) {
       root.classList.add('dark')
