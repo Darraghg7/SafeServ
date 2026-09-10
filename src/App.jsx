@@ -28,10 +28,6 @@ const MarketingPage = lazy(() => import('./pages/marketing/MarketingPage'))
 
 // Privacy policy
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
-// Terms of service
-const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
-// Cookie policy
-const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'))
 
 // Signup flow + auth callbacks
 const SignupFlowPage    = lazy(() => import('./pages/signup/SignupFlowPage'))
@@ -535,12 +531,6 @@ export default function App() {
 
           {/* Public: privacy policy */}
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
-
-          {/* Public: terms of service */}
-          <Route path="/terms" element={<TermsOfServicePage />} />
-
-          {/* Public: cookie policy */}
-          <Route path="/cookies" element={<CookiePolicyPage />} />
 
           {/* Sign up */}
           <Route path="/signup" element={<SignupFlowPage />} />
