@@ -31,6 +31,7 @@ import {
   SESSION_VENUE_SLUG_KEY,
   SESSION_LINKED_VENUES,
   SESSION_PERMISSIONS_KEY,
+  SESSION_IS_RESTRICTED_KEY,
 } from '../lib/constants'
 import { hashPin, pinHashKey } from '../lib/offlinePin'
 
@@ -60,6 +61,7 @@ const LS_KEYS = [
   SESSION_VENUE_SLUG_KEY,
   SESSION_LINKED_VENUES,
   SESSION_PERMISSIONS_KEY,
+  SESSION_IS_RESTRICTED_KEY,
 ]
 
 const clearStorage = () => LS_KEYS.forEach(k => localStorage.removeItem(k))
@@ -113,6 +115,7 @@ function sessionFromStorage(token, verified = false) {
     showTempLogs:  localStorage.getItem(SESSION_SHOW_TEMP_LOGS) === 'true',
     showAllergens: localStorage.getItem(SESSION_SHOW_ALLERGENS) === 'true',
     permissions,
+    isRestricted:  localStorage.getItem(SESSION_IS_RESTRICTED_KEY) === 'true',
     venueId:       localStorage.getItem(SESSION_VENUE_ID_KEY) ?? '',
     venueSlug:     localStorage.getItem(SESSION_VENUE_SLUG_KEY) ?? '',
     verified,
@@ -160,6 +163,27 @@ async function fetchLivePermissions(staffId, venueId, staffRole) {
   return data.map(r => r.permission)
 }
 
+/**
+ * Re-read a staff member's account-restriction flag from the server, for the
+ * same reason fetchLivePermissions exists: a manager can restrict an account
+ * while that device stays logged in, and the change needs to reach it without
+ * a full re-login. Returns null when the answer can't be trusted (not staff,
+ * no staffId/venueId) — callers keep the cached value on null.
+ */
+async function fetchLiveRestriction(staffId, venueId, staffRole) {
+  if (staffRole !== 'staff' || !staffId || !venueId) return null
+
+  const { data, error } = await supabase
+    .from('staff')
+    .select('is_restricted')
+    .eq('id', staffId)
+    .eq('venue_id', venueId)
+    .single()
+
+  if (error || !data) return null
+  return !!data.is_restricted
+}
+
 const samePermissions = (a = [], b = []) =>
   a.length === b.length && [...a].sort().join(' ') === [...b].sort().join(' ')
 
@@ -175,6 +199,7 @@ const DEV_SESSION = DEV_PREVIEW ? {
   showTempLogs: true,
   showAllergens: true,
   permissions: [],
+  isRestricted: false,
   venueId: null,
   venueSlug: import.meta.env.VITE_DEV_VENUE ?? '',
   verified: true,
@@ -193,20 +218,29 @@ export function SessionProvider({ children }) {
   // Let the Supabase client renew an expiring/rejected venue JWT on its own.
   useEffect(() => { registerJwtRefresher(issueVenueJwt) }, [])
 
-  // ── Pick up permission changes made while this device stayed logged in ───
+  // ── Pick up permission/restriction changes made while this device stayed logged in ───
   const refreshPermissions = useCallback(async (sess) => {
     if (!sess) return
-    const fresh = await fetchLivePermissions(sess.staffId, sess.venueId, sess.staffRole)
-    if (!fresh || samePermissions(sess.permissions, fresh)) return
+    const [fresh, freshRestricted] = await Promise.all([
+      fetchLivePermissions(sess.staffId, sess.venueId, sess.staffRole),
+      fetchLiveRestriction(sess.staffId, sess.venueId, sess.staffRole),
+    ])
+    const permsChanged      = fresh !== null && !samePermissions(sess.permissions, fresh)
+    const restrictedChanged = freshRestricted !== null && freshRestricted !== sess.isRestricted
+    if (!permsChanged && !restrictedChanged) return
 
-    localStorage.setItem(SESSION_PERMISSIONS_KEY, JSON.stringify(fresh))
+    const nextPermissions = permsChanged ? fresh : sess.permissions
+    const nextRestricted  = restrictedChanged ? freshRestricted : sess.isRestricted
+
+    localStorage.setItem(SESSION_PERMISSIONS_KEY, JSON.stringify(nextPermissions))
+    localStorage.setItem(SESSION_IS_RESTRICTED_KEY, String(nextRestricted))
     try {
-      localStorage.setItem(sessDataKey(sess.staffId), JSON.stringify({ ...sess, permissions: fresh }))
+      localStorage.setItem(sessDataKey(sess.staffId), JSON.stringify({ ...sess, permissions: nextPermissions, isRestricted: nextRestricted }))
     } catch { /* storage full — offline cache is best-effort */ }
 
     setSession(prev => (
       prev && prev.staffId === sess.staffId && prev.venueId === sess.venueId
-        ? { ...prev, permissions: fresh }
+        ? { ...prev, permissions: nextPermissions, isRestricted: nextRestricted }
         : prev
     ))
   }, [])
@@ -423,7 +457,7 @@ export function SessionProvider({ children }) {
       const [staffRes, permsRes, linksRes] = await Promise.all([
         supabase
           .from('staff')
-          .select('name, role, job_role, show_temp_logs, show_allergens')
+          .select('name, role, job_role, show_temp_logs, show_allergens, is_restricted')
           .eq('id', staffId)
           .single(),
         supabase
@@ -458,6 +492,7 @@ export function SessionProvider({ children }) {
       showTempLogs:  row.show_temp_logs   ?? false,
       showAllergens: row.show_allergens   ?? false,
       permissions,
+      isRestricted:  row.is_restricted    ?? false,
       venueId,
       venueSlug:     venueSlug ?? '',
       verified:      true,
@@ -472,6 +507,7 @@ export function SessionProvider({ children }) {
     localStorage.setItem(SESSION_SHOW_TEMP_LOGS, String(newSession.showTempLogs))
     localStorage.setItem(SESSION_SHOW_ALLERGENS, String(newSession.showAllergens))
     localStorage.setItem(SESSION_PERMISSIONS_KEY, JSON.stringify(permissions))
+    localStorage.setItem(SESSION_IS_RESTRICTED_KEY, String(newSession.isRestricted))
     localStorage.setItem(SESSION_VENUE_ID_KEY,   venueId)
     localStorage.setItem(SESSION_VENUE_SLUG_KEY, venueSlug ?? '')
 
@@ -579,14 +615,18 @@ export function SessionProvider({ children }) {
   const isManager = session?.verified !== false && (session?.staffRole === 'manager' || session?.staffRole === 'owner')
   const hasMultiVenueAccess = linkedVenues.length > 0
 
+  // Managers/owners can never be restricted — restrict_staff_member only ever
+  // targets role='staff' rows, but guard here too in case of stale data.
+  const isRestricted = !isManager && session?.staffRole === 'staff' && session?.isRestricted === true
+
   const hasPermission = useCallback((permissionId) => {
     if (isManager) return true
     return (session?.permissions ?? []).includes(permissionId)
   }, [isManager, session?.permissions])
 
   const value = useMemo(() => ({
-    session, loading, isManager, signIn, signOut, switchVenue, linkedVenues, hasMultiVenueAccess, hasPermission,
-  }), [session, loading, isManager, signIn, signOut, switchVenue, linkedVenues, hasMultiVenueAccess, hasPermission])
+    session, loading, isManager, isRestricted, signIn, signOut, switchVenue, linkedVenues, hasMultiVenueAccess, hasPermission,
+  }), [session, loading, isManager, isRestricted, signIn, signOut, switchVenue, linkedVenues, hasMultiVenueAccess, hasPermission])
 
   return (
     <SessionContext.Provider value={value}>

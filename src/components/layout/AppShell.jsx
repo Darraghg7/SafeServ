@@ -452,7 +452,7 @@ function useSidebarSections(venueId, localPath) {
 
 /* ── Main AppShell ───────────────────────────────────────────────────────────── */
 export default function AppShell({ children }) {
-  const { session, isManager, signOut, switchVenue, linkedVenues, hasMultiVenueAccess, hasPermission } = useSession()
+  const { session, isManager, isRestricted, signOut, switchVenue, linkedVenues, hasMultiVenueAccess, hasPermission } = useSession()
   const { venueId, venueSlug, venueName } = useVenue()
   const { venues, selectVenue } = useAuth()
   const location     = useLocation()
@@ -542,7 +542,7 @@ export default function AppShell({ children }) {
 
   const cats = isManager
     ? buildManagerCats({ isEnabled, isPlanLocked, overdueCount, pendingSwaps, vp })
-    : buildStaffCats({ isEnabled, isPlanLocked, hasPermission, overdueCount, vp })
+    : buildStaffCats({ isEnabled, isPlanLocked, hasPermission, overdueCount, vp, isRestricted })
 
   const overviewCat = isMultiVenue ? {
     id: 'overview',

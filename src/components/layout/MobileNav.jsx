@@ -339,7 +339,7 @@ function getManagerTabs(vp, isEnabled, complianceNavOrder = []) {
   ]
 }
 
-function getStaffTabs(session, vp, isEnabled) {
+function getStaffTabs(session, vp, isEnabled, isRestricted) {
   const taskChildren = [
     ...(isEnabled('opening_closing') ? [{ to: vp('/opening-closing'), label: 'Checks' }] : []),
     ...(isEnabled('cleaning')        ? [{ to: vp('/cleaning'),        label: 'Cleaning' }] : []),
@@ -352,7 +352,7 @@ function getStaffTabs(session, vp, isEnabled) {
     ...(isEnabled('allergens')       ? [{ to: vp('/allergens'),       label: 'Allergens' }] : []),
   ]
 
-  return [
+  const tabs = [
     {
       key: 'shift',
       label: 'My Shift',
@@ -382,11 +382,16 @@ function getStaffTabs(session, vp, isEnabled) {
       match: ['/time-off'],
     }] : []),
   ]
+
+  // A restricted account can only reach My Shifts — every other tab is shown
+  // (so it's clear it still exists) but disabled, rather than removed.
+  if (!isRestricted) return tabs
+  return tabs.map(t => t.key === 'rota' ? t : { ...t, disabled: true })
 }
 
 /* ── MobileNav component ───────────────────────────────────────────────── */
 export default function MobileNav() {
-  const { session, isManager } = useSession()
+  const { session, isManager, isRestricted } = useSession()
   const { venueSlug, venueId } = useVenue()
   const { pathname } = useLocation()
   const { isEnabled } = useVenueFeatures()
@@ -402,7 +407,7 @@ export default function MobileNav() {
     ? (pathname.slice(base.length) || '/')
     : pathname
 
-  const rawTabs = isManager ? getManagerTabs(vp, isEnabled, complianceNavOrder) : getStaffTabs(session, vp, isEnabled)
+  const rawTabs = isManager ? getManagerTabs(vp, isEnabled, complianceNavOrder) : getStaffTabs(session, vp, isEnabled, isRestricted)
   const tabs = isManager ? applyOrder(rawTabs, savedOrder) : rawTabs
 
   const activeTab = tabs.find(t => t.match.some(m => localPath === m || (m !== '/dashboard' && localPath.startsWith(m))))
@@ -458,6 +463,24 @@ export default function MobileNav() {
               {tabs.map(tab => {
                 const isActive = tab.match.some(m => localPath === m || (m !== '/dashboard' && localPath.startsWith(m)))
                 const Icon = tab.icon
+                if (tab.disabled) {
+                  return (
+                    <div
+                      key={tab.key}
+                      role="tab"
+                      aria-disabled="true"
+                      aria-label={`${tab.label} (restricted)`}
+                      className="flex flex-col items-center justify-center flex-1 gap-0.5 text-charcoal/20 dark:text-white/15 cursor-not-allowed select-none"
+                    >
+                      <span className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl">
+                        <Icon active={false} />
+                        <span className="text-[11px] leading-none tracking-wide font-medium">
+                          {tab.label}
+                        </span>
+                      </span>
+                    </div>
+                  )
+                }
                 return (
                   <NavLink
                     key={tab.key}

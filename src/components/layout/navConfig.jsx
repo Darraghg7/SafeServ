@@ -239,7 +239,7 @@ export function buildManagerCats({ isEnabled, isPlanLocked, overdueCount, pendin
 }
 
 /* ── Staff category / item tree ─────────────────────────────────────────────── */
-export function buildStaffCats({ isEnabled, isPlanLocked, hasPermission, overdueCount, vp }) {
+export function buildStaffCats({ isEnabled, isPlanLocked, hasPermission, overdueCount, vp, isRestricted }) {
   const cats = [
     {
       id: 'today',
@@ -283,5 +283,15 @@ export function buildStaffCats({ isEnabled, isPlanLocked, hasPermission, overdue
     },
   ]
 
-  return cats.filter(c => c.items.length > 0)
+  const nonEmptyCats = cats.filter(c => c.items.length > 0)
+  if (!isRestricted) return nonEmptyCats
+
+  // A restricted account can only reach the Rota item — every other item is
+  // kept visible (so it's clear it still exists) but disabled, not removed.
+  return nonEmptyCats.map(cat => ({
+    ...cat,
+    items: cat.items.map(item => (
+      cat.id === 'team' && item.id === 'rota' ? item : { ...item, disabled: true }
+    )),
+  }))
 }

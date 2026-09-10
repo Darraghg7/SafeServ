@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       const [jwt, staffRes, permsRes, linksRes] = await Promise.all([
         makeJwt(staff_id, venue_id, sessionToken),
         db.from('staff')
-          .select('name, role, job_role, show_temp_logs, show_allergens')
+          .select('name, role, job_role, show_temp_logs, show_allergens, is_restricted')
           .eq('id', staff_id)
           .single(),
         db.from('staff_permissions')

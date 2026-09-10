@@ -71,6 +71,12 @@ export function deactivateStaffMemberRpc(sessionToken: string, staffId: string) 
 export function reactivateStaffMemberRpc(sessionToken: string, staffId: string) {
   return supabase.rpc('reactivate_staff_member', { p_session_token: sessionToken, p_staff_id: staffId })
 }
+export function restrictStaffMemberRpc(sessionToken: string, staffId: string) {
+  return supabase.rpc('restrict_staff_member', { p_session_token: sessionToken, p_staff_id: staffId })
+}
+export function unrestrictStaffMemberRpc(sessionToken: string, staffId: string) {
+  return supabase.rpc('unrestrict_staff_member', { p_session_token: sessionToken, p_staff_id: staffId })
+}
 export function deleteStaffRow(staffId: string) {
   return supabase.from('staff').delete().eq('id', staffId)
 }

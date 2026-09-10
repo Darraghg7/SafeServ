@@ -4,20 +4,24 @@ import { T } from './navConfig'
 function PanelItem({ item, isActive, onClick }) {
   const [hovered, setHovered] = useState(false)
   const isWarn = item.warn
+  const isDisabled = !!item.disabled
   return (
     <button
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
+      disabled={isDisabled}
       aria-current={isActive ? 'page' : undefined}
-      onMouseEnter={() => setHovered(true)}
+      aria-disabled={isDisabled || undefined}
+      onMouseEnter={() => !isDisabled && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={['font-sans text-[13px] text-left cursor-pointer transition-[background,color] duration-100', isActive ? 'font-medium' : 'font-[450]'].join(' ')}
+      className={['font-sans text-[13px] text-left transition-[background,color] duration-100', isDisabled ? 'cursor-not-allowed' : 'cursor-pointer', isActive ? 'font-medium' : 'font-[450]'].join(' ')}
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
         width: 'calc(100% - 16px)', margin: '1px 8px',
         padding: '8px 10px', borderRadius: 8,
-        background: isActive ? T.bgActive : hovered ? T.bgHover : 'transparent',
-        border: isActive ? `1px solid rgba(255,255,255,0.10)` : '1px solid transparent',
-        color: isActive ? T.inkBright : isWarn ? T.warn : T.ink,
+        background: isDisabled ? 'transparent' : isActive ? T.bgActive : hovered ? T.bgHover : 'transparent',
+        border: !isDisabled && isActive ? `1px solid rgba(255,255,255,0.10)` : '1px solid transparent',
+        color: isDisabled ? T.inkFaint : isActive ? T.inkBright : isWarn ? T.warn : T.ink,
+        opacity: isDisabled ? 0.5 : 1,
       }}
     >
       <span style={{

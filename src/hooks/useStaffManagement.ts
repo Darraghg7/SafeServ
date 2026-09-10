@@ -10,6 +10,7 @@ interface StaffMember {
   role?: string
   hourly_rate?: number
   is_active: boolean
+  is_restricted?: boolean
   show_temp_logs?: boolean
   show_allergens?: boolean
   photo_url?: string
@@ -40,7 +41,7 @@ export default function useStaffManagement(): {
     queryFn: async () => {
       const { data } = await supabase
         .from('staff')
-        .select('id, name, email, job_role, role, hourly_rate, is_active, show_temp_logs, show_allergens, photo_url, skills, is_under_18, working_days, sort_order, pin_failed_attempts, pin_locked_until, employment_type, contracted_hours, start_date, emergency_contact_name, emergency_contact_phone, holiday_pay_eligible, colour')
+        .select('id, name, email, job_role, role, hourly_rate, is_active, is_restricted, show_temp_logs, show_allergens, photo_url, skills, is_under_18, working_days, sort_order, pin_failed_attempts, pin_locked_until, employment_type, contracted_hours, start_date, emergency_contact_name, emergency_contact_phone, holiday_pay_eligible, colour')
         .eq('venue_id', venueId)
         .order('sort_order')
         .order('name')

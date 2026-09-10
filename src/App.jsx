@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Capacitor } from '@capacitor/core'
 
@@ -28,6 +28,10 @@ const MarketingPage = lazy(() => import('./pages/marketing/MarketingPage'))
 
 // Privacy policy
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'))
+// Terms of service
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'))
+// Cookie policy
+const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'))
 
 // Signup flow + auth callbacks
 const SignupFlowPage    = lazy(() => import('./pages/signup/SignupFlowPage'))
@@ -186,6 +190,22 @@ function RequireManager({ children }) {
   return children
 }
 
+/**
+ * A manager can restrict a staff account to read-only "My Shifts" access.
+ * Every other route bounces a restricted staff member back to the rota page —
+ * this runs inside every already-authenticated route (see wrap()/wrapPro()),
+ * so it also catches direct URL entry and back/forward navigation, not just
+ * nav-tab clicks (which are separately disabled in MobileNav/navConfig).
+ */
+function RequireNotRestricted({ children }) {
+  const { isRestricted } = useSession()
+  const { venueSlug } = useParams()
+  const { pathname } = useLocation()
+  const rotaPath = `/v/${venueSlug}/rota`
+  if (isRestricted && pathname !== rotaPath) return <Navigate to={rotaPath} replace />
+  return children
+}
+
 /** Pages accessible to managers OR staff with a specific permission. */
 function RequirePermission({ permission, children }) {
   const { session, loading, isManager, hasPermission } = useSession()
@@ -201,9 +221,11 @@ function RequirePermission({ permission, children }) {
 function wrap(Component, Guard = RequireAuth) {
   return (
     <Guard>
-      <AppShell>
-        <Component />
-      </AppShell>
+      <RequireNotRestricted>
+        <AppShell>
+          <Component />
+        </AppShell>
+      </RequireNotRestricted>
     </Guard>
   )
 }
@@ -219,11 +241,13 @@ function wrapPerm(Component, permission, feature) {
 function wrapPro(Component, Guard = RequireAuth, feature) {
   return (
     <Guard>
-      <AppShell>
-        <PlanGate feature={feature}>
-          <Component />
-        </PlanGate>
-      </AppShell>
+      <RequireNotRestricted>
+        <AppShell>
+          <PlanGate feature={feature}>
+            <Component />
+          </PlanGate>
+        </AppShell>
+      </RequireNotRestricted>
     </Guard>
   )
 }
@@ -511,6 +535,12 @@ export default function App() {
 
           {/* Public: privacy policy */}
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
+          {/* Public: terms of service */}
+          <Route path="/terms" element={<TermsOfServicePage />} />
+
+          {/* Public: cookie policy */}
+          <Route path="/cookies" element={<CookiePolicyPage />} />
 
           {/* Sign up */}
           <Route path="/signup" element={<SignupFlowPage />} />

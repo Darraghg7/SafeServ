@@ -613,14 +613,14 @@ function WorkedSection({ rows, reqs, hourlyRate, onFix, isDateLocked }) {
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   Locked
                 </span>
-              ) : (
+              ) : onFix ? (
                 <button onClick={() => onFix(r.session, r.role)}
                   className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-[9px] border border-charcoal/15 dark:border-white/15 text-charcoal/60 dark:text-white/50 text-[11.5px] font-semibold"
                   style={{ background:'#fff', cursor:'pointer' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                   Fix
                 </button>
-              )}
+              ) : null}
             </div>
           )
         })}
@@ -651,7 +651,7 @@ function WorkedSection({ rows, reqs, hourlyRate, onFix, isDateLocked }) {
    END edit-hours components
 ───────────────────────────────────────────────────────────────── */
 
-function StaffRotaView({ shifts, staff, loading, weekStart, prevWeek, nextWeek, session, swapModal, setSwapModal, swapForm, setSwapForm, swapSaving, submitSwapRequest, swapCandidates, swaps }) {
+function StaffRotaView({ shifts, staff, loading, weekStart, prevWeek, nextWeek, session, swapModal, setSwapModal, swapForm, setSwapForm, swapSaving, submitSwapRequest, swapCandidates, swaps, readOnly }) {
   const today = format(new Date(), 'yyyy-MM-dd')
   const weekDays = getWeekDays(weekStart)
 
@@ -906,7 +906,7 @@ function StaffRotaView({ shifts, staff, loading, weekStart, prevWeek, nextWeek, 
             rows={workedRows}
             reqs={reqs}
             hourlyRate={hourlyRate}
-            onFix={(sess, role) => setFixCtx({ session: sess, role })}
+            onFix={readOnly ? null : (sess, role) => setFixCtx({ session: sess, role })}
             isDateLocked={isDateLocked}
           />
 
@@ -935,17 +935,19 @@ function StaffRotaView({ shifts, staff, loading, weekStart, prevWeek, nextWeek, 
                         <span>{shift.shift_date === today ? 'Today' : format(parseISO(shift.shift_date), 'EEE d MMM')}</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        const staffMember = staff.find(s => s.id === shift.staff_id)
-                        setSwapModal({ staffMember, date: parseISO(shift.shift_date), shift })
-                        setSwapForm({ targetStaffId: '', message: '' })
-                      }}
-                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg border border-charcoal/15 dark:border-white/15 text-charcoal/60 dark:text-white/50 text-[11.5px] font-semibold hover:border-charcoal/30 dark:hover:border-white/30 hover:text-charcoal dark:hover:text-white transition-colors"
-                    >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>
-                      Swap
-                    </button>
+                    {!readOnly && (
+                      <button
+                        onClick={() => {
+                          const staffMember = staff.find(s => s.id === shift.staff_id)
+                          setSwapModal({ staffMember, date: parseISO(shift.shift_date), shift })
+                          setSwapForm({ targetStaffId: '', message: '' })
+                        }}
+                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg border border-charcoal/15 dark:border-white/15 text-charcoal/60 dark:text-white/50 text-[11.5px] font-semibold hover:border-charcoal/30 dark:hover:border-white/30 hover:text-charcoal dark:hover:text-white transition-colors"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>
+                        Swap
+                      </button>
+                    )}
                   </div>
                 ))}
                 <div className="flex items-center justify-between px-4 py-3 border-t border-charcoal/8 dark:border-white/8 bg-charcoal/3 dark:bg-white/5">
@@ -1019,7 +1021,7 @@ function StaffRotaView({ shifts, staff, loading, weekStart, prevWeek, nextWeek, 
 export default function RotaPage() {
   const toast = useToast()
   const { venueId, venueName } = useVenue()
-  const { session, isManager } = useSession()
+  const { session, isManager, isRestricted } = useSession()
   const [searchParams] = useSearchParams()
   const personalView = searchParams.get('personal') === '1'
 
@@ -1426,6 +1428,7 @@ export default function RotaPage() {
         submitSwapRequest={submitSwapRequest}
         swapCandidates={swapCandidates}
         swaps={swaps}
+        readOnly={isRestricted}
       />
     )
   }
