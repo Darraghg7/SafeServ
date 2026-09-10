@@ -129,6 +129,12 @@ export default function SettingsHubPage() {
           label="Notifications"
           sub="Push alerts, digest, reminders"
           onClick={() => navigate(vp('/settings/notifications'))}
+        />
+        <SRow
+          icon={<><path d="M18 20V10M12 20V4M6 20v-6"/></>}
+          label="Analytics"
+          sub="Staff login activity"
+          onClick={() => navigate(vp('/settings/analytics'))}
           last
         />
       </RowGroup>
